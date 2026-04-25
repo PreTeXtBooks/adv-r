@@ -5,7 +5,7 @@
   <introduction>
     <p>There are two primary tools of control flow: choices and loops. Choices, like <c>if</c> statements and <c>switch()</c> calls, allow you to run different code depending on the input. Loops, like <c>for</c> and <c>while</c>, allow you to repeatedly run code, typically with changing options. I'd expect that you're already familiar with the basics of these functions so I'll briefly cover some technical details and then introduce some useful, but lesser known, features.</p>
 
-    <p>The condition system (messages, warnings, and errors), which you'll learn about in Chapter <xref ref="sec-conditions"/>, also provides non-local control flow.</p>
+    <p>The condition system (messages, warnings, and errors), which you'll learn about in Chapter <xref ref="ch-conditions"/>, also provides non-local control flow.</p>
 
     <subsection xml:id="subsec-control-flow-quiz">
       <title>Quiz</title>
@@ -331,7 +331,7 @@ for (i in seq_along(xs)) {
 
       <p>You can rewrite any <c>for</c> loop to use <c>while</c> instead, and you can rewrite any <c>while</c> loop to use <c>repeat</c>, but the converses are not true. That means <c>while</c> is more flexible than <c>for</c>, and <c>repeat</c> is more flexible than <c>while</c>. It's good practice, however, to use the least-flexible solution to a problem, so you should use <c>for</c> wherever possible.</p>
 
-      <p>Generally speaking you shouldn't need to use <c>for</c> loops for data analysis tasks, as <c>map()</c> and <c>apply()</c> already provide less flexible solutions to most problems. You'll learn more in Chapter <xref ref="sec-functionals"/>.</p>
+      <p>Generally speaking you shouldn't need to use <c>for</c> loops for data analysis tasks, as <c>map()</c> and <c>apply()</c> already provide less flexible solutions to most problems. You'll learn more in Chapter <xref ref="ch-functionals"/>.</p>
     </subsection>
 
     <exercises>
