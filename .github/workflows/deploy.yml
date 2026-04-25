@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: ["*"]
 
-  # Runs on pushes to main (after a PR is merged) to build and deploy
+  # Runs on pushes to master (after a PR is merged) to build and deploy
   push:
-    branches: ["main"]
+    branches: ["master"]
 
   # Runs on demand
   workflow_dispatch:
@@ -42,14 +42,14 @@ jobs:
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         with:
           path: output/stage
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     permissions:
       pages: write
       id-token: write
