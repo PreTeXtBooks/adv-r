@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-oo-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Object-Oriented Programming: Introduction</title>
+
+    <p>
+      In the following five chapters you'll learn about
+      <em>object-oriented programming</em> (OOP). OOP is a little more
+      challenging in R than in other languages because:
+    </p>
+
+    <p><ul>
+      <li><p>
+        There are multiple OOP systems to choose from. In this book, I'll
+        focus on the three that I believe are most important: S3, R6, and S4.
+        S3 and S4 are provided by base R. R6 is provided by the R6 package,
+        and is similar to the Reference Classes, or R5, that are also provided
+        by base R.
+      </p></li>
+      <li><p>
+        There is disagreement about the relative importance of the OOP systems.
+        I think S3 and R6 are most important, followed by S4. Base R mostly
+        uses S3 and S4.
+      </p></li>
+      <li><p>
+        S3 and S4 use generic function OOP which is rather different from the
+        encapsulated OOP used by most languages popular today.
+      </p></li>
+    </ul></p>
+
+    <p>
+      The OOP chapters are organised as follows:
+    </p>
+
+    <p><ol>
+      <li><p>
+        <xref ref="ch-base-types"/> gives you the necessary foundation by
+        describing the differences between base and OO objects.
+      </p></li>
+      <li><p>
+        <xref ref="ch-s3"/> introduces S3, the simplest and most commonly
+        used OOP system.
+      </p></li>
+      <li><p>
+        <xref ref="ch-r6"/> introduces R6, an encapsulated OOP system built
+        on top of environments.
+      </p></li>
+      <li><p>
+        <xref ref="ch-s4"/> introduces S4, a rigorous, formal OOP system.
+      </p></li>
+      <li><p>
+        <xref ref="ch-oo-tradeoffs"/> compares these three main OOP systems.
+      </p></li>
+    </ol></p>
+
+  </chapter>

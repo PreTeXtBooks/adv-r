@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-s4" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>S4</title>
+
+    <introduction>
+      <p>
+        S4 provides a formal approach to functional OOP. The underlying ideas
+        are similar to S3 (the topic of <xref ref="ch-s3"/>), but implementation
+        is much stricter and makes use of specialised functions for creating
+        classes (<c>setClass()</c>), generics (<c>setGeneric()</c>), and
+        methods (<c>setMethod()</c>). Additionally, S4 provides both multiple
+        inheritance (i.e. a class can have multiple parents) and multiple
+        dispatch (i.e. method dispatch can use the class of multiple arguments).
+      </p>
+    </introduction>
+
+    <section xml:id="sec-s4-classes">
+      <title>Classes</title>
+
+      <p>
+        Unlike S3, S4 classes have a formal definition. To define an S4 class,
+        you call <c>setClass()</c> with the class name and a definition of its
+        fields (called <em>slots</em>):
+      </p>
+
+      <program language="r">
+        <input>
+setClass("Person", 
+  representation(
+    name = "character", 
+    age = "numeric"
+  )
+)
+        </input>
+      </program>
+    </section>
+
+  </chapter>

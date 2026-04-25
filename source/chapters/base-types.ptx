@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-base-types" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Base Types</title>
+
+    <introduction>
+      <p>
+        To talk about objects and OOP in R we first need to clear up a
+        fundamental confusion about two uses of the word <q>object</q>. So far
+        in this book, I've used the word in the general sense captured by John
+        Chambers' pithy quote: <q>everything that exists in R is an object</q>.
+        However, while everything <em>is</em> an object, not everything is
+        object-oriented. This confusion arises because the base objects come
+        from S, and were developed before anyone thought that S might need an
+        OOP system. The tools and nomenclature evolved organically over many
+        years without a single guiding principle.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-base-vs-oo">
+      <title>Base versus OO objects</title>
+
+      <p>
+        To tell the difference between a base and OO object, use
+        <c>is.object()</c> or <c>sloop::otype()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+# A base object:
+is.object(1:10)
+#&gt; [1] FALSE
+sloop::otype(1:10)
+#&gt; [1] "base"
+
+# An OO object
+is.object(mtcars)
+#&gt; [1] TRUE
+sloop::otype(mtcars)
+#&gt; [1] "S3"
+        </input>
+      </program>
+    </section>
+
+  </chapter>

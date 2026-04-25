@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-environments" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Environments</title>
+
+    <introduction>
+      <p>
+        The environment is the data structure that powers scoping. This chapter
+        dives deep into environments, describing their structure in depth, and
+        using them to improve your understanding of the four scoping rules. It
+        also introduces a useful data structure related to the environment: the
+        binding. Together, environments and bindings form the basis of
+        scoping in R.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-env-basics">
+      <title>Environment basics</title>
+
+      <p>
+        Generally, an environment is similar to a named list, with four
+        important exceptions:
+      </p>
+
+      <p><ul>
+        <li><p>
+          Every name must be unique.
+        </p></li>
+        <li><p>
+          The names in an environment are not ordered.
+        </p></li>
+        <li><p>
+          An environment has a parent.
+        </p></li>
+        <li><p>
+          Environments are not copied when modified.
+        </p></li>
+      </ul></p>
+    </section>
+
+  </chapter>

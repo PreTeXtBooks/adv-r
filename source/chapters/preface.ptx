@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <preface xml:id="ch-preface" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Preface</title>
+
+    <p>
+      Welcome to the second edition of <em>Advanced R</em>. I had three main
+      goals for this edition:
+    </p>
+
+    <p><ul>
+      <li><p>
+        Improve coverage of important concepts that I fully understood only
+        after the publication of the first edition.
+      </p></li>
+      <li><p>
+        Reduce coverage of topics time has shown to be less useful, or that I
+        think are really exciting but turn out not to be that practical.
+      </p></li>
+      <li><p>
+        Generally make the material easier to understand with better text,
+        clearer code, and many more diagrams.
+      </p></li>
+    </ul></p>
+
+    <p>
+      If you're familiar with the first edition, this preface describes the
+      major changes so that you can focus your reading on the new areas.
+    </p>
+
+    <p>
+      This is a
+      <url href="https://pretextbook.org/" visual="pretextbook.org">PreTeXt</url>
+      edition of <em>Advanced R</em>. The original book is available at
+      <url href="https://adv-r.hadley.nz/" visual="adv-r.hadley.nz">adv-r.hadley.nz</url>
+      and the source for this edition is available on
+      <url href="https://github.com/PreTeXtBooks/adv-r"
+        visual="github.com/PreTeXtBooks/adv-r">GitHub</url>.
+    </p>
+
+  </preface>

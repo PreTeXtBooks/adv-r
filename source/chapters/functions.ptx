@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-functions" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Functions</title>
+
+    <introduction>
+      <p>
+        Functions are a fundamental building block of R: to master many of the
+        more advanced techniques in this book, you need a solid foundation in
+        how functions work. You've probably already created many R functions,
+        and you're familiar with the basics of how they work. The focus of this
+        chapter is to turn your existing, informal knowledge of functions into a
+        rigorous understanding of what functions are and how they work.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-function-fundamentals">
+      <title>Function fundamentals</title>
+
+      <p>
+        To understand functions in R you need to internalise two important ideas:
+      </p>
+
+      <p><ul>
+        <li><p>
+          Functions can be broken down into three components: arguments, body,
+          and environment.
+        </p></li>
+        <li><p>
+          Functions are objects, just as vectors are objects.
+        </p></li>
+      </ul></p>
+    </section>
+
+    <section xml:id="sec-lexical-scoping">
+      <title>Lexical scoping</title>
+
+      <p>
+        In <xref ref="sec-function-fundamentals"/>, we saw that every function
+        has an associated environment. Now we'll explore what that means in full.
+        The job of an environment is to associate, or <em>bind</em>, a set of
+        names to a set of values. Environments power <em>lexical scoping</em>:
+        the process of looking up the value associated with a name.
+      </p>
+    </section>
+
+  </chapter>

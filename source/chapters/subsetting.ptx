@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-subsetting" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Subsetting</title>
+
+    <introduction>
+      <p>
+        R's subsetting operators are powerful and fast. Mastery of subsetting
+        allows you to succinctly express complex operations in a way that few
+        other languages can match. Subsetting is hard to learn because you need
+        to master a number of interrelated concepts:
+      </p>
+
+      <p><ul>
+        <li><p>
+          The six types of thing that you can subset with.
+        </p></li>
+        <li><p>
+          The three subsetting operators: <c>[[</c>, <c>[</c>, and
+          <c>$</c>.
+        </p></li>
+        <li><p>
+          How different objects behave with subsetting.
+        </p></li>
+        <li><p>
+          The use of subsetting in conjunction with assignment.
+        </p></li>
+      </ul></p>
+    </introduction>
+
+    <section xml:id="sec-subset-atomic">
+      <title>Selecting multiple elements</title>
+
+      <p>
+        Use <c>[</c> to select any number of elements from a vector. For
+        example, <c>x[c(2, 1)]</c> returns the second and first elements of
+        vector <c>x</c>. There are six types of thing you can subset a vector
+        with:
+      </p>
+
+      <p><ul>
+        <li><p>
+          <em>Positive integers</em> return elements at the specified positions.
+        </p></li>
+        <li><p>
+          <em>Negative integers</em> exclude elements at the specified positions.
+        </p></li>
+        <li><p>
+          <em>Logical vectors</em> select elements where the corresponding
+          logical value is <c>TRUE</c>.
+        </p></li>
+        <li><p>
+          <em>Nothing</em> returns the original vector.
+        </p></li>
+        <li><p>
+          <em>Zero</em> returns a zero-length vector.
+        </p></li>
+        <li><p>
+          <em>Character vectors</em> return elements with matching names.
+        </p></li>
+      </ul></p>
+    </section>
+
+  </chapter>

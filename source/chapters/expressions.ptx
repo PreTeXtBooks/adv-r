@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-expressions" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Expressions</title>
+
+    <introduction>
+      <p>
+        To compute on the language, we first need to understand its structure.
+        This requires some new vocabulary, some new tools, and some new ways of
+        thinking about R code. The first of these is the distinction between an
+        operation and its result. Take the following code, which multiplies a
+        variable <c>x</c> by 10 and saves the result to a new variable called
+        <c>y</c>. It doesn't work if we run it, because we haven't defined a
+        variable called <c>x</c>.
+      </p>
+
+      <program language="r">
+        <input>
+y &lt;- x * 10
+        </input>
+      </program>
+
+      <p>
+        It would be nice if we could capture the intent of the code without
+        executing it. In other words, how do we separate our description of the
+        action from the action itself?
+      </p>
+    </introduction>
+
+    <section xml:id="sec-ast">
+      <title>Abstract syntax trees</title>
+
+      <p>
+        Expressions are also called <em>abstract syntax trees</em> (ASTs)
+        because the structure of code is hierarchical and can be naturally
+        represented as a tree. Understanding this tree structure is crucial for
+        inspecting and modifying expressions (i.e. metaprogramming).
+      </p>
+    </section>
+
+  </chapter>

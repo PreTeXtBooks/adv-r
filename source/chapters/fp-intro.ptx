@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-fp-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Functional Programming: Introduction</title>
+
+    <p>
+      R, at its heart, is a <em>functional</em> language. This means that it
+      has certain technical properties, but more importantly that it lends
+      itself to a style of problem solving centred on functions. Below I'll
+      give a brief overview of the technical definition of a functional
+      <em>language</em>, but in this book I will primarily focus on the
+      functional <em>style</em> of programming, because I think it is an
+      extremely good fit to the types of problem you commonly encounter when
+      doing data analysis.
+    </p>
+
+    <p>
+      The chapters in this part cover the key techniques of functional
+      programming in R:
+    </p>
+
+    <p><ol>
+      <li><p>
+        <xref ref="ch-functionals"/> introduces the concept of a functional,
+        a function that takes a function as an argument and returns a vector
+        as output.
+      </p></li>
+      <li><p>
+        <xref ref="ch-function-factories"/> teaches you about function
+        factories: functions that create functions.
+      </p></li>
+      <li><p>
+        <xref ref="ch-function-operators"/> shows you how to use function
+        operators: functions that take functions as input and produce functions
+        as output.
+      </p></li>
+    </ol></p>
+
+  </chapter>

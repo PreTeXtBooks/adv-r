@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-quasiquotation" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Quasiquotation</title>
+
+    <introduction>
+      <p>
+        Now that you understand the tree structure of R code, it's time to
+        return to one of the fundamental ideas that make <c>expr()</c> and
+        <c>ast()</c> work: quasiquotation. There are two sides to
+        quasiquotation:
+      </p>
+
+      <p><ul>
+        <li><p>
+          <em>Quoting</em> allows you to capture an unevaluated expression.
+        </p></li>
+        <li><p>
+          <em>Unquoting</em> allows you to selectively evaluate parts of an
+          otherwise quoted expression.
+        </p></li>
+      </ul></p>
+
+      <p>
+        Together, this makes it easy to compose expressions that contain a
+        mixture of direct, fixed code, and user-supplied code.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-motivation-quasi">
+      <title>Motivation</title>
+
+      <p>
+        We'll start with a concrete example that helps motivate the need for
+        unquoting, and hence quasiquotation. Imagine you're creating a lot of
+        strings by joining together words:
+      </p>
+
+      <program language="r">
+        <input>
+paste("Good", "morning", "Hadley")
+#&gt; [1] "Good morning Hadley"
+paste("Good", "afternoon", "Alice")
+#&gt; [1] "Good afternoon Alice"
+        </input>
+      </program>
+    </section>
+
+  </chapter>

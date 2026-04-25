@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-oo-tradeoffs" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Trade-offs</title>
+
+    <introduction>
+      <p>
+        You now know about the three main OOP toolkits available in R. Now that
+        you understand their basic operation and the principles that underlie
+        them, we can start to compare and contrast the systems in order to
+        understand their strengths and weaknesses.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-s4-vs-s3">
+      <title>S4 versus S3</title>
+
+      <p>
+        S4 is a rigorous system that requires careful upfront design. It's
+        well-suited for building up big systems (with multiple programmers)
+        that evolve over time. S4 has one major advantage over S3: multiple
+        dispatch. With S4 you can define a method that specialises on both
+        the <c>x</c> and <c>y</c> argument:
+      </p>
+
+      <program language="r">
+        <input>
+setGeneric("plus", function(x, y) standardGeneric("plus"))
+setMethod("plus", signature("numeric", "numeric"), function(x, y) x + y)
+        </input>
+      </program>
+    </section>
+
+    <section xml:id="sec-r6-vs-s3">
+      <title>R6 versus S3</title>
+
+      <p>
+        The primary difference between R6 and S3 is that R6 uses
+        <em>encapsulated</em> OOP which includes mutable objects (with
+        reference semantics). This helps solve a common dilemma you'll
+        encounter in R: how do you create an object that represents a
+        connection to an external resource (a database, or a file)?
+      </p>
+    </section>
+
+  </chapter>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-conditions" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Conditions</title>
+
+    <introduction>
+      <p>
+        The <em>condition</em> system provides a paired set of tools that allow
+        the author of a function to indicate that something unusual is happening,
+        and the user of that function to deal with it. The function author
+        <em>signals</em> conditions with functions like <c>stop()</c> (for
+        errors), <c>warning()</c> (for warnings), and <c>message()</c> (for
+        messages), then the function user can handle them with functions like
+        <c>tryCatch()</c> and <c>withCallingHandlers()</c>.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-signalling-conditions">
+      <title>Signalling conditions</title>
+
+      <p>
+        There are three conditions that you can signal in code: errors,
+        warnings, and messages.
+      </p>
+
+      <p><ul>
+        <li><p>
+          Errors are the most severe; they indicate that there is no way for a
+          function to continue and execution must stop.
+        </p></li>
+        <li><p>
+          Warnings are somewhat less severe, and signify that something has
+          gone wrong but the function has been able to at least partially
+          recover.
+        </p></li>
+        <li><p>
+          Messages are the mildest; they are way of informing the user that
+          some action has been performed on their behalf.
+        </p></li>
+      </ul></p>
+    </section>
+
+  </chapter>

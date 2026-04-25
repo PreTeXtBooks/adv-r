@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-control-flow" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Control Flow</title>
+
+    <introduction>
+      <p>
+        There are two primary tools of control flow: choices and loops. Choices,
+        like <c>if</c> statements and <c>switch()</c> calls, allow you to run
+        different code depending on the input. Loops, like <c>for</c> and
+        <c>while</c>, allow you to repeatedly run code, typically with changing
+        options. I'd expect that you're already familiar with the basics of
+        these functions so I'll briefly cover some technical details and then
+        introduce some useful, but lesser known, features.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-choices">
+      <title>Choices</title>
+
+      <p>
+        The basic form of an if statement in R is as follows:
+      </p>
+
+      <program language="r">
+        <input>
+if (condition) true_action
+if (condition) true_action else false_action
+        </input>
+      </program>
+
+      <p>
+        If <c>condition</c> is <c>TRUE</c>, <c>true_action</c> is evaluated;
+        if <c>condition</c> is <c>FALSE</c>, the optional <c>false_action</c>
+        is evaluated.
+      </p>
+    </section>
+
+    <section xml:id="sec-loops">
+      <title>Loops</title>
+
+      <p>
+        <c>for</c> loops are used to iterate over items in a vector. They have
+        the following basic form:
+      </p>
+
+      <program language="r">
+        <input>
+for (item in vector) perform_action
+        </input>
+      </program>
+
+      <p>
+        For each item in <c>vector</c>, <c>perform_action</c> is called once;
+        updating the value of <c>item</c> each time.
+      </p>
+    </section>
+
+  </chapter>

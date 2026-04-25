@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-functionals" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Functionals</title>
+
+    <introduction>
+      <p>
+        A <em>functional</em> is a function that takes a function as an input
+        and returns a vector as output. Here's a simple functional: it calls
+        the function provided as input with 1000 random uniform numbers:
+      </p>
+
+      <program language="r">
+        <input>
+randomise &lt;- function(f) f(runif(1e3))
+randomise(mean)
+#&gt; [1] 0.5012
+randomise(mean)
+#&gt; [1] 0.4985
+randomise(sum)
+#&gt; [1] 504.7
+        </input>
+      </program>
+
+      <p>
+        The chances are that you've already used a functional. You might have
+        used <c>for</c>-loop replacements like base R's <c>lapply()</c>,
+        <c>apply()</c>, and <c>tapply()</c>; or purrr's <c>map()</c>.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-map">
+      <title>My first functional: <c>map()</c></title>
+
+      <p>
+        The most fundamental functional is <c>purrr::map()</c>. It takes a
+        vector and a function, calls the function once for each element of the
+        vector, and returns the results in a list. In other words,
+        <c>map(1:3, f)</c> is equivalent to
+        <c>list(f(1), f(2), f(3))</c>.
+      </p>
+    </section>
+
+  </chapter>

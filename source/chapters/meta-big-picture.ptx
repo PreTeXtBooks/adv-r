@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-meta-big-picture" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Big Picture</title>
+
+    <introduction>
+      <p>
+        Metaprogramming is the hardest topic in this book because it brings
+        together many formerly unrelated topics and forces you to grapple with
+        issues that you probably haven't thought about before. You'll also need
+        to learn a lot of new vocabulary, and at first it will seem like every
+        new term is defined by three other terms that you haven't heard of. Even
+        if you're an experienced programmer in another language, your existing
+        skills are unlikely to be much help as few modern popular languages
+        expose the level of metaprogramming that R provides.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-code-is-data">
+      <title>Code is data</title>
+
+      <p>
+        The first big idea is that code is data: you can capture code and
+        compute on it as you can with any other type of data. The first way to
+        capture code is with <c>rlang::expr()</c>. You can think of
+        <c>expr()</c> as returning exactly what you pass in:
+      </p>
+
+      <program language="r">
+        <input>
+expr(mean(x, na.rm = TRUE))
+#&gt; mean(x, na.rm = TRUE)
+expr(10 + 100 + 1000)
+#&gt; 10 + 100 + 1000
+        </input>
+      </program>
+    </section>
+
+  </chapter>

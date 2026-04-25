@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-s3" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>S3</title>
+
+    <introduction>
+      <p>
+        S3 is R's first and simplest OO system. S3 is informal and ad hoc, but
+        there is a certain elegance in its minimalism: you can't take away any
+        part of it and still have a useful OO system. For these reasons, you
+        should use it, unless you have a compelling reason to do otherwise.
+        S3 is the only OO system used in the base and stats packages, and it's
+        the most commonly used system in CRAN packages.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-s3-basics">
+      <title>Basics</title>
+
+      <p>
+        An S3 object is a base type with at least a <c>class</c> attribute.
+        As an example, let's look at the difference between a factor and an
+        integer:
+      </p>
+
+      <program language="r">
+        <input>
+f &lt;- factor(c("a", "b", "c"))
+
+typeof(f)
+#&gt; [1] "integer"
+attributes(f)
+#&gt; $levels
+#&gt; [1] "a" "b" "c"
+#&gt; 
+#&gt; $class
+#&gt; [1] "factor"
+        </input>
+      </program>
+    </section>
+
+  </chapter>

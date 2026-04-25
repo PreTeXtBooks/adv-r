@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-function-factories" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Function Factories</title>
+
+    <introduction>
+      <p>
+        A <em>function factory</em> is a function that makes functions. Here's
+        a very simple example: we use a function factory (<c>power1()</c>) to
+        make two child functions (<c>square()</c> and <c>cube()</c>):
+      </p>
+
+      <program language="r">
+        <input>
+power1 &lt;- function(exp) {
+  function(x) {
+    x ^ exp
+  }
+}
+
+square &lt;- power1(2)
+cube &lt;- power1(3)
+        </input>
+      </program>
+
+      <p>
+        Don't worry if this doesn't make sense yet, it should by the end of
+        the chapter!
+      </p>
+    </introduction>
+
+    <section xml:id="sec-factory-fundamentals">
+      <title>Factory fundamentals</title>
+
+      <p>
+        The key idea that makes function factories work can be expressed
+        concisely, but requires a bit of background: function factories work
+        because of first-class functions and lexical scoping.
+      </p>
+    </section>
+
+  </chapter>
