@@ -14,7 +14,7 @@
 
     <p>Subsetting is a natural complement to <c>str()</c>. While <c>str()</c> shows you all the pieces of any object (its structure), subsetting allows you to pull out the pieces that you're interested in. For large, complex objects, I highly recommend using the interactive RStudio Viewer, which you can activate with <c>View(my_object)</c>.</p>
 
-    <paragraphs xml:id="par-subsetting-quiz">
+    <paragraphs xml:id="para-subsetting-quiz">
       <title>Quiz</title>
       <p>Take this short quiz to determine if you need to read this chapter. If the answers quickly come to mind, you can comfortably skip this chapter. Check your answers in <xref ref="sec-subsetting-answers"/>.</p>
       <p><ol>
@@ -26,7 +26,7 @@
       </ol></p>
     </paragraphs>
 
-    <paragraphs xml:id="par-subsetting-outline">
+    <paragraphs xml:id="para-subsetting-outline">
       <title>Outline</title>
       <p><ul>
         <li><p>Section <xref ref="sec-subset-multiple"/> starts by teaching you about <c>[</c>. You'll learn the six ways to subset atomic vectors. You'll then learn how those six ways act when used to subset lists, matrices, and data frames.</p></li>
