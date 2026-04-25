@@ -15,7 +15,7 @@
       The goal of this chapter is to help you understand the distinction between names and values, and when R will copy an object.
     </p>
 
-    <paragraphs xml:id="subsec-names-values-quiz">
+    <paragraphs xml:id="para-names-values-quiz">
       <title>Quiz</title>
       <p>
         Answer the following questions to see if you can safely skip this chapter. You can find the answers at the end of the chapter in <xref ref="sec-names-values-answers"/>.
@@ -48,7 +48,7 @@ b[[1]] &lt;- 10
       </ol></p>
     </paragraphs>
 
-    <paragraphs xml:id="subsec-names-values-outline">
+    <paragraphs xml:id="para-names-values-outline">
       <title>Outline</title>
       <p><ul>
         <li><p>
@@ -82,7 +82,7 @@ b[[1]] &lt;- 10
       </ul></p>
     </paragraphs>
 
-    <paragraphs xml:id="subsec-names-values-prerequisites">
+    <paragraphs xml:id="para-names-values-prerequisites">
       <title>Prerequisites</title>
       <p>
         We'll use the <url href="https://github.com/r-lib/lobstr">lobstr</url> package to dig into the internal representation of R objects.
@@ -92,7 +92,7 @@ library(lobstr)
       </input></program>
     </paragraphs>
 
-    <paragraphs xml:id="subsec-names-values-sources">
+    <paragraphs xml:id="para-names-values-sources">
       <title>Sources</title>
       <p>
         The details of R's memory management are not documented in a single place. Much of the information in this chapter was gleaned from a close reading of the documentation (particularly <c>?Memory</c> and <c>?gc</c>), the <url href="http://cran.r-project.org/doc/manuals/R-exts.html#Profiling-R-code-for-memory-use">memory profiling</url> section of <em>Writing R extensions</em>, and the <url href="http://cran.r-project.org/doc/manuals/R-ints.html#SEXPs">SEXPs</url> section of <em>R internals</em>. The rest I figured out by reading the C source code, performing small experiments, and asking questions on R-devel. Any mistakes are entirely mine.
