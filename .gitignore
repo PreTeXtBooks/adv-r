@@ -21,3 +21,7 @@ crc
 output/
 .ptx/
 generated-assets/
+
+# PreTeXt CLI logs
+logs/
+*.log
