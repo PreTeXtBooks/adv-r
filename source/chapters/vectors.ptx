@@ -1,26 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-vectors" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Vectors</title>
+<chapter xml:id="ch-vectors" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Vectors</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      This chapter discusses the most important family of data types in base R: vectors<fn>Collectively, all the other data types are known as &#x201c;node&#x201d; types, which include things like functions and environments. You&#x2019;re most likely to come across this highly technical term when using <c>gc()</c>: the &#x201c;N&#x201d; in <c>Ncells</c> stands for nodes and the &#x201c;V&#x201d; in <c>Vcells</c> stands for vectors.</fn>. While you&#x2019;ve probably already used many (if not all) of the different types of vectors, you may not have thought deeply about how they&#x2019;re interrelated. In this chapter, I won&#x2019;t cover individual vectors types in too much detail, but I will show you how all the types fit together as a whole. If you need more details, you can find them in R&#x2019;s documentation.
+    </p>
+
+    <p>
+      Vectors come in two flavours: atomic vectors and lists<fn>A few places in R&#x2019;s documentation call lists generic vectors to emphasise their difference from atomic vectors.</fn>. They differ in terms of their elements&#x2019; types: for atomic vectors, all elements must have the same type; for lists, elements can have different types. While not a vector, <c>NULL</c> is closely related to vectors and often serves the role of a generic zero length vector. This diagram, which we&#x2019;ll be expanding on throughout this chapter, illustrates the basic relationships:
+    </p>
+
+    <figure>
+      <image source="../images/vectors/summary-tree.png"/>
+    </figure>
+
+    <p>
+      Every vector can also have <alert>attributes</alert>, which you can think of as a named list of arbitrary metadata. Two attributes are particularly important. The <alert>dimension</alert> attribute turns vectors into matrices and arrays and the <alert>class</alert> attribute powers the S3 object system. While you&#x2019;ll learn how to use S3 in Chapter <xref ref="ch-s3"/>, here you&#x2019;ll learn about some of the most important S3 vectors: factors, date and times, data frames, and tibbles. And while 2D structures like matrices and data frames are not necessarily what come to mind when you think of vectors, you&#x2019;ll also learn why R considers them to be vectors.
+    </p>
+
+    <subsection xml:id="subsec-vectors-quiz">
+      <title>Quiz</title>
+
       <p>
-        This chapter discusses the most important family of data types in base
-        R: vectors. While you've probably already used many (if not all) of the
-        different types of vectors, you may not have thought deeply about how
-        they're interrelated. In this chapter, I won't cover individual vector
-        types in too much detail, but I will show you how all the types fit
-        together as a whole.
+        Take this short quiz to determine if you need to read this chapter. If the answers quickly come to mind, you can comfortably skip this chapter. You can check your answers in Section <xref ref="sec-data-structure-answers"/>.
       </p>
-    </introduction>
 
-    <section xml:id="sec-vector-basics">
-      <title>Atomic vectors</title>
+      <p><ol>
+        <li><p>What are the four common types of atomic vectors? What are the two rare types?</p></li>
+        <li><p>What are attributes? How do you get them and set them?</p></li>
+        <li><p>How is a list different from an atomic vector? How is a matrix different from a data frame?</p></li>
+        <li><p>Can you have a list that is a matrix? Can a data frame have a column that is a matrix?</p></li>
+        <li><p>How do tibbles behave differently from data frames?</p></li>
+      </ol></p>
+    </subsection>
+
+    <subsection xml:id="subsec-vectors-outline">
+      <title>Outline</title>
+
+      <p><ul>
+        <li><p>Section <xref ref="sec-atomic-vectors"/> introduces you to the atomic vectors: logical, integer, double, and character. These are R&#x2019;s simplest data structures.</p></li>
+        <li><p>Section <xref ref="sec-attributes"/> takes a small detour to discuss attributes, R&#x2019;s flexible metadata specification. The most important attributes are names, dimensions, and class.</p></li>
+        <li><p>Section <xref ref="sec-s3-atomic-vectors"/> discusses the important vector types that are built by combining atomic vectors with special attributes. These include factors, dates, date-times, and durations.</p></li>
+        <li><p>Section <xref ref="sec-lists"/> dives into lists. Lists are very similar to atomic vectors, but have one key difference: an element of a list can be any data type, including another list. This makes them suitable for representing hierarchical data.</p></li>
+        <li><p>Section <xref ref="sec-tibble"/> teaches you about data frames and tibbles, which are used to represent rectangular data. They combine the behaviour of lists and matrices to make a structure ideally suited for the needs of statistical data.</p></li>
+      </ul></p>
+    </subsection>
+  </introduction>
+
+  <section xml:id="sec-atomic-vectors">
+    <title>Atomic vectors</title>
+
+    <p>
+      There are four primary types of atomic vectors: logical, integer, double, and character (which contains strings). Collectively integer and double vectors are known as numeric vectors<fn>This is a slight simplification as R does not use &#x201c;numeric&#x201d; consistently, which we&#x2019;ll come back to in Section <xref ref="subsec-numeric-type"/>.</fn>. There are two rare types: complex and raw. I won&#x2019;t discuss them further because complex numbers are rarely needed in statistics, and raw vectors are a special type that&#x2019;s only needed when handling binary data.
+    </p>
+
+    <figure>
+      <image source="../images/vectors/summary-tree-atomic.png"/>
+    </figure>
+
+    <subsection xml:id="subsec-scalars">
+      <title>Scalars</title>
 
       <p>
-        There are four primary types of atomic vectors: logical, integer,
-        double, and character (which contains strings). Collectively, integer
-        and double vectors are known as numeric vectors. There are two rare
-        types: complex and raw.
+        Each of the four primary types has a special syntax to create an individual value, AKA a <alert>scalar</alert><fn>Technically, the R language does not possess scalars. Everything that looks like a scalar is actually a vector of length one. This is mostly a theoretical distinction, but it does mean that expressions like <c>1[1]</c> work.</fn>:
+      </p>
+
+      <p><ul>
+        <li><p>Logicals can be written in full (<c>TRUE</c> or <c>FALSE</c>), or abbreviated (<c>T</c> or <c>F</c>).</p></li>
+        <li><p>Doubles can be specified in decimal (<c>0.1234</c>), scientific (<c>1.23e4</c>), or hexadecimal (<c>0xcafe</c>) form. There are three special values unique to doubles: <c>Inf</c>, <c>-Inf</c>, and <c>NaN</c> (not a number). These are special values defined by the floating point standard.</p></li>
+        <li><p>Integers are written similarly to doubles but must be followed by <c>L</c><fn><c>L</c> is not intuitive, and you might wonder where it comes from. At the time <c>L</c> was added to R, R&#x2019;s integer type was equivalent to a long integer in C, and C code could use a suffix of <c>l</c> or <c>L</c> to force a number to be a long integer. It was decided that <c>l</c> was too visually similar to <c>i</c> (used for complex numbers in R), leaving <c>L</c>.</fn> (<c>1234L</c>, <c>1e4L</c>, or <c>0xcafeL</c>), and can not contain fractional values.</p></li>
+        <li><p>Strings are surrounded by <c>"</c> (<c>"hi"</c>) or <c>'</c> (<c>'bye'</c>). Special characters are escaped with <c>\</c>; see <c>?Quotes</c> for full details.</p></li>
+      </ul></p>
+    </subsection>
+
+    <subsection xml:id="subsec-atomic-constructing">
+      <title>Making longer vectors with <c>c()</c></title>
+
+      <p>
+        To create longer vectors from shorter ones, use <c>c()</c>, short for combine:
       </p>
 
       <program language="r">
@@ -31,18 +89,1162 @@ dbl_var &lt;- c(1, 2.5, 4.5)
 chr_var &lt;- c("these are", "some strings")
         </input>
       </program>
-    </section>
-
-    <section xml:id="sec-attributes">
-      <title>Attributes</title>
 
       <p>
-        Any vector can contain arbitrary additional metadata through its
-        attributes. You can think of attributes as named list of vectors that
-        can be attached to any object. You can get and set individual attribute
-        values with <c>attr()</c> or see them all at once with
-        <c>attributes()</c>.
+        When the inputs are atomic vectors, <c>c()</c> always creates another atomic vector; i.e. it flattens:
       </p>
-    </section>
 
-  </chapter>
+      <program language="r">
+        <input>
+c(c(1, 2), c(3, 4))
+        </input>
+      </program>
+
+      <p>
+        In diagrams, I&#x2019;ll depict vectors as connected rectangles, so the above code could be drawn as follows:
+      </p>
+
+      <figure>
+        <image source="../images/vectors/atomic.png"/>
+      </figure>
+
+      <p>
+        You can determine the type of a vector with <c>typeof()</c><fn>You may have heard of the related <c>mode()</c> and <c>storage.mode()</c> functions. Do not use them: they exist only for compatibility with S.</fn> and its length with <c>length()</c>.
+      </p>
+
+      <program language="r">
+        <input>
+typeof(lgl_var)
+typeof(int_var)
+typeof(dbl_var)
+typeof(chr_var)
+        </input>
+      </program>
+    </subsection>
+
+    <subsection xml:id="subsec-missing-values">
+      <title>Missing values</title>
+
+      <p>
+        R represents missing, or unknown values, with special sentinel value: <c>NA</c> (short for not applicable). Missing values tend to be infectious: most computations involving a missing value will return another missing value.
+      </p>
+
+      <program language="r">
+        <input>
+NA &gt; 5
+10 * NA
+!NA
+        </input>
+      </program>
+
+      <p>
+        There are only a few exceptions to this rule. These occur when some identity holds for all possible inputs:
+      </p>
+
+      <program language="r">
+        <input>
+NA ^ 0
+NA | TRUE
+NA &amp; FALSE
+        </input>
+      </program>
+
+      <p>
+        Propagation of missingness leads to a common mistake when determining which values in a vector are missing:
+      </p>
+
+      <program language="r">
+        <input>
+x &lt;- c(NA, 5, NA, 10)
+x == NA
+        </input>
+      </program>
+
+      <p>
+        This result is correct (if a little surprising) because there&#x2019;s no reason to believe that one missing value has the same value as another. Instead, use <c>is.na()</c> to test for the presence of missingness:
+      </p>
+
+      <program language="r">
+        <input>
+is.na(x)
+        </input>
+      </program>
+
+      <p>
+        NB: Technically there are four missing values<fn>Well, technically, five if we include <c>NA_complex_</c>, but we ignore this &#x201c;rare&#x201d; type, as mentioned above.</fn>, one for each of the atomic types: <c>NA</c> (logical), <c>NA_integer_</c> (integer), <c>NA_real_</c> (double), and <c>NA_character_</c> (character). This distinction is usually unimportant because <c>NA</c> will be automatically coerced to the correct type when needed.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-coercion">
+      <title>Testing and coercion</title>
+
+      <p>
+        Generally, you can <alert>test</alert> if a vector is of a given type with an <c>is.*()</c> function, but these functions need to be used with care. <c>is.logical()</c>, <c>is.integer()</c>, <c>is.double()</c>, and <c>is.character()</c> do what you might expect: they test if a vector is a character, double, integer, or logical. Avoid <c>is.vector()</c>, <c>is.atomic()</c>, and <c>is.numeric()</c>: they don&#x2019;t test if you have a vector, atomic vector, or numeric vector; you&#x2019;ll need to carefully read the documentation to figure out what they actually do.
+      </p>
+
+      <p>
+        For atomic vectors, type is a property of the entire vector: all elements must be the same type. When you attempt to combine different types they will be <alert>coerced</alert> in a fixed order: character &#x2192; double &#x2192; integer &#x2192; logical. For example, combining a character and an integer yields a character:
+      </p>
+
+      <program language="r">
+        <input>
+str(c("a", 1))
+        </input>
+      </program>
+
+      <p>
+        Coercion often happens automatically. Most mathematical functions (<c>+</c>, <c>log</c>, <c>abs</c>, etc.) will coerce to numeric. This coercion is particularly useful for logical vectors because <c>TRUE</c> becomes 1 and <c>FALSE</c> becomes 0.
+      </p>
+
+      <program language="r">
+        <input>
+x &lt;- c(FALSE, FALSE, TRUE)
+as.numeric(x)
+
+# Total number of TRUEs
+sum(x)
+
+# Proportion that are TRUE
+mean(x)
+        </input>
+      </program>
+
+      <p>
+        Generally, you can deliberately coerce by using an <c>as.*()</c> function, like <c>as.logical()</c>, <c>as.integer()</c>, <c>as.double()</c>, or <c>as.character()</c>. Failed coercion of strings generates a warning and a missing value:
+      </p>
+
+      <program language="r">
+        <input>
+as.integer(c("1", "1.5", "a"))
+        </input>
+      </program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>How do you create raw and complex scalars? (See <c>?raw</c> and <c>?complex</c>.)</p>
+      </exercise>
+      <exercise>
+        <p>Test your knowledge of the vector coercion rules by predicting the output of the following uses of <c>c()</c>:</p>
+        <program language="r">
+          <input>
+c(1, FALSE)
+c("a", 1)
+c(TRUE, 1L)
+          </input>
+        </program>
+      </exercise>
+      <exercise>
+        <p>Why is <c>1 == "1"</c> true? Why is <c>-1 &lt; FALSE</c> true? Why is <c>"one" &lt; 2</c> false?</p>
+      </exercise>
+      <exercise>
+        <p>Why is the default missing value, <c>NA</c>, a logical vector? What&#x2019;s special about logical vectors? (Hint: think about <c>c(FALSE, NA_character_)</c>.)</p>
+      </exercise>
+      <exercise>
+        <p>Precisely what do <c>is.atomic()</c>, <c>is.numeric()</c>, and <c>is.vector()</c> test for?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-attributes">
+    <title>Attributes</title>
+
+    <p>
+      You might have noticed that the set of atomic vectors does not include a number of important data structures like matrices, arrays, factors, or date-times. These types are built on top of atomic vectors by adding attributes. In this section, you&#x2019;ll learn the basics of attributes, and how the dim attribute makes matrices and arrays. In the next section you&#x2019;ll learn how the class attribute is used to create S3 vectors, including factors, dates, and date-times.
+    </p>
+
+    <subsection xml:id="subsec-getting-and-setting">
+      <title>Getting and setting</title>
+
+      <p>
+        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood. You&#x2019;ll learn more about them in Section <xref ref="sec-pairlists"/>.</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
+      </p>
+
+      <program language="r">
+        <input>
+a &lt;- 1:3
+attr(a, "x") &lt;- "abcdef"
+attr(a, "x")
+
+attr(a, "y") &lt;- 4:6
+str(attributes(a))
+
+# Or equivalently
+a &lt;- structure(
+  1:3,
+  x = "abcdef",
+  y = 4:6
+)
+str(attributes(a))
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/attr.png"/>
+      </figure>
+
+      <p>
+        Attributes should generally be thought of as ephemeral. For example, most attributes are lost by most operations:
+      </p>
+
+      <program language="r">
+        <input>
+attributes(a[1])
+attributes(sum(a))
+        </input>
+      </program>
+
+      <p>
+        There are only two attributes that are routinely preserved:
+      </p>
+
+      <p><ul>
+        <li><p><alert>names</alert>, a character vector giving each element a name.</p></li>
+        <li><p><alert>dim</alert>, short for dimensions, an integer vector, used to turn vectors into matrices or arrays.</p></li>
+      </ul></p>
+
+      <p>
+        To preserve other attributes, you&#x2019;ll need to create your own S3 class, the topic of Chapter <xref ref="ch-s3"/>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-names-attr">
+      <title>Names</title>
+
+      <p>
+        You can name a vector in three ways:
+      </p>
+
+      <program language="r">
+        <input>
+# When creating it:
+x &lt;- c(a = 1, b = 2, c = 3)
+
+# By assigning a character vector to names()
+x &lt;- 1:3
+names(x) &lt;- c("a", "b", "c")
+
+# Inline, with setNames():
+x &lt;- setNames(1:3, c("a", "b", "c"))
+        </input>
+      </program>
+
+      <p>
+        Avoid using <c>attr(x, "names")</c> as it requires more typing and is less readable than <c>names(x)</c>. You can remove names from a vector by using <c>x &lt;- unname(x)</c> or <c>names(x) &lt;- NULL</c>.
+      </p>
+
+      <p>
+        To be technically correct, when drawing the named vector <c>x</c>, I should draw it like so:
+      </p>
+
+      <figure>
+        <image source="../images/vectors/attr-names-1.png"/>
+      </figure>
+
+      <p>
+        However, names are so special and so important, that unless I&#x2019;m trying specifically to draw attention to the attributes data structure, I&#x2019;ll use them to label the vector directly:
+      </p>
+
+      <figure>
+        <image source="../images/vectors/attr-names-2.png"/>
+      </figure>
+
+      <p>
+        To be useful with character subsetting (e.g. Section <xref ref="sec-lookup-tables"/>) names should be unique, and non-missing, but this is not enforced by R. Depending on how the names are set, missing names may be either <c>""</c> or <c>NA_character_</c>. If all names are missing, <c>names()</c> will return <c>NULL</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-dimensions">
+      <title>Dimensions</title>
+
+      <p>
+        Adding a <c>dim</c> attribute to a vector allows it to behave like a 2-dimensional <alert>matrix</alert> or a multi-dimensional <alert>array</alert>. Matrices and arrays are primarily mathematical and statistical tools, not programming tools, so they&#x2019;ll be used infrequently and only covered briefly in this book. Their most important feature is multidimensional subsetting, which is covered in Section <xref ref="sec-matrix-subsetting"/>.
+      </p>
+
+      <p>
+        You can create matrices and arrays with <c>matrix()</c> and <c>array()</c>, or by using the assignment form of <c>dim()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+# Two scalar arguments specify row and column sizes
+x &lt;- matrix(1:6, nrow = 2, ncol = 3)
+x
+
+# One vector argument to describe all dimensions
+y &lt;- array(1:12, c(2, 3, 2))
+y
+
+# You can also modify an object in place by setting dim()
+z &lt;- 1:6
+dim(z) &lt;- c(3, 2)
+z
+        </input>
+      </program>
+
+      <p>
+        Many of the functions for working with vectors have generalisations for matrices and arrays:
+      </p>
+
+      <tabular>
+        <row header="yes">
+          <cell>Vector</cell>
+          <cell>Matrix</cell>
+          <cell>Array</cell>
+        </row>
+        <row>
+          <cell><c>names()</c></cell>
+          <cell><c>rownames()</c>, <c>colnames()</c></cell>
+          <cell><c>dimnames()</c></cell>
+        </row>
+        <row>
+          <cell><c>length()</c></cell>
+          <cell><c>nrow()</c>, <c>ncol()</c></cell>
+          <cell><c>dim()</c></cell>
+        </row>
+        <row>
+          <cell><c>c()</c></cell>
+          <cell><c>rbind()</c>, <c>cbind()</c></cell>
+          <cell><c>abind::abind()</c></cell>
+        </row>
+        <row>
+          <cell>---</cell>
+          <cell><c>t()</c></cell>
+          <cell><c>aperm()</c></cell>
+        </row>
+        <row>
+          <cell><c>is.null(dim(x))</c></cell>
+          <cell><c>is.matrix()</c></cell>
+          <cell><c>is.array()</c></cell>
+        </row>
+      </tabular>
+
+      <p>
+        A vector without a <c>dim</c> attribute set is often thought of as 1-dimensional, but actually has <c>NULL</c> dimensions. You also can have matrices with a single row or single column, or arrays with a single dimension. They may print similarly, but will behave differently. The differences aren&#x2019;t too important, but it&#x2019;s useful to know they exist in case you get strange output from a function (<c>tapply()</c> is a frequent offender). As always, use <c>str()</c> to reveal the differences.
+      </p>
+
+      <program language="r">
+        <input>
+str(1:3)                   # 1d vector
+str(matrix(1:3, ncol = 1)) # column vector
+str(matrix(1:3, nrow = 1)) # row vector
+str(array(1:3, 3))         # "array" vector
+        </input>
+      </program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>How is <c>setNames()</c> implemented? How is <c>unname()</c> implemented? Read the source code.</p>
+      </exercise>
+      <exercise>
+        <p>What does <c>dim()</c> return when applied to a 1-dimensional vector? When might you use <c>NROW()</c> or <c>NCOL()</c>?</p>
+      </exercise>
+      <exercise>
+        <p>How would you describe the following three objects? What makes them different from <c>1:5</c>?</p>
+        <program language="r">
+          <input>
+x1 &lt;- array(1:5, c(1, 1, 5))
+x2 &lt;- array(1:5, c(1, 5, 1))
+x3 &lt;- array(1:5, c(5, 1, 1))
+          </input>
+        </program>
+      </exercise>
+      <exercise>
+        <p>An early draft used this code to illustrate <c>structure()</c>:</p>
+        <program language="r">
+          <input>
+structure(1:5, comment = "my attribute")
+          </input>
+        </program>
+        <p>But when you print that object you don&#x2019;t see the comment attribute. Why? Is the attribute missing, or is there something else special about it? (Hint: try using help.)</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s3-atomic-vectors">
+    <title>S3 atomic vectors</title>
+
+    <p>
+      One of the most important vector attributes is <c>class</c>, which underlies the S3 object system. Having a class attribute turns an object into an <alert>S3 object</alert>, which means it will behave differently from a regular vector when passed to a <alert>generic</alert> function. Every S3 object is built on top of a base type, and often stores additional information in other attributes. You&#x2019;ll learn the details of the S3 object system, and how to create your own S3 classes, in Chapter <xref ref="ch-s3"/>.
+    </p>
+
+    <p>
+      In this section, we&#x2019;ll discuss four important S3 vectors used in base R:
+    </p>
+
+    <p><ul>
+      <li><p>Categorical data, where values come from a fixed set of levels recorded in <alert>factor</alert> vectors.</p></li>
+      <li><p>Dates (with day resolution), which are recorded in <alert>Date</alert> vectors.</p></li>
+      <li><p>Date-times (with second or sub-second resolution), which are stored in <alert>POSIXct</alert> vectors.</p></li>
+      <li><p>Durations, which are stored in <alert>difftime</alert> vectors.</p></li>
+    </ul></p>
+
+    <figure>
+      <image source="../images/vectors/summary-tree-s3-1.png"/>
+    </figure>
+
+    <subsection xml:id="subsec-factors">
+      <title>Factors</title>
+
+      <p>
+        A factor is a vector that can contain only predefined values. It is used to store categorical data. Factors are built on top of an integer vector with two attributes: a <c>class</c>, &#x201c;factor&#x201d;, which makes it behave differently from regular integer vectors, and <c>levels</c>, which defines the set of allowed values.
+      </p>
+
+      <program language="r">
+        <input>
+x &lt;- factor(c("a", "b", "b", "a"))
+x
+
+typeof(x)
+attributes(x)
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/factor.png"/>
+      </figure>
+
+      <p>
+        Factors are useful when you know the set of possible values but they&#x2019;re not all present in a given dataset. In contrast to a character vector, when you tabulate a factor you&#x2019;ll get counts of all categories, even unobserved ones:
+      </p>
+
+      <program language="r">
+        <input>
+sex_char &lt;- c("m", "m", "m")
+sex_factor &lt;- factor(sex_char, levels = c("m", "f"))
+
+table(sex_char)
+table(sex_factor)
+        </input>
+      </program>
+
+      <p>
+        <alert>Ordered</alert> factors are a minor variation of factors. In general, they behave like regular factors, but the order of the levels is meaningful (low, medium, high) (a property that is automatically leveraged by some modelling and visualisation functions).
+      </p>
+
+      <program language="r">
+        <input>
+grade &lt;- ordered(c("b", "b", "a", "c"), levels = c("c", "b", "a"))
+grade
+        </input>
+      </program>
+
+      <p>
+        In base R<fn>The tidyverse never automatically coerces characters to factors, and provides the forcats package specifically for working with factors.</fn> you tend to encounter factors very frequently because many base R functions (like <c>read.csv()</c> and <c>data.frame()</c>) automatically convert character vectors to factors. This is suboptimal because there&#x2019;s no way for those functions to know the set of all possible levels or their correct order: the levels are a property of theory or experimental design, not of the data. Instead, use the argument <c>stringsAsFactors = FALSE</c> to suppress this behaviour, and then manually convert character vectors to factors using your knowledge of the &#x201c;theoretical&#x201d; data. To learn about the historical context of this behaviour, I recommend <url href="https://simplystatistics.org/posts/2015-07-24-stringsasfactors-an-unauthorized-biography"><em>stringsAsFactors: An unauthorized biography</em></url> by Roger Peng, and <url href="http://notstatschat.tumblr.com/post/124987394001/stringsasfactors-sigh"><em>stringsAsFactors = &lt;sigh&gt;</em></url> by Thomas Lumley.
+      </p>
+
+      <p>
+        While factors look like (and often behave like) character vectors, they are built on top of integers. So be careful when treating them like strings. Some string methods (like <c>gsub()</c> and <c>grepl()</c>) will automatically coerce factors to strings, others (like <c>nchar()</c>) will throw an error, and still others will (like <c>c()</c>) use the underlying integer values. For this reason, it&#x2019;s usually best to explicitly convert factors to character vectors if you need string-like behaviour.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-dates">
+      <title>Dates</title>
+
+      <p>
+        Date vectors are built on top of double vectors. They have class &#x201c;Date&#x201d; and no other attributes:
+      </p>
+
+      <program language="r">
+        <input>
+today &lt;- Sys.Date()
+
+typeof(today)
+attributes(today)
+        </input>
+      </program>
+
+      <p>
+        The value of the double (which can be seen by stripping the class), represents the number of days since 1970-01-01<fn>This special date is known as the Unix Epoch.</fn>:
+      </p>
+
+      <program language="r">
+        <input>
+date &lt;- as.Date("1970-02-01")
+unclass(date)
+        </input>
+      </program>
+    </subsection>
+
+    <subsection xml:id="subsec-date-times">
+      <title>Date-times</title>
+
+      <p>
+        Base R<fn>The tidyverse provides the lubridate package for working with date-times. It provides a number of convenient helpers that work with the base POSIXct type.</fn> provides two ways of storing date-time information, POSIXct, and POSIXlt. These are admittedly odd names: &#x201c;POSIX&#x201d; is short for Portable Operating System Interface, which is a family of cross-platform standards. &#x201c;ct&#x201d; stands for calendar time (the <c>time_t</c> type in C), and &#x201c;lt&#x201d; for local time (the <c>struct tm</c> type in C). Here we&#x2019;ll focus on <c>POSIXct</c>, because it&#x2019;s the simplest, is built on top of an atomic vector, and is most appropriate for use in data frames. POSIXct vectors are built on top of double vectors, where the value represents the number of seconds since 1970-01-01.
+      </p>
+
+      <program language="r">
+        <input>
+now_ct &lt;- as.POSIXct("2018-08-01 22:00", tz = "UTC")
+now_ct
+
+typeof(now_ct)
+attributes(now_ct)
+        </input>
+      </program>
+
+      <p>
+        The <c>tzone</c> attribute controls only how the date-time is formatted; it does not control the instant of time represented by the vector. Note that the time is not printed if it is midnight.
+      </p>
+
+      <program language="r">
+        <input>
+structure(now_ct, tzone = "Asia/Tokyo")
+structure(now_ct, tzone = "America/New_York")
+structure(now_ct, tzone = "Australia/Lord_Howe")
+structure(now_ct, tzone = "Europe/Paris")
+        </input>
+      </program>
+    </subsection>
+
+    <subsection xml:id="subsec-durations">
+      <title>Durations</title>
+
+      <p>
+        Durations, which represent the amount of time between pairs of dates or date-times, are stored in difftimes. Difftimes are built on top of doubles, and have a <c>units</c> attribute that determines how the integer should be interpreted:
+      </p>
+
+      <program language="r">
+        <input>
+one_week_1 &lt;- as.difftime(1, units = "weeks")
+one_week_1
+
+typeof(one_week_1)
+attributes(one_week_1)
+
+one_week_2 &lt;- as.difftime(7, units = "days")
+one_week_2
+
+typeof(one_week_2)
+attributes(one_week_2)
+        </input>
+      </program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>What sort of object does <c>table()</c> return? What is its type? What attributes does it have? How does the dimensionality change as you tabulate more variables?</p>
+      </exercise>
+      <exercise>
+        <p>What happens to a factor when you modify its levels?</p>
+        <program language="r">
+          <input>
+f1 &lt;- factor(letters)
+levels(f1) &lt;- rev(levels(f1))
+          </input>
+        </program>
+      </exercise>
+      <exercise>
+        <p>What does this code do? How do <c>f2</c> and <c>f3</c> differ from <c>f1</c>?</p>
+        <program language="r">
+          <input>
+f2 &lt;- rev(factor(letters))
+
+f3 &lt;- factor(letters, levels = rev(letters))
+          </input>
+        </program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-lists">
+    <title>Lists</title>
+
+    <p>
+      Lists are a step up in complexity from atomic vectors: each element can be any type, not just vectors. Technically speaking, each element of a list is actually the same type because, as you saw in Section <xref ref="sec-list-references"/>, each element is really a <em>reference</em> to another object, which can be any type.
+    </p>
+
+    <subsection xml:id="subsec-list-creating">
+      <title>Creating</title>
+
+      <p>
+        You construct lists with <c>list()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+l1 &lt;- list(
+  1:3,
+  "a",
+  c(TRUE, FALSE, TRUE),
+  c(2.3, 5.9)
+)
+
+typeof(l1)
+
+str(l1)
+        </input>
+      </program>
+
+      <p>
+        Because the elements of a list are references, creating a list does not involve copying the components into the list. For this reason, the total size of a list might be smaller than you might expect.
+      </p>
+
+      <program language="r">
+        <input>
+lobstr::obj_size(mtcars)
+
+l2 &lt;- list(mtcars, mtcars, mtcars, mtcars)
+lobstr::obj_size(l2)
+        </input>
+      </program>
+
+      <p>
+        Lists can contain complex objects so it&#x2019;s not possible to pick a single visual style that works for every list. Generally I&#x2019;ll draw lists like vectors, using colour to remind you of the hierarchy.
+      </p>
+
+      <figure>
+        <image source="../images/vectors/list.png"/>
+      </figure>
+
+      <p>
+        Lists are sometimes called <alert>recursive</alert> vectors because a list can contain other lists. This makes them fundamentally different from atomic vectors.
+      </p>
+
+      <program language="r">
+        <input>
+l3 &lt;- list(list(list(1)))
+str(l3)
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/list-recursive.png"/>
+      </figure>
+
+      <p>
+        <c>c()</c> will combine several lists into one. If given a combination of atomic vectors and lists, <c>c()</c> will coerce the vectors to lists before combining them. Compare the results of <c>list()</c> and <c>c()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+l4 &lt;- list(list(1, 2), c(3, 4))
+l5 &lt;- c(list(1, 2), c(3, 4))
+str(l4)
+str(l5)
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/list-c.png"/>
+      </figure>
+    </subsection>
+
+    <subsection xml:id="subsec-list-types">
+      <title>Testing and coercion</title>
+
+      <p>
+        The <c>typeof()</c> a list is <c>list</c>. You can test for a list with <c>is.list()</c>, and coerce to a list with <c>as.list()</c>.
+      </p>
+
+      <program language="r">
+        <input>
+list(1:3)
+as.list(1:3)
+        </input>
+      </program>
+
+      <p>
+        You can turn a list into an atomic vector with <c>unlist()</c>. The rules for the resulting type are complex, not well documented, and not always equivalent to what you&#x2019;d get with <c>c()</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-list-array">
+      <title>Matrices and arrays</title>
+
+      <p>
+        With atomic vectors, the dimension attribute is commonly used to create matrices. With lists, the dimension attribute can be used to create list-matrices or list-arrays:
+      </p>
+
+      <program language="r">
+        <input>
+l &lt;- list(1:3, "a", TRUE, 1.0)
+dim(l) &lt;- c(2, 2)
+l
+
+l[[1, 1]]
+        </input>
+      </program>
+
+      <p>
+        These data structures are relatively esoteric but they can be useful if you want to arrange objects in a grid-like structure. For example, if you&#x2019;re running models on a spatio-temporal grid, it might be more intuitive to store the models in a 3D array that matches the grid structure.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>List all the ways that a list differs from an atomic vector.</p>
+      </exercise>
+      <exercise>
+        <p>Why do you need to use <c>unlist()</c> to convert a list to an atomic vector? Why doesn&#x2019;t <c>as.vector()</c> work?</p>
+      </exercise>
+      <exercise>
+        <p>Compare and contrast <c>c()</c> and <c>unlist()</c> when combining a date and date-time into a single vector.</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-tibble">
+    <title>Data frames and tibbles</title>
+
+    <p>
+      The two most important S3 vectors built on top of lists are data frames and tibbles.
+    </p>
+
+    <figure>
+      <image source="../images/vectors/summary-tree-s3-2.png"/>
+    </figure>
+
+    <p>
+      If you do data analysis in R, you&#x2019;re going to be using data frames. A data frame is a named list of vectors with attributes for (column) <c>names</c>, <c>row.names</c><fn>Row names are one of the most surprisingly complex data structures in R. They&#x2019;ve also been a persistent source of performance issues over the years. The most straightforward implementation is a character or integer vector, with one element for each row. But there&#x2019;s also a compact representation for &#x201c;automatic&#x201d; row names (consecutive integers), created by <c>.set_row_names()</c>. R 3.5 has a special way of deferring integer to character conversion that is specifically designed to speed up <c>lm()</c>; see <url href="https://svn.r-project.org/R/branches/ALTREP/ALTREP.html#deferred_string_conversions">ALTREP deferred string conversions</url> for details.</fn>, and its class, &#x201c;data.frame&#x201d;:
+    </p>
+
+    <program language="r">
+      <input>
+df1 &lt;- data.frame(x = 1:3, y = letters[1:3])
+typeof(df1)
+
+attributes(df1)
+      </input>
+    </program>
+
+    <p>
+      In contrast to a regular list, a data frame has an additional constraint: the length of each of its vectors must be the same. This gives data frames their rectangular structure and explains why they share the properties of both matrices and lists:
+    </p>
+
+    <p><ul>
+      <li><p>A data frame has <c>rownames()</c><fn>Technically, you are encouraged to use <c>row.names()</c>, not <c>rownames()</c> with data frames, but this distinction is rarely important.</fn> and <c>colnames()</c>. The <c>names()</c> of a data frame are the column names.</p></li>
+      <li><p>A data frame has <c>nrow()</c> rows and <c>ncol()</c> columns. The <c>length()</c> of a data frame gives the number of columns.</p></li>
+    </ul></p>
+
+    <p>
+      Data frames are one of the biggest and most important ideas in R, and one of the things that make R different from other programming languages. However, in the over 20 years since their creation, the ways that people use R have changed, and some of the design decisions that made sense at the time data frames were created now cause frustration.
+    </p>
+
+    <p>
+      This frustration lead to the creation of the tibble, a modern reimagining of the data frame. Tibbles are designed to be (as much as possible) drop-in replacements for data frames that fix those frustrations. A concise, and fun, way to summarise the main differences is that tibbles are lazy and surly: they do less and complain more. You&#x2019;ll see what that means as you work through this section.
+    </p>
+
+    <p>
+      Tibbles are provided by the tibble package and share the same structure as data frames. The only difference is that the class vector is longer, and includes <c>tbl_df</c>. This allows tibbles to behave differently in the key ways which we&#x2019;ll discuss below.
+    </p>
+
+    <program language="r">
+      <input>
+library(tibble)
+
+df2 &lt;- tibble(x = 1:3, y = letters[1:3])
+typeof(df2)
+
+attributes(df2)
+      </input>
+    </program>
+
+    <subsection xml:id="subsec-df-create">
+      <title>Creating</title>
+
+      <p>
+        You create a data frame by supplying name-vector pairs to <c>data.frame()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+df &lt;- data.frame(
+  x = 1:3,
+  y = c("a", "b", "c")
+)
+str(df)
+        </input>
+      </program>
+
+      <p>
+        If you are using a version of R before 4.0.0, beware of the default conversion of strings to factors. Use <c>stringsAsFactors = FALSE</c> to suppress this and keep character vectors as character vectors:
+      </p>
+
+      <program language="r">
+        <input>
+df1 &lt;- data.frame(
+  x = 1:3,
+  y = c("a", "b", "c"),
+  stringsAsFactors = FALSE
+)
+str(df1)
+        </input>
+      </program>
+
+      <p>
+        Creating a tibble is similar to creating a data frame. The difference between the two is that tibbles never coerce their input (this is one feature that makes them lazy):
+      </p>
+
+      <program language="r">
+        <input>
+df2 &lt;- tibble(
+  x = 1:3,
+  y = c("a", "b", "c")
+)
+str(df2)
+        </input>
+      </program>
+
+      <p>
+        Additionally, while data frames automatically transform non-syntactic names (unless <c>check.names = FALSE</c>), tibbles do not (although they do print non-syntactic names surrounded by <c>`</c>).
+      </p>
+
+      <program language="r">
+        <input>
+names(data.frame(`1` = 1))
+
+names(tibble(`1` = 1))
+        </input>
+      </program>
+
+      <p>
+        While every element of a data frame (or tibble) must have the same length, both <c>data.frame()</c> and <c>tibble()</c> will recycle shorter inputs. However, while data frames automatically recycle columns that are an integer multiple of the longest column, tibbles will only recycle vectors of length one.
+      </p>
+
+      <program language="r">
+        <input>
+data.frame(x = 1:4, y = 1:2)
+data.frame(x = 1:4, y = 1:3)
+
+tibble(x = 1:4, y = 1)
+tibble(x = 1:4, y = 1:2)
+        </input>
+      </program>
+
+      <p>
+        There is one final difference: <c>tibble()</c> allows you to refer to variables created during construction:
+      </p>
+
+      <program language="r">
+        <input>
+tibble(
+  x = 1:3,
+  y = x * 2
+)
+        </input>
+      </program>
+
+      <p>
+        (Inputs are evaluated left-to-right.)
+      </p>
+
+      <p>
+        When drawing data frames and tibbles, rather than focussing on the implementation details, i.e. the attributes:
+      </p>
+
+      <figure>
+        <image source="../images/vectors/data-frame-1.png"/>
+      </figure>
+
+      <p>
+        I&#x2019;ll draw them the same way as a named list, but arrange them to emphasise their columnar structure.
+      </p>
+
+      <figure>
+        <image source="../images/vectors/data-frame-2.png"/>
+      </figure>
+    </subsection>
+
+    <subsection xml:id="subsec-rownames">
+      <title>Row names</title>
+
+      <p>
+        Data frames allow you to label each row with a name, a character vector containing only unique values:
+      </p>
+
+      <program language="r">
+        <input>
+df3 &lt;- data.frame(
+  age = c(35, 27, 18),
+  hair = c("blond", "brown", "black"),
+  row.names = c("Bob", "Susan", "Sam")
+)
+df3
+        </input>
+      </program>
+
+      <p>
+        You can get and set row names with <c>rownames()</c>, and you can use them to subset rows:
+      </p>
+
+      <program language="r">
+        <input>
+rownames(df3)
+
+df3["Bob", ]
+        </input>
+      </program>
+
+      <p>
+        Row names arise naturally if you think of data frames as 2D structures like matrices: columns (variables) have names so rows (observations) should too. Most matrices are numeric, so having a place to store character labels is important. But this analogy to matrices is misleading because matrices possess an important property that data frames do not: they are transposable. In matrices the rows and columns are interchangeable, and transposing a matrix gives you another matrix (transposing again gives you the original matrix). With data frames, however, the rows and columns are not interchangeable: the transpose of a data frame is not a data frame.
+      </p>
+
+      <p>
+        There are three reasons why row names are undesirable:
+      </p>
+
+      <p><ul>
+        <li><p>Metadata is data, so storing it in a different way to the rest of the data is fundamentally a bad idea. It also means that you need to learn a new set of tools to work with row names; you can&#x2019;t use what you already know about manipulating columns.</p></li>
+        <li><p>Row names are a poor abstraction for labelling rows because they only work when a row can be identified by a single string. This fails in many cases, for example when you want to identify a row by a non-character vector (e.g. a time point), or with multiple vectors (e.g. position, encoded by latitude and longitude).</p></li>
+        <li>
+          <p>Row names must be unique, so any duplication of rows (e.g. from bootstrapping) will create new row names. If you want to match rows from before and after the transformation, you&#x2019;ll need to perform complicated string surgery.</p>
+          <program language="r">
+            <input>
+df3[c(1, 1, 1), ]
+            </input>
+          </program>
+        </li>
+      </ul></p>
+
+      <p>
+        For these reasons, tibbles do not support row names. Instead the tibble package provides tools to easily convert row names into a regular column with either <c>rownames_to_column()</c>, or the <c>rownames</c> argument in <c>as_tibble()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+as_tibble(df3, rownames = "name")
+        </input>
+      </program>
+    </subsection>
+
+    <subsection xml:id="subsec-printing">
+      <title>Printing</title>
+
+      <p>
+        One of the most obvious differences between tibbles and data frames is how they print. I assume that you&#x2019;re already familiar with how data frames are printed, so here I&#x2019;ll highlight some of the biggest differences using an example dataset included in the dplyr package:
+      </p>
+
+      <program language="r">
+        <input>
+dplyr::starwars
+        </input>
+      </program>
+
+      <p><ul>
+        <li><p>Tibbles only show the first 10 rows and all the columns that will fit on screen. Additional columns are shown at the bottom.</p></li>
+        <li><p>Each column is labelled with its type, abbreviated to three or four letters.</p></li>
+        <li><p>Wide columns are truncated to avoid having a single long string occupy an entire row. (This is still a work in progress: it&#x2019;s a tricky tradeoff between showing as many columns as possible and showing columns in their entirety.)</p></li>
+        <li><p>When used in console environments that support it, colour is used judiciously to highlight important information, and de-emphasise supplemental details.</p></li>
+      </ul></p>
+    </subsection>
+
+    <subsection xml:id="subsec-tibble-subsetting">
+      <title>Subsetting</title>
+
+      <p>
+        As you will learn in Chapter <xref ref="ch-subsetting"/>, you can subset a data frame or a tibble like a 1D structure (where it behaves like a list), or a 2D structure (where it behaves like a matrix).
+      </p>
+
+      <p>
+        In my opinion, data frames have two undesirable subsetting behaviours:
+      </p>
+
+      <p><ul>
+        <li><p>When you subset columns with <c>df[, vars]</c>, you will get a vector if <c>vars</c> selects one variable, otherwise you&#x2019;ll get a data frame. This is a frequent source of bugs when using <c>[</c> in a function, unless you always remember to use <c>df[, vars, drop = FALSE]</c>.</p></li>
+        <li><p>When you attempt to extract a single column with <c>df$x</c> and there is no column <c>x</c>, a data frame will instead select any variable that starts with <c>x</c>. If no variable starts with <c>x</c>, <c>df$x</c> will return <c>NULL</c>. This makes it easy to select the wrong variable or to select a variable that doesn&#x2019;t exist<fn>We can make R warn about this behavior (called partial matching) by setting <c>options(warnPartialMatchDollar = TRUE)</c>.</fn>.</p></li>
+      </ul></p>
+
+      <p>
+        Tibbles tweak these behaviours so that a <c>[</c> always returns a tibble, and a <c>$</c> doesn&#x2019;t do partial matching and warns if it can&#x2019;t find a variable (this is what makes tibbles surly).
+      </p>
+
+      <program language="r">
+        <input>
+df1 &lt;- data.frame(xyz = "a")
+df2 &lt;- tibble(xyz = "a")
+
+str(df1$x)
+str(df2$x)
+        </input>
+      </program>
+
+      <p>
+        A tibble&#x2019;s insistence on returning a data frame from <c>[</c> can cause problems with legacy code, which often uses <c>df[, "col"]</c> to extract a single column. If you want a single column, I recommend using <c>df[["col"]]</c>. This clearly communicates your intent, and works with both data frames and tibbles.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-df-test-coerce">
+      <title>Testing and coercing</title>
+
+      <p>
+        To check if an object is a data frame or tibble, use <c>is.data.frame()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+is.data.frame(df1)
+is.data.frame(df2)
+        </input>
+      </program>
+
+      <p>
+        Typically, it should not matter if you have a tibble or data frame, but if you need to be certain, use <c>is_tibble()</c>:
+      </p>
+
+      <program language="r">
+        <input>
+is_tibble(df1)
+is_tibble(df2)
+        </input>
+      </program>
+
+      <p>
+        You can coerce an object to a data frame with <c>as.data.frame()</c> or to a tibble with <c>as_tibble()</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-list-columns">
+      <title>List columns</title>
+
+      <p>
+        Since a data frame is a list of vectors, it is possible for a data frame to have a column that is a list. This is very useful because a list can contain any other object: this means you can put any object in a data frame. This allows you to keep related objects together in a row, no matter how complex the individual objects are. You can see an application of this in the &#x201c;Many Models&#x201d; chapter of <em>R for Data Science</em>, <url href="http://r4ds.had.co.nz/many-models.html">http://r4ds.had.co.nz/many-models.html</url>.
+      </p>
+
+      <p>
+        List-columns are allowed in data frames but you have to do a little extra work by either adding the list-column after creation or wrapping the list in <c>I()</c><fn><c>I()</c> is short for identity and is often used to indicate that an input should be left as is, and not automatically transformed.</fn>.
+      </p>
+
+      <program language="r">
+        <input>
+df &lt;- data.frame(x = 1:3)
+df$y &lt;- list(1:2, 1:3, 1:4)
+
+data.frame(
+  x = 1:3,
+  y = I(list(1:2, 1:3, 1:4))
+)
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/data-frame-list.png"/>
+      </figure>
+
+      <p>
+        List columns are easier to use with tibbles because they can be directly included inside <c>tibble()</c> and they will be printed tidily:
+      </p>
+
+      <program language="r">
+        <input>
+tibble(
+  x = 1:3,
+  y = list(1:2, 1:3, 1:4)
+)
+        </input>
+      </program>
+    </subsection>
+
+    <subsection xml:id="subsec-matrix-and-data-frame-columns">
+      <title>Matrix and data frame columns</title>
+
+      <p>
+        As long as the number of rows matches the data frame, it&#x2019;s also possible to have a matrix or array as a column of a data frame. (This requires a slight extension to our definition of a data frame: it&#x2019;s not the <c>length()</c> of each column that must be equal, but the <c>NROW()</c>.) As for list-columns, you must either add it after creation, or wrap it in <c>I()</c>.
+      </p>
+
+      <program language="r">
+        <input>
+dfm &lt;- data.frame(
+  x = 1:3 * 10
+)
+dfm$y &lt;- matrix(1:9, nrow = 3)
+dfm$z &lt;- data.frame(a = 3:1, b = letters[1:3], stringsAsFactors = FALSE)
+
+str(dfm)
+        </input>
+      </program>
+
+      <figure>
+        <image source="../images/vectors/data-frame-matrix.png"/>
+      </figure>
+
+      <p>
+        Matrix and data frame columns require a little caution. Many functions that work with data frames assume that all columns are vectors. Also, the printed display can be confusing.
+      </p>
+
+      <program language="r">
+        <input>
+dfm[1, ]
+        </input>
+      </program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Can you have a data frame with zero rows? What about zero columns?</p>
+      </exercise>
+      <exercise>
+        <p>What happens if you attempt to set rownames that are not unique?</p>
+      </exercise>
+      <exercise>
+        <p>If <c>df</c> is a data frame, what can you say about <c>t(df)</c>, and <c>t(t(df))</c>? Perform some experiments, making sure to try different column types.</p>
+      </exercise>
+      <exercise>
+        <p>What does <c>as.matrix()</c> do when applied to a data frame with columns of different types? How does it differ from <c>data.matrix()</c>?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-null">
+    <title>NULL</title>
+
+    <p>
+      To finish up this chapter, I want to talk about one final important data structure that&#x2019;s closely related to vectors: <c>NULL</c>. <c>NULL</c> is special because it has a unique type, is always length zero, and can&#x2019;t have any attributes:
+    </p>
+
+    <program language="r">
+      <input>
+typeof(NULL)
+
+length(NULL)
+
+x &lt;- NULL
+attr(x, "y") &lt;- 1
+      </input>
+    </program>
+
+    <p>
+      You can test for <c>NULL</c>s with <c>is.null()</c>:
+    </p>
+
+    <program language="r">
+      <input>
+is.null(NULL)
+      </input>
+    </program>
+
+    <p>
+      There are two common uses of <c>NULL</c>:
+    </p>
+
+    <p><ul>
+      <li>
+        <p>To represent an empty vector (a vector of length zero) of arbitrary type. For example, if you use <c>c()</c> but don&#x2019;t include any arguments, you get <c>NULL</c>, and concatenating <c>NULL</c> to a vector will leave it unchanged:</p>
+        <program language="r">
+          <input>
+c()
+          </input>
+        </program>
+      </li>
+      <li><p>To represent an absent vector. For example, <c>NULL</c> is often used as a default function argument, when the argument is optional but the default value requires some computation (see Section <xref ref="sec-missing-arguments"/> for more on this). Contrast this with <c>NA</c> which is used to indicate that an <em>element</em> of a vector is absent.</p></li>
+    </ul></p>
+
+    <p>
+      If you&#x2019;re familiar with SQL, you&#x2019;ll know about relational <c>NULL</c> and might expect it to be the same as R&#x2019;s. However, the database <c>NULL</c> is actually equivalent to R&#x2019;s <c>NA</c>.
+    </p>
+  </section>
+
+  <section xml:id="sec-data-structure-answers">
+    <title>Quiz Answers</title>
+
+    <p><ol>
+      <li><p>The four common types of atomic vector are logical, integer, double and character. The two rarer types are complex and raw.</p></li>
+      <li><p>Attributes allow you to associate arbitrary additional metadata to any object. You can get and set individual attributes with <c>attr(x, "y")</c> and <c>attr(x, "y") &lt;- value</c>; or you can get and set all attributes at once with <c>attributes()</c>.</p></li>
+      <li><p>The elements of a list can be any type (even a list); the elements of an atomic vector are all of the same type. Similarly, every element of a matrix must be the same type; in a data frame, different columns can have different types.</p></li>
+      <li><p>You can make a list-array by assigning dimensions to a list. You can make a matrix a column of a data frame with <c>df$x &lt;- matrix()</c>, or by using <c>I()</c> when creating a new data frame <c>data.frame(x = I(matrix()))</c>.</p></li>
+      <li><p>Tibbles have an enhanced print method, never coerce strings to factors, and provide stricter subsetting methods.</p></li>
+    </ol></p>
+  </section>
+
+</chapter>
