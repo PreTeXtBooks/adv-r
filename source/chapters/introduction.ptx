@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-introduction" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Introduction</title>
+
+    <p>
+      I have now been programming in R for over 15 years, and have been doing
+      it full-time for the last five years. This has given me the luxury of
+      time to examine how the language works. This book is my attempt to pass
+      on what I've learned so that you can understand the intricacies of R as
+      quickly and painlessly as possible. Reading it will help you avoid the
+      mistakes I've made and dead ends I've gone down, and will teach you
+      useful tools, techniques, and idioms that can help you to attack many
+      types of problems. In the process, I hope to show that, despite its
+      sometimes frustrating quirks, R is, at its heart, an elegant and
+      beautiful language, well tailored for data science.
+    </p>
+
+    <section xml:id="sec-why-r">
+      <title>Why R?</title>
+
+      <p>
+        If you are new to R, you might wonder what makes learning such a quirky
+        language worthwhile. To me, some of the best features are:
+      </p>
+
+      <p><ul>
+        <li><p>
+          It's free, open source, and available on every major platform. As a
+          result, if you do your analysis in R, anyone can easily replicate it,
+          regardless of where they live or how much money they earn.
+        </p></li>
+        <li><p>
+          R has a diverse and welcoming community, both online and in person.
+        </p></li>
+        <li><p>
+          A massive set of packages for statistical modelling, machine learning,
+          visualisation, and importing and manipulating data.
+        </p></li>
+        <li><p>
+          Powerful tools for communicating your results. R Markdown and Quarto
+          let you combine prose, code, and results into documents, presentations,
+          websites, and more.
+        </p></li>
+        <li><p>
+          RStudio, the IDE, provides an integrated development environment built
+          specifically for interactive data analysis.
+        </p></li>
+        <li><p>
+          Cutting edge tools. Researchers in statistics and machine learning
+          will often publish an R package to accompany their articles.
+        </p></li>
+        <li><p>
+          Deep-seated language support for data analysis. This includes features
+          like missing values, data frames, and vectorisation.
+        </p></li>
+      </ul></p>
+    </section>
+
+    <section xml:id="sec-who-should-read">
+      <title>Who should read this book</title>
+
+      <p>
+        This book is aimed at two complementary audiences:
+      </p>
+
+      <p><ul>
+        <li><p>
+          Intermediate R programmers who want to dive deeper into R and learn
+          new strategies for solving diverse problems.
+        </p></li>
+        <li><p>
+          Programmers from other languages who are learning R and want to
+          understand why R works the way it does.
+        </p></li>
+      </ul></p>
+    </section>
+
+    <section xml:id="sec-what-you-will-get">
+      <title>What you will get out of this book</title>
+
+      <p>
+        This book delivers the understanding of R that you need to write
+        sophisticated R programs and, should you want, to understand how the
+        language itself works. After reading this book, you will:
+      </p>
+
+      <p><ul>
+        <li><p>
+          Be familiar with the foundations of R. You'll understand complex data
+          types and the best ways to perform operations on them.
+        </p></li>
+        <li><p>
+          Understand what functional programming means, and why it is a useful
+          tool for data science.
+        </p></li>
+        <li><p>
+          Know about R's rich variety of object-oriented systems.
+        </p></li>
+        <li><p>
+          Appreciate the double-edged sword of metaprogramming.
+        </p></li>
+        <li><p>
+          Have a good intuition for which operations in R are slow or use a lot
+          of memory, and you'll know how to use profiling to pinpoint performance
+          bottlenecks.
+        </p></li>
+      </ul></p>
+    </section>
+
+  </chapter>

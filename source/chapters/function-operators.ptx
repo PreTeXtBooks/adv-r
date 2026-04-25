@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-function-operators" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Function Operators</title>
+
+    <introduction>
+      <p>
+        In this chapter, you'll learn about function operators. A
+        <em>function operator</em> is a function that takes one (or more)
+        functions as input and returns a function as output. The following code
+        shows a simple function operator, <c>chatty()</c>. It wraps a function,
+        making a new function that prints out its first argument. You might
+        create a function like this because it gives you a window to see how
+        functionals, like <c>map_int()</c>, work.
+      </p>
+
+      <program language="r">
+        <input>
+chatty &lt;- function(f) {
+  force(f)
+  
+  function(x, ...) {
+    res &lt;- f(x, ...)
+    cat("Processing ", x, "\n", sep = "")
+    res
+  }
+}
+f &lt;- function(x) x ^ 2
+s &lt;- c(3, 2, 1)
+
+purrr::map_dbl(s, chatty(f))
+#&gt; Processing 3
+#&gt; Processing 2
+#&gt; Processing 1
+#&gt; [1] 9 4 1
+        </input>
+      </program>
+    </introduction>
+
+  </chapter>

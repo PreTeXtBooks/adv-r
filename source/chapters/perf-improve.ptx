@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-perf-improve" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Improving Performance</title>
+
+    <introduction>
+      <p>
+        Once you've used profiling to identify a bottleneck, you need to make
+        it faster. It's difficult to provide general advice on improving
+        performance, but I try to distil some of the most important techniques
+        into this chapter. I'll illustrate each technique with a small example
+        that helps understand the idea, but don't forget to also apply them to
+        your actual problem.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-perf-improve-intro">
+      <title>Code organisation</title>
+
+      <p>
+        There are two traps that are easy to fall into when trying to make your
+        code faster:
+      </p>
+
+      <p><ol>
+        <li><p>
+          Writing faster but incorrect code.
+        </p></li>
+        <li><p>
+          Writing code that you think is faster, but is actually no faster
+          (or even slower).
+        </p></li>
+      </ol></p>
+
+      <p>
+        The target of your optimisation efforts should always be the bottleneck
+        you found through profiling, and you should always use microbenchmarking
+        to verify that your change made a real difference.
+      </p>
+    </section>
+
+  </chapter>

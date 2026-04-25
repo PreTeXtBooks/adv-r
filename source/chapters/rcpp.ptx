@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-rcpp" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Rewriting R Code in C++</title>
+
+    <introduction>
+      <p>
+        Sometimes R code just isn't fast enough. You've used profiling to find
+        the bottleneck and you've done everything you can in R, but your code
+        still isn't fast enough. In this chapter you'll learn how to improve
+        performance by rewriting key functions in C++. This magic comes by way
+        of the Rcpp package, which provides a clean, approachable API that lets
+        you write high-performance code, insulated from R's complex C API.
+      </p>
+
+      <p>
+        Typical bottlenecks that C++ can address include:
+      </p>
+
+      <p><ul>
+        <li><p>
+          Loops that can't be easily vectorised because subsequent iterations
+          depend on previous ones.
+        </p></li>
+        <li><p>
+          Recursive functions, or problems which involve calling functions
+          millions of times. The overhead of calling a function in C++ is much
+          lower than in R.
+        </p></li>
+        <li><p>
+          Problems that require advanced data structures and algorithms that
+          R doesn't provide. Through the standard template library (STL), C++
+          has efficient implementations of many important data structures,
+          from ordered maps to double-ended queues.
+        </p></li>
+      </ul></p>
+    </introduction>
+
+    <section xml:id="sec-rcpp-intro">
+      <title>Getting started with C++</title>
+
+      <p>
+        <c>cppFunction()</c> allows you to write C++ functions in R. We'll use
+        this to learn a bit of C++ by converting simple R functions to their C++
+        equivalents. The learning sequence is designed to get you writing and
+        running C++ code as quickly as possible.
+      </p>
+
+      <program language="cpp">
+        <input>
+#include &lt;Rcpp.h&gt;
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+double meanC(NumericVector x) {
+  int n = x.size();
+  double total = 0;
+
+  for(int i = 0; i &lt; n; ++i) {
+    total += x[i];
+  }
+  return total / n;
+}
+        </input>
+      </program>
+    </section>
+
+  </chapter>

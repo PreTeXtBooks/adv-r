@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-perf-measure" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Measuring Performance</title>
+
+    <introduction>
+      <p>
+        Before you can make your code faster, you first need to figure out
+        what's making it slow. This sounds easy, but it's not. Even experienced
+        programmers have a hard time identifying bottlenecks in their code. So
+        instead of relying on your intuition, you should <em>profile</em> your
+        code: measure the run-time of each line of code using realistic inputs.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-profiling">
+      <title>Profiling</title>
+
+      <p>
+        Across programming languages, the primary tool used to understand code
+        performance is the <em>profiler</em>. There are a number of different
+        types of profiler, but R uses a fairly simple type called a sampling or
+        statistical profiler. A sampling profiler stops the execution of code
+        every few milliseconds and records the call stack (i.e. which function
+        is currently executing, and the function that called the function, and
+        so on). For example, consider <c>f()</c>, below:
+      </p>
+
+      <program language="r">
+        <input>
+f &lt;- function() {
+  pause(0.1)
+  g()
+  h()
+}
+g &lt;- function() {
+  pause(0.1)
+  h()
+}
+h &lt;- function() {
+  pause(0.1)
+}
+        </input>
+      </program>
+    </section>
+
+  </chapter>

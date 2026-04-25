@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-translation" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Translating R Code</title>
+
+    <introduction>
+      <p>
+        The combination of first-class environments, lexical scoping, and
+        metaprogramming gives us a powerful toolkit for translating R code into
+        other languages. One fully-fledged example of this idea is
+        <c>dbplyr</c>, which powers the database backends for dplyr, allowing
+        you to express data manipulation in R and automatically translate it to
+        SQL.
+      </p>
+
+      <p>
+        In this chapter, we'll develop two simple, but useful, domain-specific
+        languages (DSL). The first translates R expressions into HTML, and the
+        second translates R expressions into mathematical equations in LaTeX.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-html-dsl">
+      <title>HTML</title>
+
+      <p>
+        HTML (HyperText Markup Language) is the language that underlies the
+        web. It's a special case of SGML (Standard Generalised Markup Language),
+        and it's similar to XML (eXtensible Markup Language).
+      </p>
+    </section>
+
+  </chapter>

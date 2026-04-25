@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-names-values" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Names and Values</title>
+
+    <introduction>
+      <p>
+        In R, it is important to understand the distinction between an object
+        and its name. Doing so will help you:
+      </p>
+
+      <p><ul>
+        <li><p>
+          More accurately predict the performance and memory usage of your code.
+        </p></li>
+        <li><p>
+          Write faster code by avoiding accidental copies, a major source of
+          slow code.
+        </p></li>
+        <li><p>
+          Better understand R's functional programming tools.
+        </p></li>
+      </ul></p>
+    </introduction>
+
+    <section xml:id="sec-binding-basics">
+      <title>Binding basics</title>
+
+      <p>
+        Consider this code:
+      </p>
+
+      <program language="r">
+        <input>
+x &lt;- c(1, 2, 3)
+        </input>
+      </program>
+
+      <p>
+        It's easy to read it as: <q>create an object named <sq>x</sq>,
+        containing the values 1, 2, and 3.</q> Unfortunately, that's a
+        simplification that will lead to inaccurate predictions about what R is
+        actually doing behind the scenes. It's more accurate to say that this
+        code is doing two things:
+      </p>
+
+      <p><ul>
+        <li><p>
+          It's creating an object, a vector of values, <c>c(1, 2, 3)</c>.
+        </p></li>
+        <li><p>
+          And it's binding that object to a name, <c>x</c>.
+        </p></li>
+      </ul></p>
+
+      <p>
+        In other words, the object, or value, doesn't have a name; it's
+        actually the name that has a value.
+      </p>
+    </section>
+
+  </chapter>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-meta-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Metaprogramming: Introduction</title>
+
+    <p>
+      One of the most intriguing things about R is its capability for
+      metaprogramming: the ability of code to inspect and modify other code.
+      This is most commonly seen in R as non-standard evaluation (NSE): the
+      ability of functions to quote arguments rather than evaluating them.
+    </p>
+
+    <p>
+      The following chapters explain the metaprogramming capabilities of R:
+    </p>
+
+    <p><ol>
+      <li><p>
+        <xref ref="ch-meta-big-picture"/> gives you a big picture of
+        metaprogramming. It introduces important vocabulary, gives a broad
+        overview of the main ideas, and introduces a few simpler tools.
+      </p></li>
+      <li><p>
+        <xref ref="ch-expressions"/> dives into the details of expressions:
+        the data structures that represent code.
+      </p></li>
+      <li><p>
+        <xref ref="ch-quasiquotation"/> teaches you about quasiquotation, which
+        allows you to create code that mixes user-supplied code and developer
+        code.
+      </p></li>
+      <li><p>
+        <xref ref="ch-evaluation"/> shows how to take an expression and evaluate
+        it in a custom environment.
+      </p></li>
+      <li><p>
+        <xref ref="ch-translation"/> ties the previous four chapters together
+        by showing how you might use metaprogramming to translate R code into
+        another language.
+      </p></li>
+    </ol></p>
+
+  </chapter>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-debugging" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Debugging</title>
+
+    <introduction>
+      <p>
+        What do you do when R code throws an unexpected error? What tools do
+        you have to find and fix the problem? This chapter will teach you the
+        art and science of debugging.
+      </p>
+
+      <p>
+        A typo in the code, an unexpected input, and many other problems will
+        cause code to fail. In many languages, even the simplest mistakes will
+        cause the program to terminate. In R, the interactivity of the language
+        means that you're usually in a better position: even when errors occur
+        you can often figure out what went wrong.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-overall-approach">
+      <title>Overall approach</title>
+
+      <p>
+        Finding your bug is a process of confirming the many things that you
+        believe are true, until you find one that is not true. When a bug
+        bites, I recommend a three-step approach to find it:
+      </p>
+
+      <p><ol>
+        <li><p>
+          Google: whenever you see an error message, start by googling it.
+          If you're lucky, you'll discover that it's a known bug with a known
+          solution.
+        </p></li>
+        <li><p>
+          Make it repeatable: to find the root cause of an error, you need to
+          be able to repeat it on command.
+        </p></li>
+        <li><p>
+          Figure out where it is: once you can make the bug happen reliably,
+          the next step is to figure out where it comes from.
+        </p></li>
+      </ol></p>
+    </section>
+
+  </chapter>

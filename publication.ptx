@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- This is the publication file for the Advanced R PreTeXt book.        -->
+<!-- By changing the values of attributes here, you can change how        -->
+<!-- the output looks and functions.  For the complete documentation      -->
+<!-- of publication-file options, see                                     -->
+<!-- https://pretextbook.org/doc/guide/html/publisher-file-reference.html -->
+
+<publication>
+  <!-- Set where external assets and generated assets will be   -->
+  <!-- stored or created.  Directories are relative to the main -->
+  <!-- source PreTeXt file                                      -->
+  <source>
+    <directories external="../assets" generated="../generated-assets"/>
+  </source>
+
+  <numbering>
+    <!-- the divisions element describes the numbering of divisions.  -->
+    <!-- @part-structure should be "decorative" or "structural",      -->
+    <!-- were the latter would restart numbering chapters within each -->
+    <!-- part (this only matters if your book has parts).             -->
+    <!-- The attribute @chapter-start give the number of the first    -->
+    <!-- chapter.  @level says how deep (chapter->section->subsection)-->
+    <!-- numbering should appear.                                     -->
+    <divisions part-structure="decorative" chapter-start="1" level="3"/>
+    <!-- The next elements say how the levels deep to break up the    -->
+    <!-- numbering of the respective elements. Can't be more than the -->
+    <!-- @level on divisions above.                                   -->
+    <blocks level="2"/>
+    <projects level="2"/>
+    <equations level="2"/>
+    <footnotes level="2"/>
+  </numbering>
+
+  <!-- LaTeX specific options: set @print="yes" to get pdf set up   -->
+  <!-- for printing; set @sides="two" if the printing would be two- -->
+  <!-- sided.  The asymptote/@links set to "yes" would produce      -->
+  <!-- links the html version of asymptote graphics.                -->
+  <latex print="no" sides="one">
+    <asymptote links="no"/>
+  </latex>
+
+  <html>
+    <!-- Whether to knowl a particular element is set here     -->
+    <!-- Lots of elements have this possibility; see the guide -->
+    <knowl remark="no" example="yes" proof="yes"/>
+    <!-- Specify the style of the html by giving names to      -->
+    <!-- override defaults.  Ex: to use "style_oscarlevin.css" -->
+    <!-- put <css style="oscarlevin"/>                         -->
+    <css style="default"/>
+  </html>
+</publication>

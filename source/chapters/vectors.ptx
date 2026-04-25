@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-vectors" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Vectors</title>
+
+    <introduction>
+      <p>
+        This chapter discusses the most important family of data types in base
+        R: vectors. While you've probably already used many (if not all) of the
+        different types of vectors, you may not have thought deeply about how
+        they're interrelated. In this chapter, I won't cover individual vector
+        types in too much detail, but I will show you how all the types fit
+        together as a whole.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-vector-basics">
+      <title>Atomic vectors</title>
+
+      <p>
+        There are four primary types of atomic vectors: logical, integer,
+        double, and character (which contains strings). Collectively, integer
+        and double vectors are known as numeric vectors. There are two rare
+        types: complex and raw.
+      </p>
+
+      <program language="r">
+        <input>
+lgl_var &lt;- c(TRUE, FALSE)
+int_var &lt;- c(1L, 6L, 10L)
+dbl_var &lt;- c(1, 2.5, 4.5)
+chr_var &lt;- c("these are", "some strings")
+        </input>
+      </program>
+    </section>
+
+    <section xml:id="sec-attributes">
+      <title>Attributes</title>
+
+      <p>
+        Any vector can contain arbitrary additional metadata through its
+        attributes. You can think of attributes as named list of vectors that
+        can be attached to any object. You can get and set individual attribute
+        values with <c>attr()</c> or see them all at once with
+        <c>attributes()</c>.
+      </p>
+    </section>
+
+  </chapter>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pretext xml:lang="en-US" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+  <docinfo>
+    <brandlogo url="https://adv-r.hadley.nz/" source="images/cover.png"/>
+    <document-id>advanced-r</document-id>
+  </docinfo>
+
+  <book xml:id="advanced-r">
+    <title>Advanced R</title>
+    <subtitle>Second Edition</subtitle>
+
+    <frontmatter xml:id="frontmatter">
+      <titlepage>
+        <author>
+          <personname>Hadley Wickham</personname>
+          <institution>Posit, PBC</institution>
+        </author>
+        <date><today/></date>
+      </titlepage>
+
+      <colophon>
+        <copyright>
+          <year>2019</year>
+          <holder>Hadley Wickham</holder>
+          <shortlicense>
+            This work is licensed under the
+            <url href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+              visual="creativecommons.org/licenses/by-nc-sa/4.0/">
+              Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+              International License
+            </url>.
+            The code contained in this book is simultaneously available under
+            the
+            <url href="https://opensource.org/licenses/MIT"
+              visual="opensource.org/licenses/MIT">MIT license</url>.
+          </shortlicense>
+        </copyright>
+      </colophon>
+
+      <xi:include href="chapters/preface.ptx"/>
+
+    </frontmatter>
+
+    <!-- Introduction chapter (standalone, before parts) -->
+    <xi:include href="chapters/introduction.ptx"/>
+
+    <!-- Part I: Foundations -->
+    <part xml:id="part-foundations">
+      <title>Foundations</title>
+
+      <xi:include href="chapters/foundations-intro.ptx"/>
+      <xi:include href="chapters/names-values.ptx"/>
+      <xi:include href="chapters/vectors.ptx"/>
+      <xi:include href="chapters/subsetting.ptx"/>
+      <xi:include href="chapters/control-flow.ptx"/>
+      <xi:include href="chapters/functions.ptx"/>
+      <xi:include href="chapters/environments.ptx"/>
+      <xi:include href="chapters/conditions.ptx"/>
+
+    </part>
+
+    <!-- Part II: Functional Programming -->
+    <part xml:id="part-fp">
+      <title>Functional Programming</title>
+
+      <xi:include href="chapters/fp-intro.ptx"/>
+      <xi:include href="chapters/functionals.ptx"/>
+      <xi:include href="chapters/function-factories.ptx"/>
+      <xi:include href="chapters/function-operators.ptx"/>
+
+    </part>
+
+    <!-- Part III: Object-Oriented Programming -->
+    <part xml:id="part-oop">
+      <title>Object-Oriented Programming</title>
+
+      <xi:include href="chapters/oo-intro.ptx"/>
+      <xi:include href="chapters/base-types.ptx"/>
+      <xi:include href="chapters/s3.ptx"/>
+      <xi:include href="chapters/r6.ptx"/>
+      <xi:include href="chapters/s4.ptx"/>
+      <xi:include href="chapters/oo-tradeoffs.ptx"/>
+
+    </part>
+
+    <!-- Part IV: Metaprogramming -->
+    <part xml:id="part-metaprogramming">
+      <title>Metaprogramming</title>
+
+      <xi:include href="chapters/meta-intro.ptx"/>
+      <xi:include href="chapters/meta-big-picture.ptx"/>
+      <xi:include href="chapters/expressions.ptx"/>
+      <xi:include href="chapters/quasiquotation.ptx"/>
+      <xi:include href="chapters/evaluation.ptx"/>
+      <xi:include href="chapters/translation.ptx"/>
+
+    </part>
+
+    <!-- Part V: Techniques -->
+    <part xml:id="part-techniques">
+      <title>Techniques</title>
+
+      <xi:include href="chapters/techniques-intro.ptx"/>
+      <xi:include href="chapters/debugging.ptx"/>
+      <xi:include href="chapters/perf-measure.ptx"/>
+      <xi:include href="chapters/perf-improve.ptx"/>
+      <xi:include href="chapters/rcpp.ptx"/>
+
+    </part>
+
+    <backmatter xml:id="backmatter">
+      <index/>
+    </backmatter>
+
+  </book>
+</pretext>

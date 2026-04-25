@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-evaluation" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Evaluation</title>
+
+    <introduction>
+      <p>
+        In the previous chapter, you learned how to capture expressions. The
+        complement of capturing is evaluating. Here, you'll learn about
+        <c>eval()</c>, which evaluates an expression in an environment.
+      </p>
+
+      <p>
+        This gives you tremendous power to manipulate R code, but it also
+        comes with a responsibility: it's easy to misuse, and it's easy to
+        create code that doesn't work in all cases. This chapter will give you
+        the foundations you need to use it safely.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-eval-basics">
+      <title>Evaluation basics</title>
+
+      <p>
+        Here we'll explore the basics of evaluation. The first important idea
+        is that <c>eval()</c> takes two arguments. The first is the expression
+        to evaluate, and the second is the environment in which to evaluate it.
+      </p>
+    </section>
+
+  </chapter>

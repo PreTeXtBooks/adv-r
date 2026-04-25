@@ -16,3 +16,8 @@ adv-r-source.zip
 crc
 
 /.quarto/
+
+# PreTeXt build output
+output/
+.ptx/
+generated-assets/

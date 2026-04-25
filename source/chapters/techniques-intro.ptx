@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-techniques-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Techniques: Introduction</title>
+
+    <p>
+      The following four chapters cover two general programming techniques: finding
+      and fixing bugs, and finding and fixing performance issues. Tools to
+      measure and improve performance are particularly important because R is
+      not a fast language. This is not an accident: R was purposely designed to
+      make interactive data analysis easier for humans, not to make computers
+      as fast as possible. While R is slow compared to other programming
+      languages, for most purposes, it's fast enough. These chapters help you
+      handle the cases where R is no longer fast enough, either by improving
+      the performance of your R code, or by switching to a language, C++, that
+      is designed for performance.
+    </p>
+
+    <p><ol>
+      <li><p>
+        <xref ref="ch-debugging"/> introduces you to the tools and techniques
+        that help you get to the root cause of a bug.
+      </p></li>
+      <li><p>
+        <xref ref="ch-perf-measure"/> teaches you how to use profiling to
+        understand where your code spends its time and memory.
+      </p></li>
+      <li><p>
+        <xref ref="ch-perf-improve"/> shows you general techniques that help
+        you make your R code faster.
+      </p></li>
+      <li><p>
+        <xref ref="ch-rcpp"/> teaches you how to write high-performance code
+        by rewriting key parts of your code in C++.
+      </p></li>
+    </ol></p>
+
+  </chapter>

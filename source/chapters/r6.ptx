@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <chapter xml:id="ch-r6" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>R6</title>
+
+    <introduction>
+      <p>
+        This chapter describes the R6 OOP system. R6 has two special properties:
+      </p>
+
+      <p><ul>
+        <li><p>
+          It uses the encapsulated OOP paradigm, which means that methods
+          belong to objects, not generics, and you call them like
+          <c>object$method()</c>.
+        </p></li>
+        <li><p>
+          R6 objects are mutable, which means that they are modified in place,
+          and hence have reference semantics.
+        </p></li>
+      </ul></p>
+
+      <p>
+        If you've learned OOP in another mainstream language, it's likely that
+        R6 will feel very natural. If not, you may prefer S3 <em>first</em>,
+        since R6 will be harder to follow.
+      </p>
+    </introduction>
+
+    <section xml:id="sec-r6-classes">
+      <title>Classes and methods</title>
+
+      <p>
+        R6 only needs a single function call to create both the class and its
+        methods: <c>R6::R6Class()</c>. This is the only function from the
+        package that you'll ever use!
+      </p>
+    </section>
+
+  </chapter>
