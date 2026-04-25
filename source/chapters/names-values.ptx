@@ -1,61 +1,905 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-names-values" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Names and Values</title>
+<chapter xml:id="ch-names-values" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Names and Values</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      In R, it is important to understand the distinction between an object and its name. Doing so will help you:
+    </p>
+    <p><ul>
+      <li><p>More accurately predict the performance and memory usage of your code.</p></li>
+      <li><p>Write faster code by avoiding accidental copies, a major source of slow code.</p></li>
+      <li><p>Better understand R's functional programming tools.</p></li>
+    </ul></p>
+    <p>
+      The goal of this chapter is to help you understand the distinction between names and values, and when R will copy an object.
+    </p>
+
+    <paragraphs xml:id="subsec-names-values-quiz">
+      <title>Quiz</title>
       <p>
-        In R, it is important to understand the distinction between an object
-        and its name. Doing so will help you:
+        Answer the following questions to see if you can safely skip this chapter. You can find the answers at the end of the chapter in <xref ref="sec-names-values-answers"/>.
       </p>
+      <p><ol>
+        <li><p>
+          Given the following data frame, how do I create a new column called <c>3</c>
+          that contains the sum of <c>1</c> and <c>2</c>? You may only use <c>$</c>, not <c>[[</c>.
+          What makes <c>1</c>, <c>2</c>, and <c>3</c> challenging as variable names?
+        </p>
+        <program language="r"><input>
+df &lt;- data.frame(runif(3), runif(3))
+names(df) &lt;- c(1, 2)
+        </input></program></li>
+        <li><p>
+          In the following code, how much memory does <c>y</c> occupy?
+        </p>
+        <program language="r"><input>
+x &lt;- runif(1e6)
+y &lt;- list(x, x, x)
+        </input></program></li>
+        <li><p>
+          On which line does <c>a</c> get copied in the following example?
+        </p>
+        <program language="r"><input>
+a &lt;- c(1, 5, 3, 2)
+b &lt;- a
+b[[1]] &lt;- 10
+        </input></program></li>
+      </ol></p>
+    </paragraphs>
 
+    <paragraphs xml:id="subsec-names-values-outline">
+      <title>Outline</title>
       <p><ul>
         <li><p>
-          More accurately predict the performance and memory usage of your code.
+          <xref ref="sec-binding-basics"/> introduces you to the distinction between
+          names and values, and discusses how <c>&lt;-</c> creates a binding, or reference,
+          between a name and a value.
         </p></li>
         <li><p>
-          Write faster code by avoiding accidental copies, a major source of
-          slow code.
+          <xref ref="sec-copy-on-modify"/> describes when R makes a copy: whenever you
+          modify a vector, you're almost certainly creating a new, modified vector.
+          You'll learn how to use <c>tracemem()</c> to figure out when a copy actually
+          occurs. Then you'll explore the implications as they apply to function calls,
+          lists, data frames, and character vectors.
         </p></li>
         <li><p>
-          Better understand R's functional programming tools.
+          <xref ref="sec-object-size"/> explores the implications of the previous two
+          sections on how much memory an object occupies. Since your intuition may be
+          profoundly wrong and since <c>utils::object.size()</c> is unfortunately
+          inaccurate, you'll learn how to use <c>lobstr::obj_size()</c>.
+        </p></li>
+        <li><p>
+          <xref ref="sec-modify-in-place"/> describes the two important exceptions to
+          copy-on-modify: with environments and values with a single name, objects are
+          actually modified in place.
+        </p></li>
+        <li><p>
+          <xref ref="sec-gc"/> concludes the chapter with a discussion of the garbage
+          collector, which frees up the memory used by objects no longer referenced by
+          a name.
         </p></li>
       </ul></p>
-    </introduction>
+    </paragraphs>
 
-    <section xml:id="sec-binding-basics">
-      <title>Binding basics</title>
-
+    <paragraphs xml:id="subsec-names-values-prerequisites">
+      <title>Prerequisites</title>
       <p>
-        Consider this code:
+        We'll use the <url href="https://github.com/r-lib/lobstr">lobstr</url> package to dig into the internal representation of R objects.
       </p>
+      <program language="r"><input>
+library(lobstr)
+      </input></program>
+    </paragraphs>
 
-      <program language="r">
-        <input>
+    <paragraphs xml:id="subsec-names-values-sources">
+      <title>Sources</title>
+      <p>
+        The details of R's memory management are not documented in a single place. Much of the information in this chapter was gleaned from a close reading of the documentation (particularly <c>?Memory</c> and <c>?gc</c>), the <url href="http://cran.r-project.org/doc/manuals/R-exts.html#Profiling-R-code-for-memory-use">memory profiling</url> section of <em>Writing R extensions</em>, and the <url href="http://cran.r-project.org/doc/manuals/R-ints.html#SEXPs">SEXPs</url> section of <em>R internals</em>. The rest I figured out by reading the C source code, performing small experiments, and asking questions on R-devel. Any mistakes are entirely mine.
+      </p>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-binding-basics">
+    <title>Binding basics</title>
+
+    <p>Consider this code:</p>
+    <program language="r"><input>
 x &lt;- c(1, 2, 3)
-        </input>
-      </program>
+    </input></program>
+    <p>
+      It's easy to read it as: <q>create an object named 'x', containing the values 1, 2, and 3</q>. Unfortunately, that's a simplification that will lead to inaccurate predictions about what R is actually doing behind the scenes. It's more accurate to say that this code is doing two things:
+    </p>
+    <p><ul>
+      <li><p>It's creating an object, a vector of values, <c>c(1, 2, 3)</c>.</p></li>
+      <li><p>And it's binding that object to a name, <c>x</c>.</p></li>
+    </ul></p>
+    <p>
+      In other words, the object, or value, doesn't have a name; it's actually the name that has a value.
+    </p>
+    <p>To further clarify this distinction, I'll draw diagrams like this:</p>
+    <figure>
+      <image source="../images/name-value/binding-1.png"/>
+    </figure>
+    <p>
+      The name, <c>x</c>, is drawn with a rounded rectangle. It has an arrow that points to (or binds or references) the value, the vector <c>c(1, 2, 3)</c>. The arrow points in opposite direction to the assignment arrow: <c>&lt;-</c> creates a binding from the name on the left-hand side to the object on the right-hand side.
+    </p>
+    <p>
+      Thus, you can think of a name as a reference to a value. For example, if you run this code, you don't get another copy of the value <c>c(1, 2, 3)</c>, you get another binding to the existing object:
+    </p>
+    <program language="r"><input>
+y &lt;- x
+    </input></program>
+    <figure>
+      <image source="../images/name-value/binding-2.png"/>
+    </figure>
+    <p>
+      You might have noticed that the value <c>c(1, 2, 3)</c> has a label: <c>0x74b</c>. While the vector doesn't have a name, I'll occasionally need to refer to an object independent of its bindings. To make that possible, I'll label values with a unique identifier. These identifiers have a special form that looks like the object's memory <q>address</q>, i.e. the location in memory where the object is stored. But because the actual memory addresses changes every time the code is run, we use these identifiers instead.
+    </p>
+    <p>
+      You can access an object's identifier with <c>lobstr::obj_addr()</c>. Doing so allows you to see that both <c>x</c> and <c>y</c> point to the same identifier:
+    </p>
+    <program language="r"><input>
+obj_addr(x)
+obj_addr(y)
+    </input></program>
+    <p>
+      These identifiers are long, and change every time you restart R.
+    </p>
+    <p>
+      It can take some time to get your head around the distinction between names and values, but understanding this is really helpful in functional programming where functions can have different names in different contexts.
+    </p>
 
+    <subsection xml:id="subsec-non-syntactic">
+      <title>Non-syntactic names</title>
       <p>
-        It's easy to read it as: <q>create an object named <sq>x</sq>,
-        containing the values 1, 2, and 3.</q> Unfortunately, that's a
-        simplification that will lead to inaccurate predictions about what R is
-        actually doing behind the scenes. It's more accurate to say that this
-        code is doing two things:
+        R has strict rules about what constitutes a valid name. A <alert>syntactic</alert> name must consist of letters,<fn>Surprisingly, precisely what constitutes a letter is determined by your current locale. That means that the syntax of R code can actually differ from computer to computer, and that it's possible for a file that works on one computer to not even parse on another! Avoid this problem by sticking to ASCII characters (i.e. A-Z) as much as possible.</fn> digits, <c>.</c> and <c>_</c> but can't begin with <c>_</c> or a digit. Additionally, you can't use any of the <alert>reserved words</alert> like <c>TRUE</c>, <c>NULL</c>, <c>if</c>, and <c>function</c> (see the complete list in <c>?Reserved</c>). A name that doesn't follow these rules is a <alert>non-syntactic</alert> name; if you try to use them, you'll get an error:
       </p>
+      <program language="r"><input>
+_abc &lt;- 1
+#&gt; Error: unexpected input in "_"
 
+if &lt;- 10
+#&gt; Error: unexpected assignment in "if &lt;-"
+      </input></program>
+      <p>
+        It's possible to override these rules and use any name, i.e., any sequence of characters, by surrounding it with backticks:
+      </p>
+      <program language="r"><input>
+`_abc` &lt;- 1
+`_abc`
+
+`if` &lt;- 10
+`if`
+      </input></program>
+      <p>
+        While it's unlikely you'd deliberately create such crazy names, you need to understand how these crazy names work because you'll come across them, most commonly when you load data that has been created outside of R.
+      </p>
+      <aside>
+        <p>
+          You <em>can</em> also create non-syntactic bindings using single or double quotes
+          (e.g. <c>"_abc" &lt;- 1</c>) instead of backticks, but you shouldn't, because
+          you'll have to use a different syntax to retrieve the values. The ability to use
+          strings on the left hand side of the assignment arrow is an historical artefact,
+          used before R supported backticks.
+        </p>
+      </aside>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          Explain the relationship between <c>a</c>, <c>b</c>, <c>c</c> and <c>d</c>
+          in the following code:
+        </p>
+        <program language="r"><input>
+a &lt;- 1:10
+b &lt;- a
+c &lt;- b
+d &lt;- 1:10
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>
+          The following code accesses the mean function in multiple ways. Do they all
+          point to the same underlying function object? Verify this with
+          <c>lobstr::obj_addr()</c>.
+        </p>
+        <program language="r"><input>
+mean
+base::mean
+get("mean")
+evalq(mean)
+match.fun("mean")
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>
+          By default, base R data import functions, like <c>read.csv()</c>, will
+          automatically convert non-syntactic names to syntactic ones. Why might
+          this be problematic? What option allows you to suppress this behaviour?
+        </p>
+      </exercise>
+      <exercise>
+        <p>
+          What rules does <c>make.names()</c> use to convert non-syntactic names into
+          syntactic ones?
+        </p>
+      </exercise>
+      <exercise>
+        <p>
+          I slightly simplified the rules that govern syntactic names. Why is <c>.123e1</c>
+          not a syntactic name? Read <c>?make.names</c> for the full details.
+        </p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-copy-on-modify">
+    <title>Copy-on-modify</title>
+
+    <p>
+      Consider the following code. It binds <c>x</c> and <c>y</c> to the same underlying
+      value, then modifies <c>y</c>.<fn>You may be surprised to see <c>[[</c> used to
+      subset a numeric vector. We'll come back to this in <xref ref="sec-subset-single"/>,
+      but in brief, I think you should always use <c>[[</c> when you are getting or setting
+      a single element.</fn>
+    </p>
+    <program language="r"><input>
+x &lt;- c(1, 2, 3)
+y &lt;- x
+
+y[[3]] &lt;- 4
+x
+    </input></program>
+    <p>
+      Modifying <c>y</c> clearly didn't modify <c>x</c>. So what happened to the shared
+      binding? While the value associated with <c>y</c> changed, the original object did not.
+      Instead, R created a new object, <c>0xcd2</c>, a copy of <c>0x74b</c> with one value
+      changed, then rebound <c>y</c> to that object.
+    </p>
+    <figure>
+      <image source="../images/name-value/binding-3.png"/>
+    </figure>
+    <p>
+      This behaviour is called <alert>copy-on-modify</alert>. Understanding it will radically
+      improve your intuition about the performance of R code. A related way to describe this
+      behaviour is to say that R objects are unchangeable, or <alert>immutable</alert>.
+      However, I'll generally avoid that term because there are a couple of important
+      exceptions to copy-on-modify that you'll learn about in <xref ref="sec-modify-in-place"/>.
+    </p>
+    <p>
+      When exploring copy-on-modify behaviour interactively, be aware that you'll get different
+      results inside of RStudio. That's because the environment pane must make a reference to
+      each object in order to display information about it. This distorts your interactive
+      exploration but doesn't affect code inside of functions, and so doesn't affect performance
+      during data analysis. For experimentation, I recommend either running R directly from the
+      terminal, or using RMarkdown (like this book).
+    </p>
+
+    <subsection xml:id="subsec-tracemem">
+      <title><c>tracemem()</c></title>
+      <p>
+        You can see when an object gets copied with the help of <c>base::tracemem()</c>. Once
+        you call that function with an object, you'll get the object's current address:
+      </p>
+      <program language="r"><input>
+x &lt;- c(1, 2, 3)
+cat(tracemem(x), "\n")
+#&gt; &lt;0x7f80c0e0ffc8&gt;
+      </input></program>
+      <p>
+        From then on, whenever that object is copied, <c>tracemem()</c> will print a message
+        telling you which object was copied, its new address, and the sequence of calls that
+        led to the copy:
+      </p>
+      <program language="r"><input>
+y &lt;- x
+y[[3]] &lt;- 4L
+#&gt; tracemem[0x7f80c0e0ffc8 -&gt; 0x7f80c4427f40]:
+      </input></program>
+      <p>
+        If you modify <c>y</c> again, it won't get copied. That's because the new object now
+        only has a single name bound to it, so R applies modify-in-place optimisation. We'll
+        come back to this in <xref ref="sec-modify-in-place"/>.
+      </p>
+      <program language="r"><input>
+y[[3]] &lt;- 5L
+
+untracemem(x)
+      </input></program>
+      <p>
+        <c>untracemem()</c> is the opposite of <c>tracemem()</c>; it turns tracing off.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-function-calls">
+      <title>Function calls</title>
+      <p>
+        The same rules for copying also apply to function calls. Take this code:
+      </p>
+      <program language="r"><input>
+f &lt;- function(a) {
+  a
+}
+
+x &lt;- c(1, 2, 3)
+cat(tracemem(x), "\n")
+
+z &lt;- f(x)
+# there's no copy here!
+
+untracemem(x)
+      </input></program>
+      <p>
+        While <c>f()</c> is running, the <c>a</c> inside the function points to the same
+        value as the <c>x</c> does outside the function:
+      </p>
+      <figure>
+        <image source="../images/name-value/binding-f1.png"/>
+      </figure>
+      <p>
+        You'll learn more about the conventions used in this diagram in
+        <xref ref="sec-execution-environments"/>. In brief: the function <c>f()</c> is
+        depicted by the yellow object on the right. It has a formal argument, <c>a</c>,
+        which becomes a binding (indicated by dotted black line) in the execution environment
+        (the gray box) when the function is run.
+      </p>
+      <p>
+        Once <c>f()</c> completes, <c>x</c> and <c>z</c> will point to the same object.
+        <c>0x74b</c> never gets copied because it never gets modified. If <c>f()</c> did
+        modify <c>x</c>, R would create a new copy, and then <c>z</c> would bind that object.
+      </p>
+      <figure>
+        <image source="../images/name-value/binding-f2.png"/>
+      </figure>
+    </subsection>
+
+    <subsection xml:id="subsec-list-references">
+      <title>Lists</title>
+      <p>
+        It's not just names (i.e. variables) that point to values; elements of lists do too.
+        Consider this list, which is superficially very similar to the numeric vector above:
+      </p>
+      <program language="r"><input>
+l1 &lt;- list(1, 2, 3)
+      </input></program>
+      <p>
+        This list is more complex because instead of storing the values itself, it stores
+        references to them:
+      </p>
+      <figure>
+        <image source="../images/name-value/list.png"/>
+      </figure>
+      <p>This is particularly important when we modify a list:</p>
+      <program language="r"><input>
+l2 &lt;- l1
+      </input></program>
+      <figure>
+        <image source="../images/name-value/l-modify-1.png"/>
+      </figure>
+      <program language="r"><input>
+l2[[3]] &lt;- 4
+      </input></program>
+      <figure>
+        <image source="../images/name-value/l-modify-2.png"/>
+      </figure>
+      <p>
+        Like vectors, lists use copy-on-modify behaviour; the original list is left unchanged,
+        and R creates a modified copy. This, however, is a <alert>shallow</alert> copy: the
+        list object and its bindings are copied, but the values pointed to by the bindings are
+        not. The opposite of a shallow copy is a deep copy where the contents of every
+        reference are copied. Prior to R 3.1.0, copies were always deep copies.
+      </p>
+      <p>
+        To see values that are shared across lists, use <c>lobstr::ref()</c>. <c>ref()</c>
+        prints the memory address of each object, along with a local ID so that you can easily
+        cross-reference shared components.
+      </p>
+      <program language="r"><input>
+ref(l1, l2)
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-df-modify">
+      <title>Data frames</title>
+      <p>
+        Data frames are lists of vectors, so copy-on-modify has important consequences when
+        you modify a data frame. Take this data frame as an example:
+      </p>
+      <program language="r"><input>
+d1 &lt;- data.frame(x = c(1, 5, 6), y = c(2, 4, 3))
+      </input></program>
+      <figure>
+        <image source="../images/name-value/dataframe.png"/>
+      </figure>
+      <p>
+        If you modify a column, only <em>that</em> column needs to be modified; the others
+        will still point to their original references:
+      </p>
+      <program language="r"><input>
+d2 &lt;- d1
+d2[, 2] &lt;- d2[, 2] * 2
+      </input></program>
+      <figure>
+        <image source="../images/name-value/d-modify-c.png"/>
+      </figure>
+      <p>
+        However, if you modify a row, every column is modified, which means every column
+        must be copied:
+      </p>
+      <program language="r"><input>
+d3 &lt;- d1
+d3[1, ] &lt;- d3[1, ] * 3
+      </input></program>
+      <figure>
+        <image source="../images/name-value/d-modify-r.png"/>
+      </figure>
+    </subsection>
+
+    <subsection xml:id="subsec-character-vectors">
+      <title>Character vectors</title>
+      <p>
+        The final place that R uses references is with character vectors.<fn>Confusingly, a
+        character vector is a vector of strings, not individual characters.</fn> I usually
+        draw character vectors like this:
+      </p>
+      <program language="r"><input>
+x &lt;- c("a", "a", "abc", "d")
+      </input></program>
+      <figure>
+        <image source="../images/name-value/character.png"/>
+      </figure>
+      <p>
+        But this is a polite fiction. R actually uses a <alert>global string pool</alert>
+        where each element of a character vector is a pointer to a unique string in the pool:
+      </p>
+      <figure>
+        <image source="../images/name-value/character-2.png"/>
+      </figure>
+      <p>
+        You can request that <c>ref()</c> show these references by setting the
+        <c>character</c> argument to <c>TRUE</c>:
+      </p>
+      <program language="r"><input>
+ref(x, character = TRUE)
+      </input></program>
+      <p>
+        This has a profound impact on the amount of memory a character vector uses but is
+        otherwise generally unimportant, so elsewhere in the book I'll draw character vectors
+        as if the strings lived inside a vector.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Why is <c>tracemem(1:10)</c> not useful?</p>
+      </exercise>
+      <exercise>
+        <p>
+          Explain why <c>tracemem()</c> shows two copies when you run this code.
+          Hint: carefully look at the difference between this code and the code
+          shown earlier in the section.
+        </p>
+        <program language="r"><input>
+x &lt;- c(1L, 2L, 3L)
+tracemem(x)
+
+x[[3]] &lt;- 4
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>Sketch out the relationship between the following objects:</p>
+        <program language="r"><input>
+a &lt;- 1:10
+b &lt;- list(a, a)
+c &lt;- list(b, a, 1:10)
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What happens when you run this code?</p>
+        <program language="r"><input>
+x &lt;- list(1:10)
+x[[2]] &lt;- x
+        </input></program>
+        <p>Draw a picture.</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-object-size">
+    <title>Object size</title>
+
+    <p>
+      You can find out how much memory an object takes with <c>lobstr::obj_size()</c>:<fn>Beware
+      of the <c>utils::object.size()</c> function. It does not correctly account for shared
+      references and will return sizes that are too large.</fn>
+    </p>
+    <program language="r"><input>
+obj_size(letters)
+obj_size(ggplot2::diamonds)
+    </input></program>
+    <p>
+      Since the elements of lists are references to values, the size of a list might be much
+      smaller than you expect:
+    </p>
+    <program language="r"><input>
+x &lt;- runif(1e6)
+obj_size(x)
+
+y &lt;- list(x, x, x)
+obj_size(y)
+    </input></program>
+    <p>
+      <c>y</c> is only 80 bytes bigger than <c>x</c>. That's the size of an empty list with
+      three elements:
+    </p>
+    <program language="r"><input>
+obj_size(list(NULL, NULL, NULL))
+    </input></program>
+    <p>
+      Similarly, because R uses a global string pool character vectors take up less memory than
+      you might expect: repeating a string 100 times does not make it take up 100 times as much
+      memory.
+    </p>
+    <program language="r"><input>
+banana &lt;- "bananas bananas bananas"
+obj_size(banana)
+obj_size(rep(banana, 100))
+    </input></program>
+    <p>
+      References also make it challenging to think about the size of individual objects.
+      <c>obj_size(x) + obj_size(y)</c> will only equal <c>obj_size(x, y)</c> if there are no
+      shared values. Here, the combined size of <c>x</c> and <c>y</c> is the same as the size
+      of <c>y</c>:
+    </p>
+    <program language="r"><input>
+obj_size(x, y)
+    </input></program>
+    <p>
+      Finally, R 3.5.0 and later versions have a feature that might lead to surprises: ALTREP,
+      short for <alert>alternative representation</alert>. This allows R to represent certain
+      types of vectors very compactly. The place you are most likely to see this is with <c>:</c>
+      because instead of storing every single number in the sequence, R just stores the first and
+      last number. This means that every sequence, no matter how large, is the same size:
+    </p>
+    <program language="r"><input>
+obj_size(1:3)
+obj_size(1:1e3)
+obj_size(1:1e6)
+obj_size(1:1e9)
+    </input></program>
+
+    <exercises>
+      <exercise>
+        <p>
+          In the following example, why are <c>object.size(y)</c> and <c>obj_size(y)</c>
+          so radically different? Consult the documentation of <c>object.size()</c>.
+        </p>
+        <program language="r"><input>
+y &lt;- rep(list(runif(1e4)), 100)
+
+object.size(y)
+obj_size(y)
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>Take the following list. Why is its size somewhat misleading?</p>
+        <program language="r"><input>
+funs &lt;- list(mean, sd, var)
+obj_size(funs)
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>Predict the output of the following code:</p>
+        <program language="r"><input>
+a &lt;- runif(1e6)
+obj_size(a)
+
+b &lt;- list(a, a)
+obj_size(b)
+obj_size(a, b)
+
+b[[1]][[1]] &lt;- 10
+obj_size(b)
+obj_size(a, b)
+
+b[[2]][[1]] &lt;- 10
+obj_size(b)
+obj_size(a, b)
+        </input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-modify-in-place">
+    <title>Modify-in-place</title>
+
+    <p>
+      As we've seen above, modifying an R object usually creates a copy. There are two exceptions:
+    </p>
+    <p><ul>
+      <li><p>Objects with a single binding get a special performance optimisation.</p></li>
+      <li><p>Environments, a special type of object, are always modified in place.</p></li>
+    </ul></p>
+
+    <subsection xml:id="subsec-single-binding">
+      <title>Objects with a single binding</title>
+      <p>If an object has a single name bound to it, R will modify it in place:</p>
+      <program language="r"><input>
+v &lt;- c(1, 2, 3)
+      </input></program>
+      <figure>
+        <image source="../images/name-value/v-inplace-1.png"/>
+      </figure>
+      <program language="r"><input>
+v[[3]] &lt;- 4
+      </input></program>
+      <figure>
+        <image source="../images/name-value/v-inplace-2.png"/>
+      </figure>
+      <p>
+        (Note the object IDs here: <c>v</c> continues to bind to the same object, <c>0x207</c>.)
+      </p>
+      <p>
+        Two complications make predicting exactly when R applies this optimisation challenging:
+      </p>
       <p><ul>
         <li><p>
-          It's creating an object, a vector of values, <c>c(1, 2, 3)</c>.
+          When it comes to bindings, R can currently only count 0, 1, or many. That means that
+          if an object has two bindings, and one goes away, the reference count does not go back
+          to 1: one less than many is still many. In turn, this means that R will make copies
+          when it sometimes doesn't need to.
         </p></li>
         <li><p>
-          And it's binding that object to a name, <c>x</c>.
+          Whenever you call the vast majority of functions, it makes a reference to the object.
+          The only exception are specially written <q>primitive</q> C functions. These can only
+          be written by R-core and occur mostly in the base package.
         </p></li>
       </ul></p>
-
       <p>
-        In other words, the object, or value, doesn't have a name; it's
-        actually the name that has a value.
+        Together, these two complications make it hard to predict whether or not a copy will
+        occur. Instead, it's better to determine it empirically with <c>tracemem()</c>.
       </p>
-    </section>
+      <p>
+        Let's explore the subtleties with a case study using for loops. For loops have a
+        reputation for being slow in R, but often that slowness is caused by every iteration
+        of the loop creating a copy. Consider the following code. It subtracts the median from
+        each column of a large data frame:
+      </p>
+      <program language="r"><input>
+x &lt;- data.frame(matrix(runif(5 * 1e4), ncol = 5))
+medians &lt;- vapply(x, median, numeric(1))
 
-  </chapter>
+for (i in seq_along(medians)) {
+  x[[i]] &lt;- x[[i]] - medians[[i]]
+}
+      </input></program>
+      <p>
+        This loop is surprisingly slow because each iteration of the loop copies the data frame.
+        You can see this by using <c>tracemem()</c>:
+      </p>
+      <program language="r"><input>
+cat(tracemem(x), "\n")
+#&gt; &lt;0x7f80c429e020&gt;
+
+for (i in 1:5) {
+  x[[i]] &lt;- x[[i]] - medians[[i]]
+}
+#&gt; tracemem[0x7f80c429e020 -&gt; 0x7f80c0c144d8]:
+#&gt; tracemem[0x7f80c0c144d8 -&gt; 0x7f80c0c14540]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c14540 -&gt; 0x7f80c0c145a8]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c145a8 -&gt; 0x7f80c0c14610]:
+#&gt; tracemem[0x7f80c0c14610 -&gt; 0x7f80c0c14678]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c14678 -&gt; 0x7f80c0c146e0]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c146e0 -&gt; 0x7f80c0c14748]:
+#&gt; tracemem[0x7f80c0c14748 -&gt; 0x7f80c0c147b0]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c147b0 -&gt; 0x7f80c0c14818]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c14818 -&gt; 0x7f80c0c14880]:
+#&gt; tracemem[0x7f80c0c14880 -&gt; 0x7f80c0c148e8]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c148e8 -&gt; 0x7f80c0c14950]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c14950 -&gt; 0x7f80c0c149b8]:
+#&gt; tracemem[0x7f80c0c149b8 -&gt; 0x7f80c0c14a20]: [[&lt;-.data.frame [[&lt;-
+#&gt; tracemem[0x7f80c0c14a20 -&gt; 0x7f80c0c14a88]: [[&lt;-.data.frame [[&lt;-
+
+untracemem(x)
+      </input></program>
+      <p>
+        In fact, each iteration copies the data frame not once, not twice, but three times!
+        Two copies are made by <c>[[.data.frame</c>, and a further copy<fn>These copies are
+        shallow: they only copy the reference to each individual column, not the contents of
+        the columns. This means the performance isn't terrible, but it's obviously not as
+        good as it could be.</fn> is made because <c>[[.data.frame</c> is a regular function
+        that increments the reference count of <c>x</c>.
+      </p>
+      <p>
+        We can reduce the number of copies by using a list instead of a data frame. Modifying
+        a list uses internal C code, so the references are not incremented and no copy is made:
+      </p>
+      <program language="r"><input>
+y &lt;- as.list(x)
+cat(tracemem(y), "\n")
+#&gt; &lt;0x7f80c5c3de20&gt;
+
+for (i in 1:5) {
+  y[[i]] &lt;- y[[i]] - medians[[i]]
+}
+      </input></program>
+      <p>
+        While it's not hard to determine when a copy is made, it is hard to prevent it. If
+        you find yourself resorting to exotic tricks to avoid copies, it may be time to rewrite
+        your function in C++, as described in <xref ref="ch-rcpp"/>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-env-modify">
+      <title>Environments</title>
+      <p>
+        You'll learn more about environments in <xref ref="ch-environments"/>, but it's
+        important to mention them here because their behaviour is different from that of other
+        objects: environments are always modified in place. This property is sometimes described
+        as <alert>reference semantics</alert> because when you modify an environment all
+        existing bindings to that environment continue to have the same reference.
+      </p>
+      <p>Take this environment, which we bind to <c>e1</c> and <c>e2</c>:</p>
+      <program language="r"><input>
+e1 &lt;- rlang::env(a = 1, b = 2, c = 3)
+e2 &lt;- e1
+      </input></program>
+      <figure>
+        <image source="../images/name-value/e-modify-1.png"/>
+      </figure>
+      <p>If we change a binding, the environment is modified in place:</p>
+      <program language="r"><input>
+e1$c &lt;- 4
+e2$c
+      </input></program>
+      <figure>
+        <image source="../images/name-value/e-modify-2.png"/>
+      </figure>
+      <p>
+        This basic idea can be used to create functions that <q>remember</q> their previous
+        state. See <xref ref="sec-stateful-funs"/> for more details. This property is also
+        used to implement the R6 object-oriented programming system, the topic of
+        <xref ref="ch-r6"/>.
+      </p>
+      <p>One consequence of this is that environments can contain themselves:</p>
+      <program language="r"><input>
+e &lt;- rlang::env()
+e$self &lt;- e
+
+ref(e)
+      </input></program>
+      <figure>
+        <image source="../images/name-value/e-self.png"/>
+      </figure>
+      <p>This is a unique property of environments!</p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Explain why the following code doesn't create a circular list.</p>
+        <program language="r"><input>
+x &lt;- list()
+x[[1]] &lt;- x
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Wrap the two methods for subtracting medians into two functions, then use the
+          <c>bench</c> package to carefully compare their speeds. How does performance
+          change as the number of columns increase?
+        </p>
+      </exercise>
+      <exercise>
+        <p>What happens if you attempt to use <c>tracemem()</c> on an environment?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-gc">
+    <title>Unbinding and the garbage collector</title>
+
+    <p>Consider this code:</p>
+    <program language="r"><input>
+x &lt;- 1:3
+    </input></program>
+    <figure>
+      <image source="../images/name-value/unbinding-1.png"/>
+    </figure>
+    <program language="r"><input>
+x &lt;- 2:4
+    </input></program>
+    <figure>
+      <image source="../images/name-value/unbinding-2.png"/>
+    </figure>
+    <program language="r"><input>
+rm(x)
+    </input></program>
+    <figure>
+      <image source="../images/name-value/unbinding-3.png"/>
+    </figure>
+    <p>
+      We created two objects, but by the time the code finishes, neither object is bound to a
+      name. How do these objects get deleted? That's the job of the <alert>garbage
+      collector</alert>, or GC for short. The GC frees up memory by deleting R objects that
+      are no longer used, and by requesting more memory from the operating system if needed.
+    </p>
+    <p>
+      R uses a <alert>tracing</alert> GC. This means it traces every object that's reachable
+      from the global<fn>And every environment in the current call stack.</fn> environment,
+      and all objects that are, in turn, reachable from those objects (i.e. the references in
+      lists and environments are searched recursively). The garbage collector does not use the
+      modify-in-place reference count described above. While these two ideas are closely
+      related, the internal data structures are optimised for different use cases.
+    </p>
+    <p>
+      The garbage collector (GC) runs automatically whenever R needs more memory to create a
+      new object. Looking from the outside, it's basically impossible to predict when the GC
+      will run. In fact, you shouldn't even try. If you want to find out when the GC runs,
+      call <c>gcinfo(TRUE)</c> and GC will print a message to the console every time it runs.
+    </p>
+    <p>
+      You can force garbage collection by calling <c>gc()</c>. But despite what you might have
+      read elsewhere, there's never any <em>need</em> to call <c>gc()</c> yourself. The only
+      reasons you might <em>want</em> to call <c>gc()</c> is to ask R to return memory to your
+      operating system so other programs can use it, or for the side-effect that tells you how
+      much memory is currently being used:
+    </p>
+    <program language="r"><input>
+gc()
+    </input></program>
+    <p>
+      <c>lobstr::mem_used()</c> is a wrapper around <c>gc()</c> that prints the total number
+      of bytes used:
+    </p>
+    <program language="r"><input>
+mem_used()
+    </input></program>
+    <p>
+      This number won't agree with the amount of memory reported by your operating system.
+      There are three reasons:
+    </p>
+    <p><ol>
+      <li><p>It includes objects created by R but not by the R interpreter.</p></li>
+      <li><p>
+        Both R and the operating system are lazy: they won't reclaim memory until it's
+        actually needed. R might be holding on to memory because the OS hasn't yet asked
+        for it back.
+      </p></li>
+      <li><p>
+        R counts the memory occupied by objects but there may be empty gaps due to deleted
+        objects. This problem is known as memory fragmentation.
+      </p></li>
+    </ol></p>
+  </section>
+
+  <section xml:id="sec-names-values-answers">
+    <title>Quiz Answers</title>
+
+    <p><ol>
+      <li><p>
+        You must quote non-syntactic names with backticks: for example,
+        the variables <c>1</c>, <c>2</c>, and <c>3</c>.
+      </p>
+      <program language="r"><input>
+df &lt;- data.frame(runif(3), runif(3))
+names(df) &lt;- c(1, 2)
+
+df$`3` &lt;- df$`1` + df$`2`
+      </input></program></li>
+      <li><p>
+        It occupies about 8 MB.
+      </p>
+      <program language="r"><input>
+x &lt;- runif(1e6)
+y &lt;- list(x, x, x)
+obj_size(y)
+      </input></program></li>
+      <li><p>
+        <c>a</c> is copied when <c>b</c> is modified, <c>b[[1]] &lt;- 10</c>.
+      </p></li>
+    </ol></p>
+  </section>
+
+</chapter>
