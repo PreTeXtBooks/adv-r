@@ -294,7 +294,7 @@ bench::mark(
       the data, use <c>drop = TRUE</c>.</p></li>
     </ul></p>
 
-    <p>Below, I explore how you might improve apply this strategy to improve the
+    <p>Below, I explore how you might apply this strategy to improve the
     performance of <c>mean()</c> and <c>as.data.frame()</c>.</p>
 
     <subsection xml:id="subsec-mean-method-dispatch">
