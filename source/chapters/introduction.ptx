@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
   <chapter xml:id="ch-introduction" xmlns:xi="http://www.w3.org/2001/XInclude">
-  <introduction>
     <title>Introduction</title>
+  <introduction>
     <p>
       I have now been programming in R for over 15 years, and have been doing
       it full-time for the last five years. This has given me the luxury of
@@ -336,8 +336,10 @@
 
       <p>
         If you want to learn to be a better programmer, there's no place better
-        to turn than <em>The Pragmatic Programmer</em>. This book is language
-        agnostic, and provides great advice for how to be a better programmer.
+        to turn than <em>The Pragmatic Programmer</em><fn>Andrew Hunt and David
+        Thomas, <em>The Pragmatic Programmer</em> (Addison Wesley, 1990) </fn>.
+        This book is language agnostic, and provides great advice for how to be a
+        better programmer.
       </p>
     </section>
 
@@ -590,7 +592,8 @@
 
     <section xml:id="sec-colophon">
       <title>Colophon</title>
-
+      <p>Note that this is relating to the original version of this book found at 
+      <url href="https://adv-r.hadley.nz/">https://adv-r.hadley.nz/</url>
       <p>
         This book was written in
         <url href="http://bookdown.org/" visual="bookdown.org">bookdown</url>
@@ -614,12 +617,51 @@
       </p>
 
       <p>
-        This version of the book was built with R and the following packages:
-        bench, bookdown, bslib, dbplyr, desc, downlit, emo, ggbeeswarm,
-        ggplot2, jsonlite, knitr, lobstr, memoise, png, profvis, Rcpp, rlang,
-        RSQLite, scales, sessioninfo, sloop, testthat, tidyr, vctrs, xml2,
-        zeallot.
+       This version of the book was built with R version 4.4.3 (2025-02-28) and
+       the following packages.
       </p>
+<table xml:id="tbl-r-packages">
+  <title>R package versions and sources</title>
+  <tabular halign="left">
+    <row header="yes" bottom="medium">
+      <cell>package</cell>
+      <cell right="minor">version</cell>
+      <cell>source</cell>
+    </row>
+
+    <row><cell>bench</cell><cell right="minor">1.1.4</cell><cell>RSPM</cell></row>
+    <row><cell>bookdown</cell><cell right="minor">0.42</cell><cell>RSPM</cell></row>
+    <row><cell>bslib</cell><cell right="minor">0.9.0</cell><cell>RSPM</cell></row>
+    <row><cell>dbplyr</cell><cell right="minor">2.5.0</cell><cell>RSPM</cell></row>
+    <row><cell>desc</cell><cell right="minor">1.4.3</cell><cell>RSPM</cell></row>
+    <row><cell>downlit</cell><cell right="minor">0.4.4</cell><cell>RSPM</cell></row>
+    <row>
+      <cell>emo</cell>
+      <cell right="minor">0.0.0.9000</cell>
+      <cell>Github (hadley/emo@3f03b11491ce3d6fc5601e210927eff73bf8e350)</cell>
+    </row>
+    <row><cell>ggbeeswarm</cell><cell right="minor">0.7.2</cell><cell>RSPM</cell></row>
+    <row><cell>ggplot2</cell><cell right="minor">3.5.1</cell><cell>RSPM</cell></row>
+    <row><cell>jsonlite</cell><cell right="minor">1.9.1</cell><cell>RSPM</cell></row>
+    <row><cell>knitr</cell><cell right="minor">1.49</cell><cell>RSPM</cell></row>
+    <row><cell>lobstr</cell><cell right="minor">1.1.2</cell><cell>RSPM</cell></row>
+    <row><cell>memoise</cell><cell right="minor">2.0.1</cell><cell>RSPM</cell></row>
+    <row><cell>png</cell><cell right="minor">0.1-8</cell><cell>RSPM</cell></row>
+    <row><cell>profvis</cell><cell right="minor">0.4.0</cell><cell>RSPM</cell></row>
+    <row><cell>Rcpp</cell><cell right="minor">1.0.14</cell><cell>RSPM</cell></row>
+    <row><cell>rlang</cell><cell right="minor">1.1.5</cell><cell>RSPM</cell></row>
+    <row><cell>RSQLite</cell><cell right="minor">2.3.9</cell><cell>RSPM</cell></row>
+    <row><cell>scales</cell><cell right="minor">1.3.0</cell><cell>RSPM</cell></row>
+    <row><cell>sessioninfo</cell><cell right="minor">1.2.3</cell><cell>RSPM</cell></row>
+    <row><cell>sloop</cell><cell right="minor">1.0.1</cell><cell>RSPM</cell></row>
+    <row><cell>testthat</cell><cell right="minor">3.2.3</cell><cell>RSPM</cell></row>
+    <row><cell>tidyr</cell><cell right="minor">1.3.1</cell><cell>RSPM</cell></row>
+    <row><cell>vctrs</cell><cell right="minor">0.6.5</cell><cell>RSPM</cell></row>
+    <row><cell>xml2</cell><cell right="minor">1.3.7</cell><cell>RSPM</cell></row>
+    <row><cell>zeallot</cell><cell right="minor">0.1.0</cell><cell>RSPM</cell></row>
+
+  </tabular>
+</table>
     </section>
 
   </chapter>
