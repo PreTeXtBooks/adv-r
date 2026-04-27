@@ -8,7 +8,7 @@
       </p>
 
       <program language="r">
-        <input>
+        <code>
 chatty &lt;- function(f) {
   force(f)
   
@@ -21,7 +21,7 @@ f &lt;- function(x) x ^ 2
 s &lt;- c(3, 2, 1)
 
 purrr::map_dbl(s, chatty(f))
-        </input>
+        </code>
       </program>
 
       <p>
@@ -50,10 +50,10 @@ purrr::map_dbl(s, chatty(f))
       </p>
 
       <program language="r">
-        <input>
+        <code>
 library(purrr)
 library(memoise)
-        </input>
+        </code>
       </program>
     </introduction>
 
@@ -72,7 +72,7 @@ library(memoise)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 x &lt;- list(
   c(0.512, 0.165, 0.717),
   c(0.064, 0.781, 0.427),
@@ -85,7 +85,7 @@ for (i in seq_along(x)) {
   out[[i]] &lt;- sum(x[[i]])
 }
 out
-          </input>
+          </code>
         </program>
 
         <p>
@@ -93,20 +93,20 @@ out
         </p>
 
         <program language="r">
-          <input>
+          <code>
 map_dbl(x, sum)
-          </input>
+          </code>
         </program>
 
         <p>
-          <c>purrr::safely()</c> provides a tool to help with this problem. <c>safely()</c> is a function operator that transforms a function to turn errors into data. (You can learn the basic idea that makes it work in Section <xref ref="sec-try-success-failure"/>.) Let's start by taking a look at it outside of <c>map_dbl()</c>:
+          <c>purrr::safely()</c> provides a tool to help with this problem. <c>safely()</c> is a function operator that transforms a function to turn errors into data. (You can learn the basic idea that makes it work in Section <xref ref="sec-signalling-conditions"/>.) Let's start by taking a look at it outside of <c>map_dbl()</c>:
         </p>
 
         <program language="r">
-          <input>
+          <code>
 safe_sum &lt;- safely(sum)
 safe_sum
-          </input>
+          </code>
         </program>
 
         <p>
@@ -114,10 +114,10 @@ safe_sum
         </p>
 
         <program language="r">
-          <input>
+          <code>
 str(safe_sum(x[[1]]))
 str(safe_sum(x[[4]]))
-          </input>
+          </code>
         </program>
 
         <p>
@@ -127,10 +127,10 @@ str(safe_sum(x[[4]]))
         <p>Now lets use <c>safely()</c> with a functional:</p>
 
         <program language="r">
-          <input>
+          <code>
 out &lt;- map(x, safely(sum))
 str(out)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -138,23 +138,23 @@ str(out)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 out &lt;- transpose(map(x, safely(sum)))
 str(out)
-          </input>
+          </code>
         </program>
 
         <p>Now we can easily find the results that worked, or the inputs that failed:</p>
 
         <program language="r">
-          <input>
+          <code>
 ok &lt;- map_lgl(out$error, is.null)
 ok
 
 x[!ok]
 
 out$result[ok]
-          </input>
+          </code>
         </program>
 
         <p>
@@ -162,7 +162,7 @@ out$result[ok]
         </p>
 
         <program language="r">
-          <input>
+          <code>
 fit_model &lt;- function(df) {
   glm(y ~ x1 + x2 * x3, data = df)
 }
@@ -175,7 +175,7 @@ datasets[!ok]
 
 # which models were successful?
 models[ok]
-          </input>
+          </code>
         </program>
 
         <p>
@@ -203,7 +203,7 @@ models[ok]
         <p>Let's explore this idea with a toy function that simulates an expensive operation:</p>
 
         <program language="r">
-          <input>
+          <code>
 slow_function &lt;- function(x) {
   Sys.sleep(1)
   x * 10 * runif(1)
@@ -211,7 +211,7 @@ slow_function &lt;- function(x) {
 system.time(print(slow_function(1)))
 
 system.time(print(slow_function(1)))
-          </input>
+          </code>
         </program>
 
         <p>
@@ -219,12 +219,12 @@ system.time(print(slow_function(1)))
         </p>
 
         <program language="r">
-          <input>
+          <code>
 fast_function &lt;- memoise::memoise(slow_function)
 system.time(print(fast_function(1)))
 
 system.time(print(fast_function(1)))
-          </input>
+          </code>
         </program>
 
         <p>
@@ -232,34 +232,34 @@ system.time(print(fast_function(1)))
         </p>
 
         <program language="r">
-          <input>
+          <code>
 fib &lt;- function(n) {
   if (n &lt; 2) return(n)
   fib(n - 2) + fib(n - 1)
 }
 system.time(fib(23))
 system.time(fib(24))
-          </input>
+          </code>
         </program>
 
         <p>Memoising <c>fib()</c> makes the implementation much faster because each value is computed only once:</p>
 
         <program language="r">
-          <input>
+          <code>
 fib2 &lt;- memoise::memoise(function(n) {
   if (n &lt; 2) return(n)
   fib2(n - 2) + fib2(n - 1)
 })
 system.time(fib2(23))
-          </input>
+          </code>
         </program>
 
         <p>And future calls can rely on previous computations:</p>
 
         <program language="r">
-          <input>
+          <code>
 system.time(fib2(24))
-          </input>
+          </code>
         </program>
 
         <p>
@@ -298,7 +298,7 @@ system.time(fib2(24))
       </p>
 
       <program language="r">
-        <input>
+        <code>
 urls &lt;- c(
   "adv-r" = "https://adv-r.hadley.nz", 
   "r4ds" = "http://r4ds.had.co.nz/"
@@ -307,7 +307,7 @@ urls &lt;- c(
 path &lt;- paste0(tempdir(), names(urls), ".html")
 
 walk2(urls, path, download.file, quiet = TRUE)
-        </input>
+        </code>
       </program>
 
       <p>This approach is fine for a handful of URLs, but as the vector gets longer, you might want to add a couple more features:</p>
@@ -320,13 +320,13 @@ walk2(urls, path, download.file, quiet = TRUE)
       <p>It's relatively easy to add these extra features if we're using a for loop:</p>
 
       <program language="r">
-        <input>
+        <code>
 for(i in seq_along(urls)) {
   Sys.sleep(0.1)
   if (i %% 10 == 0) cat(".")
   download.file(urls[[i]], paths[[i]])
 }
-        </input>
+        </code>
       </program>
 
       <p>
@@ -338,7 +338,7 @@ for(i in seq_along(urls)) {
       </p>
 
       <program language="r">
-        <input>
+        <code>
 delay_by &lt;- function(f, amount) {
   force(f)
   force(amount)
@@ -350,15 +350,15 @@ delay_by &lt;- function(f, amount) {
 }
 system.time(runif(100))
 system.time(delay_by(runif, 0.1)(100))
-        </input>
+        </code>
       </program>
 
       <p>And we can use it with the original <c>walk2()</c>:</p>
 
       <program language="r">
-        <input>
+        <code>
 walk2(urls, path, delay_by(download.file, 0.1), quiet = TRUE)
-        </input>
+        </code>
       </program>
 
       <p>
@@ -366,7 +366,7 @@ walk2(urls, path, delay_by(download.file, 0.1), quiet = TRUE)
       </p>
 
       <program language="r">
-        <input>
+        <code>
 dot_every &lt;- function(f, n) {
   force(f)
   force(n)
@@ -380,19 +380,19 @@ dot_every &lt;- function(f, n) {
 }
 walk(1:100, runif)
 walk(1:100, dot_every(runif, 10))
-        </input>
+        </code>
       </program>
 
       <p>Now we can express our original for loop as:</p>
 
       <program language="r">
-        <input>
+        <code>
 walk2(
   urls, path, 
   dot_every(delay_by(download.file, 0.1), 10), 
   quiet = TRUE
 )
-        </input>
+        </code>
       </program>
 
       <p>
@@ -400,13 +400,13 @@ walk2(
       </p>
 
       <program language="r">
-        <input>
+        <code>
 walk2(
   urls, path, 
   download.file %>% dot_every(10) %>% delay_by(0.1), 
   quiet = TRUE
 )
-        </input>
+        </code>
       </program>
 
       <p>

@@ -11,7 +11,7 @@
       </p>
 
       <program language="r">
-        <input>
+        <code>
 power1 &lt;- function(exp) {
   function(x) {
     x ^ exp
@@ -20,7 +20,7 @@ power1 &lt;- function(exp) {
 
 square &lt;- power1(2)
 cube &lt;- power1(3)
-        </input>
+        </code>
       </program>
 
       <p>
@@ -36,10 +36,10 @@ cube &lt;- power1(3)
       </p>
 
       <program language="r">
-        <input>
+        <code>
 square(3)
 cube(3)
-        </input>
+        </code>
       </program>
 
       <p>
@@ -51,7 +51,7 @@ cube(3)
         <ul>
           <li>
             <p>
-              In Section <xref ref="sec-first-class-functions"/>, you learned
+              In Section <xref ref="sec-function-fundamentals"/>, you learned
               about R's first-class functions. In R, you bind a function to a
               name in the same way as you bind any object to a name: with
               <c>&lt;-</c>.
@@ -59,14 +59,14 @@ cube(3)
           </li>
           <li>
             <p>
-              In Section <xref ref="sec-function-environments"/>, you learned
+              In Section <xref ref="sec-env-basics"/>, you learned
               that a function captures (encloses) the environment in which it
               is created.
             </p>
           </li>
           <li>
             <p>
-              In Section <xref ref="sec-execution-environments"/>, you learned
+              In Section <xref ref="sec-env-basics"/>, you learned
               that a function creates a new execution environment every time it
               is run. This environment is usually ephemeral, but here it
               becomes the enclosing environment of the manufactured function.
@@ -135,9 +135,9 @@ cube(3)
 
       <p>
         Make sure you're familiar with the contents of Sections
-        <xref ref="sec-first-class-functions"/> (first-class functions),
-        <xref ref="sec-function-environments"/> (the function environment), and
-        <xref ref="sec-execution-environments"/> (execution environments)
+        <xref ref="sec-function-fundamentals"/> (first-class functions),
+        <xref ref="sec-env-basics"/> (the function environment), and
+        <xref ref="sec-env-basics"/> (execution environments)
         mentioned above.
       </p>
 
@@ -151,11 +151,11 @@ cube(3)
       </p>
 
       <program language="r">
-        <input>
+        <code>
 library(rlang)
 library(ggplot2)
 library(scales)
-        </input>
+        </code>
       </program>
     </introduction>
 
@@ -187,11 +187,11 @@ library(scales)
         <p>Let's start by taking a look at <c>square()</c> and <c>cube()</c>:</p>
 
         <program language="r">
-          <input>
+          <code>
 square
 
 cube
-          </input>
+          </code>
         </program>
 
         <p>
@@ -207,11 +207,11 @@ cube
         </p>
 
         <program language="r">
-          <input>
+          <code>
 env_print(square)
 
 env_print(cube)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -222,11 +222,11 @@ env_print(cube)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 fn_env(square)$exp
 
 fn_env(cube)$exp
-          </input>
+          </code>
         </program>
 
         <p>
@@ -282,9 +282,9 @@ fn_env(cube)$exp
         </p>
 
         <program language="r">
-          <input>
+          <code>
 square(10)
-          </input>
+          </code>
         </program>
 
         <figure>
@@ -301,11 +301,11 @@ square(10)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 x &lt;- 2
 square &lt;- power1(x)
 x &lt;- 3
-          </input>
+          </code>
         </program>
 
         <p>
@@ -313,9 +313,9 @@ x &lt;- 3
         </p>
 
         <program language="r">
-          <input>
+          <code>
 square(2)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -333,7 +333,7 @@ square(2)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 power2 &lt;- function(exp) {
   force(exp)
   function(x) {
@@ -345,7 +345,7 @@ x &lt;- 2
 square &lt;- power2(x)
 x &lt;- 3
 square(2)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -361,7 +361,7 @@ square(2)
         <p>
           Function factories also allow you to maintain state across function
           invocations, which is generally hard to do because of the fresh start
-          principle described in Section <xref ref="sec-fresh-start"/>.
+          principle described in Section <xref ref="sec-env-basics"/>.
         </p>
 
         <p>There are two things that make this possible:</p>
@@ -396,7 +396,7 @@ square(2)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 new_counter &lt;- function() {
   i &lt;- 0
 
@@ -408,7 +408,7 @@ new_counter &lt;- function() {
 
 counter_one &lt;- new_counter()
 counter_two &lt;- new_counter()
-          </input>
+          </code>
         </program>
 
         <figure>
@@ -423,11 +423,11 @@ counter_two &lt;- new_counter()
         </p>
 
         <program language="r">
-          <input>
+          <code>
 counter_one()
 counter_one()
 counter_two()
-          </input>
+          </code>
         </program>
 
         <figure>
@@ -454,7 +454,7 @@ counter_two()
         </p>
 
         <program language="r">
-          <input>
+          <code>
 f1 &lt;- function(n) {
   x &lt;- runif(n)
   m &lt;- mean(x)
@@ -473,7 +473,7 @@ f2 &lt;- function(n) {
 
 g2 &lt;- f2(1e6)
 lobstr::obj_size(g2)
-          </input>
+          </code>
         </program>
       </subsection>
 
@@ -482,9 +482,9 @@ lobstr::obj_size(g2)
           <statement>
             <p>The definition of <c>force()</c> is simple:</p>
             <program language="r">
-              <input>
+              <code>
 force
-              </input>
+              </code>
             </program>
             <p>Why is it better to <c>force(x)</c> instead of just <c>x</c>?</p>
           </statement>
@@ -508,7 +508,7 @@ force
               that subsets <c>x</c> with <c>i</c>.
             </p>
             <program language="r">
-              <input>
+              <code>
 pick(1)(x)
 # should be equivalent to
 x[[1]]
@@ -516,7 +516,7 @@ x[[1]]
 lapply(mtcars, pick(5))
 # should be equivalent to
 lapply(mtcars, function(x) x[[5]])
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
@@ -531,14 +531,14 @@ lapply(mtcars, function(x) x[[5]])
               following code:
             </p>
             <program language="r">
-              <input>
+              <code>
 m1 &lt;- moment(1)
 m2 &lt;- moment(2)
 
 x &lt;- runif(100)
 stopifnot(all.equal(m1(x), 0))
 stopifnot(all.equal(m2(x), var(x) * 99 / 100))
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
@@ -550,13 +550,13 @@ stopifnot(all.equal(m2(x), var(x) * 99 / 100))
               verify with the code below.
             </p>
             <program language="r">
-              <input>
+              <code>
 i &lt;- 0
 new_counter2 &lt;- function() {
   i &lt;&lt;- i + 1
   i
 }
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
@@ -568,7 +568,7 @@ new_counter2 &lt;- function() {
               Make predictions, then verify with the code below.
             </p>
             <program language="r">
-              <input>
+              <code>
 new_counter3 &lt;- function() {
   i &lt;- 0
   function() {
@@ -576,7 +576,7 @@ new_counter3 &lt;- function() {
     i
   }
 }
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
@@ -606,12 +606,12 @@ new_counter3 &lt;- function() {
         </p>
 
         <program language="r">
-          <input>
+          <code>
 y &lt;- c(12345, 123456, 1234567)
 comma_format()(y)
 
 number_format(scale = 1e-3, suffix = " K")(y)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -622,7 +622,7 @@ number_format(scale = 1e-3, suffix = " K")(y)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 df &lt;- data.frame(x = 1, y = y)
 core &lt;- ggplot(df, aes(x, y)) +
   geom_point() +
@@ -639,7 +639,7 @@ core + scale_y_continuous(
 core + scale_y_continuous(
   labels = scientific_format()
 )
-          </input>
+          </code>
         </program>
       </subsection>
 
@@ -661,7 +661,7 @@ core + scale_y_continuous(
         </p>
 
         <program language="r">
-          <input>
+          <code>
 # construct some sample data with very different numbers in each cell
 sd &lt;- c(1, 5, 15)
 n &lt;- 100
@@ -672,7 +672,7 @@ ggplot(df, aes(x)) +
   geom_histogram(binwidth = 2) +
   facet_wrap(~ sd, scales = "free_x") +
   labs(x = NULL)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -686,7 +686,7 @@ ggplot(df, aes(x)) +
         </p>
 
         <program language="r">
-          <input>
+          <code>
 binwidth_bins &lt;- function(n) {
   force(n)
 
@@ -699,7 +699,7 @@ ggplot(df, aes(x)) +
   geom_histogram(binwidth = binwidth_bins(20)) +
   facet_wrap(~ sd, scales = "free_x") +
   labs(x = NULL)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -710,7 +710,7 @@ ggplot(df, aes(x)) +
         </p>
 
         <program language="r">
-          <input>
+          <code>
 base_bins &lt;- function(type) {
   fun &lt;- switch(type,
     Sturges = nclass.Sturges,
@@ -728,7 +728,7 @@ ggplot(df, aes(x)) +
   geom_histogram(binwidth = base_bins("FD")) +
   facet_wrap(~ sd, scales = "free_x") +
   labs(x = NULL)
-          </input>
+          </code>
         </program>
       </subsection>
 
@@ -762,7 +762,7 @@ ggplot(df, aes(x)) +
         <p>A mildly simplified version of <c>plot_dev()</c> is shown below:</p>
 
         <program language="r">
-          <input>
+          <code>
 plot_dev &lt;- function(ext, dpi = 96) {
   force(dpi)
 
@@ -789,7 +789,7 @@ plot_dev &lt;- function(ext, dpi = 96) {
 
 plot_dev("pdf")
 plot_dev("png")
-          </input>
+          </code>
         </program>
       </subsection>
 
@@ -839,7 +839,7 @@ plot_dev("png")
         </p>
 
         <program language="r">
-          <input>
+          <code>
 boxcox1 &lt;- function(x, lambda) {
   stopifnot(length(lambda) == 1)
 
@@ -849,7 +849,7 @@ boxcox1 &lt;- function(x, lambda) {
     (x ^ lambda - 1) / lambda
   }
 }
-          </input>
+          </code>
         </program>
 
         <p>
@@ -858,7 +858,7 @@ boxcox1 &lt;- function(x, lambda) {
         </p>
 
         <program language="r">
-          <input>
+          <code>
 boxcox2 &lt;- function(lambda) {
   if (lambda == 0) {
     function(x) log(x)
@@ -881,7 +881,7 @@ ggplot(data.frame(x = c(0, 5)), aes(x)) +
 ggplot(data.frame(x = c(0.01, 1)), aes(x)) +
   lapply(c(0.5, 0.25, 0.1, 0), stat_boxcox) +
   scale_colour_viridis_c(limits = c(0, 1.5))
-          </input>
+          </code>
         </program>
 
         <p>
@@ -906,7 +906,7 @@ ggplot(data.frame(x = c(0.01, 1)), aes(x)) +
         </p>
 
         <program language="r">
-          <input>
+          <code>
 boot_permute &lt;- function(df, var) {
   n &lt;- nrow(df)
   force(var)
@@ -920,7 +920,7 @@ boot_permute &lt;- function(df, var) {
 boot_mtcars1 &lt;- boot_permute(mtcars, "mpg")
 head(boot_mtcars1())
 head(boot_mtcars1())
-          </input>
+          </code>
         </program>
 
         <p>
@@ -931,7 +931,7 @@ head(boot_mtcars1())
         </p>
 
         <program language="r">
-          <input>
+          <code>
 boot_model &lt;- function(df, formula) {
   mod &lt;- lm(formula, data = df)
   fitted &lt;- unname(fitted(mod))
@@ -946,7 +946,7 @@ boot_model &lt;- function(df, formula) {
 boot_mtcars2 &lt;- boot_model(mtcars, mpg ~ wt)
 head(boot_mtcars2())
 head(boot_mtcars2())
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1019,20 +1019,20 @@ head(boot_mtcars2())
         </p>
 
         <program language="r">
-          <input>
+          <code>
 lprob_poisson &lt;- function(lambda, x) {
   n &lt;- length(x)
   (log(lambda) * sum(x)) - (n * lambda) - sum(lfactorial(x))
 }
-          </input>
+          </code>
         </program>
 
         <p>Consider this vector of observations:</p>
 
         <program language="r">
-          <input>
+          <code>
 x1 &lt;- c(41, 30, 31, 38, 29, 24, 30, 29, 31, 38)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1041,11 +1041,11 @@ x1 &lt;- c(41, 30, 31, 38, 29, 24, 30, 29, 31, 38)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 lprob_poisson(10, x1)
 lprob_poisson(20, x1)
 lprob_poisson(30, x1)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1068,7 +1068,7 @@ lprob_poisson(30, x1)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 ll_poisson1 &lt;- function(x) {
   n &lt;- length(x)
 
@@ -1076,7 +1076,7 @@ ll_poisson1 &lt;- function(x) {
     log(lambda) * sum(x) - n * lambda - sum(lfactorial(x))
   }
 }
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1092,7 +1092,7 @@ ll_poisson1 &lt;- function(x) {
         </p>
 
         <program language="r">
-          <input>
+          <code>
 ll_poisson2 &lt;- function(x) {
   n &lt;- length(x)
   sum_x &lt;- sum(x)
@@ -1102,7 +1102,7 @@ ll_poisson2 &lt;- function(x) {
     log(lambda) * sum_x - n * lambda - c
   }
 }
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1111,13 +1111,13 @@ ll_poisson2 &lt;- function(x) {
         </p>
 
         <program language="r">
-          <input>
+          <code>
 ll1 &lt;- ll_poisson2(x1)
 
 ll1(10)
 ll1(20)
 ll1(30)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1129,9 +1129,9 @@ ll1(30)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 optimise(ll1, c(0, 100), maximum = TRUE)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1142,9 +1142,9 @@ optimise(ll1, c(0, 100), maximum = TRUE)
         </p>
 
         <program language="r">
-          <input>
+          <code>
 optimise(lprob_poisson, c(0, 100), x = x1, maximum = TRUE)
-          </input>
+          </code>
         </program>
 
         <p>
@@ -1189,7 +1189,7 @@ optimise(lprob_poisson, c(0, 100), x = x1, maximum = TRUE)
           <statement>
             <p>Why might you formulate the Box-Cox transformation like this?</p>
             <program language="r">
-              <input>
+              <code>
 boxcox3 &lt;- function(x) {
   function(lambda) {
     if (lambda == 0) {
@@ -1199,7 +1199,7 @@ boxcox3 &lt;- function(x) {
     }
   }
 }
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
@@ -1237,7 +1237,7 @@ boxcox3 &lt;- function(x) {
       </p>
 
       <program language="r">
-        <input>
+        <code>
 names &lt;- list(
   square = 2,
   cube = 3,
@@ -1249,7 +1249,7 @@ funs &lt;- purrr::map(names, power1)
 
 funs$root(64)
 funs$root
-        </input>
+        </code>
       </program>
 
       <p>
@@ -1269,9 +1269,9 @@ funs$root
           <li>
             <p>For a very temporary effect, you can use <c>with()</c>:</p>
             <program language="r">
-              <input>
+              <code>
 with(funs, root(100))
-              </input>
+              </code>
             </program>
             <p>
               I recommend this because it makes it very clear when code is
@@ -1284,11 +1284,11 @@ with(funs, root(100))
               the search path, then <c>detach()</c> when you're done:
             </p>
             <program language="r">
-              <input>
+              <code>
 attach(funs)
 root(100)
 detach(funs)
-              </input>
+              </code>
             </program>
             <p>
               You've probably been told to avoid using <c>attach()</c>, and
@@ -1303,13 +1303,13 @@ detach(funs)
             <p>
               Finally, you could copy the functions to the global environment
               with <c>env_bind()</c> (you'll learn about <c>!!!</c> in Section
-              <xref ref="sec-tidy-dots"/>). This is mostly permanent:
+              <xref ref="ch-quasiquotation"/>). This is mostly permanent:
             </p>
             <program language="r">
-              <input>
+              <code>
 rlang::env_bind(globalenv(), !!!funs)
 root(100)
-              </input>
+              </code>
             </program>
             <p>
               You can later unbind those same names, but there's no guarantee
@@ -1317,9 +1317,9 @@ root(100)
               deleting an object that someone else created.
             </p>
             <program language="r">
-              <input>
+              <code>
 rlang::env_unbind(globalenv(), names(funs))
-              </input>
+              </code>
             </program>
           </li>
         </ul>
@@ -1327,11 +1327,11 @@ rlang::env_unbind(globalenv(), names(funs))
 
       <p>
         You'll learn an alternative approach to the same problem in Section
-        <xref ref="sec-new-function"/>. Instead of using a function factory,
+        <xref ref="ch-r6"/>. Instead of using a function factory,
         you could construct the function with quasiquotation. This requires
         additional knowledge, but generates functions with readable bodies,
         and avoids accidentally capturing large objects in the enclosing scope.
-        We use that idea in Section <xref ref="sec-tag-functions"/> when we
+        We use that idea in Section <xref ref="ch-translation"/> when we
         work on tools for generating HTML from R.
       </p>
 
@@ -1361,7 +1361,7 @@ rlang::env_unbind(globalenv(), names(funs))
               <c>attach()</c> for the following code.
             </p>
             <program language="r">
-              <input>
+              <code>
 funs &lt;- list(
   mean = function(x) mean(x, na.rm = TRUE),
   sum = function(x) sum(x, na.rm = TRUE)
@@ -1374,7 +1374,7 @@ detach(funs)
 env_bind(globalenv(), !!!funs)
 mean &lt;- function(x) stop("Hi!")
 env_unbind(globalenv(), names(funs))
-              </input>
+              </code>
             </program>
           </statement>
         </exercise>
