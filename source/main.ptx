@@ -48,8 +48,60 @@
     <!-- Part I: Foundations -->
     <part xml:id="part-foundations">
       <title>Foundations</title>
+  <introduction>
+    <title>Introduction</title>
 
-      <xi:include href="chapters/foundations-intro.ptx"/>
+    <p>
+      To start your journey in mastering R, the following seven chapters will
+      help you learn the foundational components of R. I expect that you've
+      already seen many of these pieces before, but you probably have not
+      studied them deeply. To help check your existing knowledge, each chapter
+      starts with a quiz; if you get all the questions right, feel free to skip
+      to the next chapter!
+    </p>
+
+    <p><ol>
+      <li><p>
+        <xref ref="ch-names-values"/> teaches you about an important
+        distinction that you probably haven't thought deeply about: the
+        difference between an object and its name. Improving your mental model
+        here will help you make better predictions about when R copies data and
+        hence which basic operations are cheap and which are expensive.
+      </p></li>
+      <li><p>
+        <xref ref="ch-vectors"/> dives into the details of vectors, helping you
+        learn how the different types of vector fit together. You'll also learn
+        about attributes, which allow you to store arbitrary metadata, and form
+        the basis for two of R's object-oriented programming toolkits.
+      </p></li>
+      <li><p>
+        <xref ref="ch-subsetting"/> describes how to use subsetting to write
+        clear, concise, and efficient R code. Understanding the fundamental
+        components of subsetting will allow you to solve new problems by
+        combining the building blocks in novel ways.
+      </p></li>
+      <li><p>
+        <xref ref="ch-control-flow"/> covers tools that control the flow of
+        execution: choices and loops.
+      </p></li>
+      <li><p>
+        <xref ref="ch-functions"/> deals with the most important building block
+        of R code: the function. You'll learn exactly how functions work, and
+        the properties that underlie the functional programming style.
+      </p></li>
+      <li><p>
+        <xref ref="ch-environments"/> describes a data structure that is crucial
+        for understanding how R works: the environment. Environments are the
+        data structure that binds names to values, and they power both scoping
+        and packages.
+      </p></li>
+      <li><p>
+        <xref ref="ch-conditions"/> describes the condition system, which
+        powers messages, warnings, and errors. You'll learn how to signal them,
+        and how to handle them when they happen in code you call.
+      </p></li>
+    </ol></p>
+  </introduction>
       <xi:include href="chapters/names-values.ptx"/>
       <xi:include href="chapters/vectors.ptx"/>
       <xi:include href="chapters/subsetting.ptx"/>
