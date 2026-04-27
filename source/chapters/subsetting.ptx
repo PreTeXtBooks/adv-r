@@ -14,7 +14,7 @@
 
     <p>Subsetting is a natural complement to <c>str()</c>. While <c>str()</c> shows you all the pieces of any object (its structure), subsetting allows you to pull out the pieces that you're interested in. For large, complex objects, I highly recommend using the interactive RStudio Viewer, which you can activate with <c>View(my_object)</c>.</p>
 
-    <subsection xml:id="subsec-subsetting-quiz">
+    <paragraphs xml:id="para-subsetting-quiz">
       <title>Quiz</title>
       <p>Take this short quiz to determine if you need to read this chapter. If the answers quickly come to mind, you can comfortably skip this chapter. Check your answers in <xref ref="sec-subsetting-answers"/>.</p>
       <p><ol>
@@ -24,9 +24,9 @@
         <li><p>If <c>x</c> is a matrix, what does <c>x[] &lt;- 0</c> do? How is it different from <c>x &lt;- 0</c>?</p></li>
         <li><p>How can you use a named vector to relabel categorical variables?</p></li>
       </ol></p>
-    </subsection>
+    </paragraphs>
 
-    <subsection xml:id="subsec-subsetting-outline">
+    <paragraphs xml:id="para-subsetting-outline">
       <title>Outline</title>
       <p><ul>
         <li><p>Section <xref ref="sec-subset-multiple"/> starts by teaching you about <c>[</c>. You'll learn the six ways to subset atomic vectors. You'll then learn how those six ways act when used to subset lists, matrices, and data frames.</p></li>
@@ -34,7 +34,7 @@
         <li><p>In Section <xref ref="sec-subassignment"/> you'll learn the art of subassignment, which combines subsetting and assignment to modify parts of an object.</p></li>
         <li><p>Section <xref ref="sec-applications"/> leads you through eight important, but not obvious, applications of subsetting to solve problems that you often encounter in data analysis.</p></li>
       </ul></p>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-subset-multiple">

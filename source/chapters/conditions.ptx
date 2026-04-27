@@ -14,7 +14,7 @@
       <li><p><url href="http://homepage.stat.uiowa.edu/~luke/R/exceptions/simpcond.html">A prototype of a condition system for R</url> by Robert Gentleman and Luke Tierney. This describes an early version of R's condition system. While the implementation has changed somewhat since this document was written, it provides a good overview of how the pieces fit together, and some motivation for its design.</p></li>
       <li><p><url href="http://www.gigamonkeys.com/book/beyond-exception-handling-conditions-and-restarts.html">Beyond exception handling: conditions and restarts</url> by Peter Seibel. This describes exception handling in Lisp, which happens to be very similar to R's approach. It provides useful motivation and more sophisticated examples. I have provided an R translation of the chapter at <url href="http://adv-r.had.co.nz/beyond-exception-handling.html">http://adv-r.had.co.nz/beyond-exception-handling.html</url>.</p></li>
     </ul></p>
-    <subsection xml:id="subsec-conditions-quiz">
+    <paragraphs xml:id="para-conditions-quiz">
       <title>Quiz</title>
       <p>Want to skip this chapter? Go for it, if you can answer the questions below. Find the answers at the end of the chapter in <xref ref="sec-conditions-answers"/>.</p>
       <p><ol>
@@ -23,8 +23,8 @@
         <li><p>What's the main difference between <c>tryCatch()</c> and <c>withCallingHandlers()</c>?</p></li>
         <li><p>Why might you want to create a custom error object?</p></li>
       </ol></p>
-    </subsection>
-    <subsection xml:id="subsec-conditions-outline">
+    </paragraphs>
+    <paragraphs xml:id="para-conditions-outline">
       <title>Outline</title>
       <p><ul>
         <li><p><xref ref="sec-signalling-conditions"/> introduces the basic tools for signalling conditions, and discusses when it is appropriate to use each type.</p></li>
@@ -33,14 +33,14 @@
         <li><p><xref ref="sec-custom-conditions"/> shows you how to extend the built-in condition objects to store useful data that condition handlers can use to make more informed decisions.</p></li>
         <li><p><xref ref="sec-condition-applications"/> closes out the chapter with a grab bag of practical applications based on the low-level tools found in earlier sections.</p></li>
       </ul></p>
-    </subsection>
-    <subsection xml:id="subsec-conditions-prerequisites">
+    </paragraphs>
+    <paragraphs xml:id="para-conditions-prerequisites">
       <title>Prerequisites</title>
       <p>As well as base R functions, this chapter uses condition signalling and handling functions from <url href="https://rlang.r-lib.org">rlang</url>.</p>
       <program language="r"><input>
 library(rlang)
       </input></program>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-signalling-conditions">
@@ -708,7 +708,7 @@ safety &lt;- function(expr) {
 str(safety(1 + 10))
 str(safety(stop("Error!")))
       </input></program>
-      <p>(This is closely related to <c>purrr::safely()</c>, a function operator, which we'll come back to in <xref ref="subsec-safely"/>.)</p>
+      <p>(This is closely related to <c>purrr::safely()</c>, a function operator, which we'll come back to in <xref ref="ch-function-operators"/>.)</p>
     </subsection>
     <subsection xml:id="subsec-resignal">
       <title>Resignal</title>

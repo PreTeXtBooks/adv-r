@@ -6,7 +6,7 @@
     <p>
       The environment is the data structure that powers scoping. This chapter dives deep into environments, describing their structure in depth, and using them to improve your understanding of the four scoping rules described in <xref ref="sec-lexical-scoping"/>. Understanding environments is not necessary for day-to-day use of R. But they are important to understand because they power many important R features like lexical scoping, namespaces, and R6 classes, and interact with evaluation to give you powerful tools for making domain specific languages, like dplyr and ggplot2.
     </p>
-    <subsection xml:id="subsec-environments-quiz">
+    <paragraphs xml:id="para-environments-quiz">
       <title>Quiz</title>
       <p>If you can answer the following questions correctly, you already know the most important topics in this chapter. You can find the answers at the end of the chapter in <xref ref="sec-env-answers"/>.</p>
       <p><ol>
@@ -16,8 +16,8 @@
         <li><p>How do you determine the environment from which a function was called?</p></li>
         <li><p>How are <c>&lt;-</c> and <c>&lt;&lt;-</c> different?</p></li>
       </ol></p>
-    </subsection>
-    <subsection xml:id="subsec-environments-outline">
+    </paragraphs>
+    <paragraphs xml:id="para-environments-outline">
       <title>Outline</title>
       <p><ul>
         <li><p><xref ref="sec-env-basics"/> introduces you to the basic properties of an environment and shows you how to create your own.</p></li>
@@ -26,14 +26,14 @@
         <li><p><xref ref="sec-call-stack"/> explains the last important environment: the caller environment.</p></li>
         <li><p><xref ref="sec-explicit-envs"/> briefly discusses three places where environments are useful data structures for solving other problems.</p></li>
       </ul></p>
-    </subsection>
-    <subsection xml:id="subsec-environments-prerequisites">
+    </paragraphs>
+    <paragraphs xml:id="para-environments-prerequisites">
       <title>Prerequisites</title>
       <p>This chapter will use <url href="https://rlang.r-lib.org">rlang</url> functions for working with environments.</p>
       <program language="r"><input>
 library(rlang)
       </input></program>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-env-basics">
@@ -130,7 +130,7 @@ f &lt;- function() {
 f()
 x
       </input></program>
-      <p>If <c>&lt;&lt;-</c> doesn't find an existing variable, it will create one in the global environment. This is usually undesirable, because global variables introduce non-obvious dependencies between functions. <c>&lt;&lt;-</c> is most often used in conjunction with a function factory, as described in <xref ref="subsec-stateful-funs"/>.</p>
+      <p>If <c>&lt;&lt;-</c> doesn't find an existing variable, it will create one in the global environment. This is usually undesirable, because global variables introduce non-obvious dependencies between functions. <c>&lt;&lt;-</c> is most often used in conjunction with a function factory.</p>
     </subsection>
     <subsection xml:id="subsec-env-getting-setting">
       <title>Getting and setting</title>
@@ -209,7 +209,7 @@ env_bind_active(current_env(), z1 = function(val) runif(1))
 z1
 z1
           </input></program>
-          <p>Active bindings are used to implement R6's active fields, which you'll learn about in <xref ref="subsec-active-fields"/>.</p>
+          <p>Active bindings are used to implement R6's active fields, which you'll learn about in <xref ref="ch-r6"/>.</p>
         </li>
       </ul></p>
       <aside><p>See <c>?delayedAssign()</c> and <c>?makeActiveBinding()</c>.</p></aside>
@@ -449,7 +449,7 @@ plus_one
 plus_one(2)
       </input></program>
       <figure><image source="../images/environments/closure-call.png"/></figure>
-      <p>You'll learn more about function factories in <xref ref="subsec-factory-fundamentals"/>.</p>
+      <p>You'll learn more about function factories in <xref ref="ch-function-factories"/>.</p>
     </subsection>
     <exercises>
       <exercise><p>How is <c>search_envs()</c> different from <c>env_parents(global_env())</c>?</p></exercise>

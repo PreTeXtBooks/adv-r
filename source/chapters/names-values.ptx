@@ -340,7 +340,7 @@ untracemem(x)
       </figure>
       <p>
         You'll learn more about the conventions used in this diagram in
-        <xref ref="sec-execution-environments"/>. In brief: the function <c>f()</c> is
+        <xref ref="subsec-execution-environments"/>. In brief: the function <c>f()</c> is
         depicted by the yellow object on the right. It has a formal argument, <c>a</c>,
         which becomes a binding (indicated by dotted black line) in the execution environment
         (the gray box) when the function is run.
@@ -759,7 +759,7 @@ e2$c
       </figure>
       <p>
         This basic idea can be used to create functions that <q>remember</q> their previous
-        state. See <xref ref="sec-stateful-funs"/> for more details. This property is also
+        state (discussed in a later chapter). This property is also
         used to implement the R6 object-oriented programming system, the topic of
         <xref ref="ch-r6"/>.
       </p>

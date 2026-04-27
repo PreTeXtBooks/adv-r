@@ -19,7 +19,7 @@
       Every vector can also have <alert>attributes</alert>, which you can think of as a named list of arbitrary metadata. Two attributes are particularly important. The <alert>dimension</alert> attribute turns vectors into matrices and arrays and the <alert>class</alert> attribute powers the S3 object system. While you&#x2019;ll learn how to use S3 in Chapter <xref ref="ch-s3"/>, here you&#x2019;ll learn about some of the most important S3 vectors: factors, date and times, data frames, and tibbles. And while 2D structures like matrices and data frames are not necessarily what come to mind when you think of vectors, you&#x2019;ll also learn why R considers them to be vectors.
     </p>
 
-    <subsection xml:id="subsec-vectors-quiz">
+    <paragraphs xml:id="para-vectors-quiz">
       <title>Quiz</title>
 
       <p>
@@ -33,9 +33,9 @@
         <li><p>Can you have a list that is a matrix? Can a data frame have a column that is a matrix?</p></li>
         <li><p>How do tibbles behave differently from data frames?</p></li>
       </ol></p>
-    </subsection>
+    </paragraphs>
 
-    <subsection xml:id="subsec-vectors-outline">
+    <paragraphs xml:id="para-vectors-outline">
       <title>Outline</title>
 
       <p><ul>
@@ -45,14 +45,14 @@
         <li><p>Section <xref ref="sec-lists"/> dives into lists. Lists are very similar to atomic vectors, but have one key difference: an element of a list can be any data type, including another list. This makes them suitable for representing hierarchical data.</p></li>
         <li><p>Section <xref ref="sec-tibble"/> teaches you about data frames and tibbles, which are used to represent rectangular data. They combine the behaviour of lists and matrices to make a structure ideally suited for the needs of statistical data.</p></li>
       </ul></p>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-atomic-vectors">
     <title>Atomic vectors</title>
 
     <p>
-      There are four primary types of atomic vectors: logical, integer, double, and character (which contains strings). Collectively integer and double vectors are known as numeric vectors<fn>This is a slight simplification as R does not use &#x201c;numeric&#x201d; consistently, which we&#x2019;ll come back to in Section <xref ref="subsec-numeric-type"/>.</fn>. There are two rare types: complex and raw. I won&#x2019;t discuss them further because complex numbers are rarely needed in statistics, and raw vectors are a special type that&#x2019;s only needed when handling binary data.
+      There are four primary types of atomic vectors: logical, integer, double, and character (which contains strings). Collectively integer and double vectors are known as numeric vectors<fn>This is a slight simplification as R does not use &#x201c;numeric&#x201d; consistently, which we&#x2019;ll come back to in Section <xref ref="subsec-scalars"/>.</fn>. There are two rare types: complex and raw. I won&#x2019;t discuss them further because complex numbers are rarely needed in statistics, and raw vectors are a special type that&#x2019;s only needed when handling binary data.
     </p>
 
     <figure>
@@ -257,7 +257,7 @@ c(TRUE, 1L)
       <title>Getting and setting</title>
 
       <p>
-        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood. You&#x2019;ll learn more about them in Section <xref ref="sec-pairlists"/>.</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
+        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood (covered in a later chapter).</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
       </p>
 
       <program language="r">
@@ -350,7 +350,7 @@ x &lt;- setNames(1:3, c("a", "b", "c"))
       </figure>
 
       <p>
-        To be useful with character subsetting (e.g. Section <xref ref="sec-lookup-tables"/>) names should be unique, and non-missing, but this is not enforced by R. Depending on how the names are set, missing names may be either <c>""</c> or <c>NA_character_</c>. If all names are missing, <c>names()</c> will return <c>NULL</c>.
+        To be useful with character subsetting (e.g. Section <xref ref="subsec-lookup-tables"/>) names should be unique, and non-missing, but this is not enforced by R. Depending on how the names are set, missing names may be either <c>""</c> or <c>NA_character_</c>. If all names are missing, <c>names()</c> will return <c>NULL</c>.
       </p>
     </subsection>
 
@@ -358,7 +358,7 @@ x &lt;- setNames(1:3, c("a", "b", "c"))
       <title>Dimensions</title>
 
       <p>
-        Adding a <c>dim</c> attribute to a vector allows it to behave like a 2-dimensional <alert>matrix</alert> or a multi-dimensional <alert>array</alert>. Matrices and arrays are primarily mathematical and statistical tools, not programming tools, so they&#x2019;ll be used infrequently and only covered briefly in this book. Their most important feature is multidimensional subsetting, which is covered in Section <xref ref="sec-matrix-subsetting"/>.
+        Adding a <c>dim</c> attribute to a vector allows it to behave like a 2-dimensional <alert>matrix</alert> or a multi-dimensional <alert>array</alert>. Matrices and arrays are primarily mathematical and statistical tools, not programming tools, so they&#x2019;ll be used infrequently and only covered briefly in this book. Their most important feature is multidimensional subsetting, which is covered in Section <xref ref="subsec-matrix-subsetting"/>.
       </p>
 
       <p>
@@ -652,7 +652,7 @@ f3 &lt;- factor(letters, levels = rev(letters))
     <title>Lists</title>
 
     <p>
-      Lists are a step up in complexity from atomic vectors: each element can be any type, not just vectors. Technically speaking, each element of a list is actually the same type because, as you saw in Section <xref ref="sec-list-references"/>, each element is really a <em>reference</em> to another object, which can be any type.
+      Lists are a step up in complexity from atomic vectors: each element can be any type, not just vectors. Technically speaking, each element of a list is actually the same type because, as you saw in Section <xref ref="subsec-list-references"/>, each element is really a <em>reference</em> to another object, which can be any type.
     </p>
 
     <subsection xml:id="subsec-list-creating">
@@ -1227,7 +1227,7 @@ c()
           </input>
         </program>
       </li>
-      <li><p>To represent an absent vector. For example, <c>NULL</c> is often used as a default function argument, when the argument is optional but the default value requires some computation (see Section <xref ref="sec-missing-arguments"/> for more on this). Contrast this with <c>NA</c> which is used to indicate that an <em>element</em> of a vector is absent.</p></li>
+      <li><p>To represent an absent vector. For example, <c>NULL</c> is often used as a default function argument, when the argument is optional but the default value requires some computation (see Section <xref ref="subsec-missing-arguments"/> for more on this). Contrast this with <c>NA</c> which is used to indicate that an <em>element</em> of a vector is absent.</p></li>
     </ul></p>
 
     <p>

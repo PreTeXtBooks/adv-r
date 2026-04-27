@@ -7,7 +7,7 @@
 
     <p>The condition system (messages, warnings, and errors), which you'll learn about in Chapter <xref ref="ch-conditions"/>, also provides non-local control flow.</p>
 
-    <subsection xml:id="subsec-control-flow-quiz">
+    <paragraphs xml:id="para-control-flow-quiz">
       <title>Quiz</title>
 
       <p>Want to skip this chapter? Go for it, if you can answer the questions below. Find the answers at the end of the chapter in Section <xref ref="sec-control-flow-answers"/>.</p>
@@ -22,16 +22,16 @@ y &lt;- if (x) 3
         </li>
         <li><p>What does <c>switch("x", x = , y = 2, z = 3)</c> return?</p></li>
       </ul></p>
-    </subsection>
+    </paragraphs>
 
-    <subsection xml:id="subsec-control-flow-outline">
+    <paragraphs xml:id="para-control-flow-outline">
       <title>Outline</title>
 
       <p><ul>
         <li><p>Section <xref ref="sec-choices"/> dives into the details of <c>if</c>, then discusses the close relatives <c>ifelse()</c> and <c>switch()</c>.</p></li>
         <li><p>Section <xref ref="sec-loops"/> starts off by reminding you of the basic structure of the for loop in R, discusses some common pitfalls, and then talks about the related <c>while</c> and <c>repeat</c> statements.</p></li>
       </ul></p>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-choices">
@@ -73,7 +73,7 @@ c(x1, x2)
 
     <p>(I recommend assigning the results of an <c>if</c> statement only when the entire expression fits on one line; otherwise it tends to be hard to read.)</p>
 
-    <p>When you use the single argument form without an else statement, <c>if</c> invisibly (<xref ref="sec-invisible"/>) returns <c>NULL</c> if the condition is <c>FALSE</c>. Since functions like <c>c()</c> and <c>paste()</c> drop <c>NULL</c> inputs, this allows for a compact expression of certain idioms:</p>
+    <p>When you use the single argument form without an else statement, <c>if</c> invisibly (<xref ref="subsec-invisible"/>) returns <c>NULL</c> if the condition is <c>FALSE</c>. Since functions like <c>c()</c> and <c>paste()</c> drop <c>NULL</c> inputs, this allows for a compact expression of certain idioms:</p>
 
     <program language="r"><input>
 greet &lt;- function(name, birthday = FALSE) {
@@ -262,7 +262,7 @@ for (i in 1:10) {
     <subsection xml:id="subsec-common-pitfalls">
       <title>Common pitfalls</title>
 
-      <p>There are three common pitfalls to watch out for when using <c>for</c>. First, if you're generating data, make sure to preallocate the output container. Otherwise the loop will be very slow; see <xref ref="sec-memory-profiling"/> and <xref ref="sec-avoid-copies"/> for more details. The <c>vector()</c> function is helpful here.</p>
+      <p>There are three common pitfalls to watch out for when using <c>for</c>. First, if you're generating data, make sure to preallocate the output container. Otherwise the loop will be very slow (see the performance chapters for more details). The <c>vector()</c> function is helpful here.</p>
 
       <program language="r"><input>
 means &lt;- c(1, 50, 20)

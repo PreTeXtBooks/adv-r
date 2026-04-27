@@ -7,7 +7,7 @@
       If you're reading this book, you've probably already created many R functions and know how to use them to reduce duplication in your code. In this chapter, you'll learn how to turn that informal, working knowledge into more rigorous, theoretical understanding. And while you'll see some interesting tricks and techniques along the way, keep in mind that what you'll learn here will be important for understanding the more advanced topics discussed later in the book.
     </p>
 
-    <subsection xml:id="subsec-functions-quiz">
+    <paragraphs xml:id="para-functions-quiz">
       <title>Quiz</title>
       <p>Answer the following questions to see if you can safely skip this chapter. You can find the answers in <xref ref="sec-function-answers"/>.</p>
       <p><ol>
@@ -48,9 +48,9 @@ f2(10, stop("This is an error!"))
         <li><p>What is an infix function? How do you write it? What's a replacement function? How do you write it?</p></li>
         <li><p>How do you ensure that cleanup action occurs regardless of how a function exits?</p></li>
       </ol></p>
-    </subsection>
+    </paragraphs>
 
-    <subsection xml:id="subsec-functions-outline">
+    <paragraphs xml:id="para-functions-outline">
       <title>Outline</title>
       <p><ul>
         <li><p><xref ref="sec-function-fundamentals"/> describes the basics of creating a function, the three main components of a function, and the exception to many function rules: primitive functions (which are implemented in C, not R).</p></li>
@@ -61,7 +61,7 @@ f2(10, stop("This is an error!"))
         <li><p><xref ref="sec-exiting-a-function"/> discusses the two primary ways that a function can exit, and how to define an exit handler, code that is run on exit, regardless of what triggers it.</p></li>
         <li><p><xref ref="sec-function-forms"/> shows you the various ways in which R disguises ordinary function calls, and how you can use the standard prefix form to better understand what's going on.</p></li>
       </ul></p>
-    </subsection>
+    </paragraphs>
   </introduction>
 
   <section xml:id="sec-function-fundamentals">
@@ -198,7 +198,7 @@ args &lt;- list(1:10, na.rm = TRUE)
 do.call(mean, args)
       </input></program>
 
-      <p>We'll come back to this idea in <xref ref="subsec-tidy-dots"/>.</p>
+      <p>We'll come back to this idea in a later chapter.</p>
     </subsection>
 
     <exercises>
@@ -424,7 +424,7 @@ g11()
 g11()
       </input></program>
 
-      <p>You might be surprised that <c>g11()</c> always returns the same value. This happens because every time a function is called a new environment is created to host its execution. This means that a function has no way to tell what happened the last time it was run; each invocation is completely independent. We'll see some ways to get around this in <xref ref="subsec-stateful-funs"/>.</p>
+      <p>You might be surprised that <c>g11()</c> always returns the same value. This happens because every time a function is called a new environment is created to host its execution. This means that a function has no way to tell what happened the last time it was run; each invocation is completely independent. We'll see some ways to get around this in a later chapter.</p>
     </subsection>
 
     <subsection xml:id="subsec-dynamic-lookup">
@@ -505,7 +505,7 @@ h01(stop("This is an error!"))
     <subsection xml:id="subsec-promises">
       <title>Promises</title>
 
-      <p>Lazy evaluation is powered by a data structure called a <alert>promise</alert>, or (less commonly) a thunk. It's one of the features that makes R such an interesting programming language (we'll return to promises again in <xref ref="subsec-quosures"/>).</p>
+      <p>Lazy evaluation is powered by a data structure called a <alert>promise</alert>, or (less commonly) a thunk. It's one of the features that makes R such an interesting programming language (we'll return to promises again in a later chapter).</p>
 
       <p>A promise has three components:</p>
 
@@ -545,7 +545,7 @@ h03(double(20))
         </li>
       </ul></p>
 
-      <p>You cannot manipulate promises with R code. Promises are like a quantum state: any attempt to inspect them with R code will force an immediate evaluation, making the promise disappear. Later, in <xref ref="subsec-quosures"/>, you'll learn about quosures, which convert promises into an R object where you can easily inspect the expression and the environment.</p>
+      <p>You cannot manipulate promises with R code. Promises are like a quantum state: any attempt to inspect them with R code will force an immediate evaluation, making the promise disappear. Later, you'll learn about quosures, which convert promises into an R object where you can easily inspect the expression and the environment.</p>
     </subsection>
 
     <subsection xml:id="subsec-default-arguments">
@@ -750,7 +750,7 @@ str(i04(a = 1, b = 2))
 x &lt;- list(c(1, 3, NA), c(4, NA, 6))
 str(lapply(x, mean, na.rm = TRUE))
         </input></program>
-        <p>We'll come back to this technique in <xref ref="subsec-passing-arguments"/>.</p>
+        <p>We'll come back to this technique in a later chapter.</p>
       </li>
       <li>
         <p>If your function is an S3 generic, you need some way to allow methods to take arbitrary extra arguments. For example, take the <c>print()</c> function. Because there are different options for printing depending on the type of object, there's no way to pre-specify every possible argument and <c>...</c> allows individual methods to have different arguments:</p>
@@ -759,7 +759,7 @@ print(factor(letters), max.levels = 4)
 
 print(y ~ x, showEnv = TRUE)
         </input></program>
-        <p>We'll come back to this use of <c>...</c> in <xref ref="subsec-s3-arguments"/>.</p>
+        <p>We'll come back to this use of <c>...</c> in a later chapter.</p>
       </li>
     </ul></p>
 
@@ -1066,7 +1066,7 @@ replicate(50, (1 + 2))
 rm("(")
       </input></program>
 
-      <p>Of course, overriding built-in functions like this is a bad idea, but, as you'll learn in <xref ref="subsec-html-env"/>, it's possible to apply it only to selected code blocks. This provides a clean and elegant approach to writing domain specific languages and translators to other languages.</p>
+      <p>Of course, overriding built-in functions like this is a bad idea, but, as you'll learn later, it's possible to apply it only to selected code blocks. This provides a clean and elegant approach to writing domain specific languages and translators to other languages.</p>
 
       <p>A more useful application comes up when using functional programming tools. For example, you could use <c>lapply()</c> to add 3 to every element of a list by first defining a function <c>add()</c>:</p>
 
@@ -1176,7 +1176,7 @@ second(x) &lt;- 5L
 x
       </input></program>
 
-      <p>I say they act like they modify their arguments in place, because, as explained in <xref ref="subsec-modify-in-place"/>, they actually create a modified copy. We can see that by using <c>tracemem()</c>:</p>
+      <p>I say they act like they modify their arguments in place, because, as explained in <xref ref="sec-modify-in-place"/>, they actually create a modified copy. We can see that by using <c>tracemem()</c>:</p>
 
       <program language="r"><input>
 x &lt;- 1:10
