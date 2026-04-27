@@ -397,7 +397,16 @@ l2[[3]] &lt;- 4
         cross-reference shared components.
       </p>
       <program language="r"><input>
-ref(l1, l2)
+[ref](https://lobstr.r-lib.org/reference/ref.html)(l1, l2)
+#&gt; █ [1:0x557144725998] &lt;list&gt;
+#&gt; ├─[2:0x557144c98240] &lt;dbl&gt;
+#&gt; ├─[3:0x557144c98400] &lt;dbl&gt;
+#&gt; └─[4:0x557144c985c0] &lt;dbl&gt;
+#&gt;  
+#&gt; █ [5:0x557146b240e8] &lt;list&gt; 
+#&gt; ├─[2:0x557144c98240] 
+#&gt; ├─[3:0x557144c98400] 
+#&gt; └─[6:0x5571439a1540] &lt;dbl&gt;
       </input></program>
     </subsection>
 
@@ -463,6 +472,11 @@ x &lt;- c("a", "a", "abc", "d")
       </p>
       <program language="r"><input>
 ref(x, character = TRUE)
+#&gt; █ [1:0x557146929b48] &lt;chr&gt;
+#&gt; ├─[2:0x557140f2fbd0] &lt;string: "a"&gt;
+#&gt; ├─[2:0x557140f2fbd0] 
+#&gt; ├─[3:0x5571447546d0] &lt;string: "abc"&gt;
+#&gt; └─[4:0x557141371b40] &lt;string: "d"&gt;
       </input></program>
       <p>
         This has a profound impact on the amount of memory a character vector uses but is
