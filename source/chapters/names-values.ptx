@@ -397,7 +397,7 @@ l2[[3]] &lt;- 4
         cross-reference shared components.
       </p>
       <program language="r"><input>
-[ref](https://lobstr.r-lib.org/reference/ref.html)(l1, l2)
+ref(l1, l2)
 #&gt; █ [1:0x557144725998] &lt;list&gt;
 #&gt; ├─[2:0x557144c98240] &lt;dbl&gt;
 #&gt; ├─[3:0x557144c98400] &lt;dbl&gt;
