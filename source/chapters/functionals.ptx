@@ -3,41 +3,1263 @@
     <title>Functionals</title>
 
     <introduction>
-      <p>
-        A <em>functional</em> is a function that takes a function as an input
-        and returns a vector as output. Here's a simple functional: it calls
-        the function provided as input with 1000 random uniform numbers:
-      </p>
+      <blockquote>
+        <p>To become significantly more reliable, code must become more transparent.
+        In particular, nested conditions and loops must be viewed with great
+        suspicion. Complicated control flows confuse programmers. Messy code often
+        hides bugs.</p>
+        <attribution>Bjarne Stroustrup</attribution>
+      </blockquote>
+
+      <p>A <term>functional</term> is a function that takes a function as an input and returns a vector as output. Here's a simple functional: it calls the function provided as input with 1000 random uniform numbers.</p>
 
       <program language="r">
-        <input>
+        <code>
 randomise &lt;- function(f) f(runif(1e3))
 randomise(mean)
-#&gt; [1] 0.5012
 randomise(mean)
-#&gt; [1] 0.4985
 randomise(sum)
-#&gt; [1] 504.7
-        </input>
+        </code>
       </program>
 
-      <p>
-        The chances are that you've already used a functional. You might have
-        used <c>for</c>-loop replacements like base R's <c>lapply()</c>,
-        <c>apply()</c>, and <c>tapply()</c>; or purrr's <c>map()</c>.
-      </p>
+      <p>The chances are that you've already used a functional. You might have used for-loop replacements like base R's <c>lapply()</c>, <c>apply()</c>, and <c>tapply()</c>; or purrr's <c>map()</c>; or maybe you've used a mathematical functional like <c>integrate()</c> or <c>optim()</c>.</p>
+
+      <p>A common use of functionals is as an alternative to for loops. For loops have a bad rap in R because many people believe they are slow<fn>Typically it's not the for loop itself that's slow, but what you're doing inside of it. A common culprit of slow loops is modifying a data structure, where each modification generates a copy. See <xref ref="sec-binding-basics"/> and <xref ref="ch-names-values"/> for more details.</fn>, but the real downside of for loops is that they're very flexible: a loop conveys that you're iterating, but not what should be done with the results. Just as it's better to use <c>while</c> than <c>repeat</c>, and it's better to use <c>for</c> than <c>while</c> (<xref ref="sec-loops"/>), it's better to use a functional than <c>for</c>. Each functional is tailored for a specific task, so when you recognise the functional you immediately know why it's being used.</p>
+
+      <p>If you're an experienced for loop user, switching to functionals is typically a pattern matching exercise. You look at the for loop and find a functional that matches the basic form. If one doesn't exist, don't try and torture an existing functional to fit the form you need. Instead, just leave it as a for loop! (Or once you've repeated the same loop two or more times, maybe think about writing your own functional).</p>
+
+      <paragraphs xml:id="subsec-outline">
+        <title>Outline</title>
+        <p><ul>
+          <li><p>Section <xref ref="sec-map"/> introduces your first functional: <c>purrr::map()</c>.</p></li>
+          <li><p>Section <xref ref="sec-purrr-style"/> demonstrates how you can combine multiple simple functionals to solve a more complex problem and discusses how purrr style differs from other approaches.</p></li>
+          <li><p>Section <xref ref="sec-map-variants"/> teaches you about 18 (!!) important variants of <c>purrr::map()</c>. Fortunately, their orthogonal design makes them easy to learn, remember, and master.</p></li>
+          <li><p>Section <xref ref="sec-reduce"/> introduces a new style of functional: <c>purrr::reduce()</c>. <c>reduce()</c> systematically reduces a vector to a single result by applying a function that takes two inputs.</p></li>
+          <li><p>Section <xref ref="sec-predicate-functionals"/> teaches you about predicates: functions that return a single <c>TRUE</c> or <c>FALSE</c>, and the family of functionals that use them to solve common problems.</p></li>
+          <li><p>Section <xref ref="sec-base-functionals"/> reviews some functionals in base R that are not members of the map, reduce, or predicate families.</p></li>
+        </ul></p>
+      </paragraphs>
+
+      <paragraphs xml:id="subsec-prerequisites">
+        <title>Prerequisites</title>
+        <p>This chapter will focus on functionals provided by the <url href="https://purrr.tidyverse.org">purrr package</url>. These functions have a consistent interface that makes it easier to understand the key ideas than their base equivalents, which have grown organically over many years. I'll compare and contrast base R functions as we go, and then wrap up the chapter with a discussion of base functionals that don't have purrr equivalents.</p>
+        <program language="r">
+          <code>
+library(purrr)
+          </code>
+        </program>
+      </paragraphs>
     </introduction>
 
     <section xml:id="sec-map">
       <title>My first functional: <c>map()</c></title>
 
-      <p>
-        The most fundamental functional is <c>purrr::map()</c>. It takes a
-        vector and a function, calls the function once for each element of the
-        vector, and returns the results in a list. In other words,
-        <c>map(1:3, f)</c> is equivalent to
-        <c>list(f(1), f(2), f(3))</c>.
-      </p>
+      <p>The most fundamental functional is <c>purrr::map()</c><fn>Not to be confused with <c>base::Map()</c>, which is considerably more complex. I'll discuss <c>Map()</c> in <xref ref="sec-pmap"/>.</fn>. It takes a vector and a function, calls the function once for each element of the vector, and returns the results in a list. In other words, <c>map(1:3, f)</c> is equivalent to <c>list(f(1), f(2), f(3))</c>.</p>
+
+      <program language="r">
+        <code>
+triple &lt;- function(x) x * 3
+map(1:3, triple)
+        </code>
+      </program>
+
+      <p>Or, graphically:</p>
+
+      <figure><image source="functionals/map.png"/></figure>
+
+      <aside>
+        <p>You might wonder why this function is called <c>map()</c>. What does it have to do with depicting physical features of land or sea? In fact, the meaning comes from mathematics where <em>map</em> refers to "an operation that associates each element of a given set with one or more elements of a second set". This makes sense here because <c>map()</c> defines a mapping from one vector to another. (<em>"Map"</em> also has the nice property of being short, which is useful for such a fundamental building block.)</p>
+      </aside>
+
+      <p>The implementation of <c>map()</c> is quite simple. We allocate a list the same length as the input, and then fill in the list with a for loop. The heart of the implementation is only a handful of lines of code:</p>
+
+      <program language="r">
+        <code>
+simple_map &lt;- function(x, f, ...) {
+  out &lt;- vector("list", length(x))
+  for (i in seq_along(x)) {
+    out[[i]] &lt;- f(x[[i]], ...)
+  }
+  out
+}
+        </code>
+      </program>
+
+      <p>The real <c>purrr::map()</c> function has a few differences: it is written in C to eke out every last iota of performance, preserves names, and supports a few shortcuts that you'll learn about in <xref ref="sec-purrr-shortcuts"/>.</p>
+
+      <remark>
+        <title>Base R</title>
+        <p>The base equivalent to <c>map()</c> is <c>lapply()</c>. The only difference is that <c>lapply()</c> does not support the helpers that you'll learn about below, so if you're only using <c>map()</c> from purrr, you can skip the additional dependency and use <c>lapply()</c> directly.</p>
+      </remark>
+
+      <subsection xml:id="sec-map-atomic">
+        <title>Producing atomic vectors</title>
+
+        <p><c>map()</c> returns a list, which makes it the most general of the map family because you can put anything in a list. But it is inconvenient to return a list when a simpler data structure would do, so there are four more specific variants: <c>map_lgl()</c>, <c>map_int()</c>, <c>map_dbl()</c>, and <c>map_chr()</c>. Each returns an atomic vector of the specified type:</p>
+
+        <program language="r">
+          <code>
+# map_chr() always returns a character vector
+map_chr(mtcars, typeof)
+
+# map_lgl() always returns a logical vector
+map_lgl(mtcars, is.double)
+
+# map_int() always returns a integer vector
+n_unique &lt;- function(x) length(unique(x))
+map_int(mtcars, n_unique)
+
+# map_dbl() always returns a double vector
+map_dbl(mtcars, mean)
+          </code>
+        </program>
+
+        <p>purrr uses the convention that suffixes, like <c>_dbl()</c>, refer to the output. All <c>map_*()</c> functions can take any type of vector as input. These examples rely on two facts: <c>mtcars</c> is a data frame, and data frames are lists containing vectors of the same length. This is more obvious if we draw a data frame with the same orientation as vector:</p>
+
+        <figure><image source="functionals/map-list.png"/></figure>
+
+        <p>All map functions always return an output vector the same length as the input, which implies that each call to <c>.f</c> must return a single value. If it does not, you'll get an error:</p>
+
+        <program language="r">
+          <code>
+pair &lt;- function(x) c(x, x)
+map_dbl(1:2, pair)
+          </code>
+        </program>
+
+        <p>This is similar to the error you'll get if <c>.f</c> returns the wrong type of result:</p>
+
+        <program language="r">
+          <code>
+map_dbl(1:2, as.character)
+          </code>
+        </program>
+
+        <p>In either case, it's often useful to switch back to <c>map()</c>, because <c>map()</c> can accept any type of output. That allows you to see the problematic output, and figure out what to do with it.</p>
+
+        <program language="r">
+          <code>
+map(1:2, pair)
+map(1:2, as.character)
+          </code>
+        </program>
+
+        <remark>
+          <title>Base R</title>
+          <p>Base R has two apply functions that can return atomic vectors: <c>sapply()</c> and <c>vapply()</c>. I recommend that you avoid <c>sapply()</c> because it tries to simplify the result, so it can return a list, a vector, or a matrix. This makes it difficult to program with, and it should be avoided in non-interactive settings. <c>vapply()</c> is safer because it allows you to provide a template, <c>FUN.VALUE</c>, that describes the output shape. If you don't want to use purrr, I recommend you always use <c>vapply()</c> in your functions, not <c>sapply()</c>. The primary downside of <c>vapply()</c> is its verbosity: for example, the equivalent to <c>map_dbl(x, mean, na.rm = TRUE)</c> is <c>vapply(x, mean, na.rm = TRUE, FUN.VALUE = double(1))</c>.</p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="sec-purrr-shortcuts">
+        <title>Anonymous functions and shortcuts</title>
+
+        <p>Instead of using <c>map()</c> with an existing function, you can create an inline anonymous function (as mentioned in <xref ref="sec-function-fundamentals"/>):</p>
+
+        <program language="r">
+          <code>
+map_dbl(mtcars, function(x) length(unique(x)))
+          </code>
+        </program>
+
+        <p>Anonymous functions are very useful, but the syntax is verbose. So purrr supports a special shortcut:</p>
+
+        <program language="r">
+          <code>
+map_dbl(mtcars, ~ length(unique(.x)))
+          </code>
+        </program>
+
+        <p>This works because all purrr functions translate formulas, created by <c>~</c> (pronounced "twiddle"), into functions. You can see what's happening behind the scenes by calling <c>as_mapper()</c>:</p>
+
+        <program language="r">
+          <code>
+as_mapper(~ length(unique(.x)))
+          </code>
+        </program>
+
+        <p>The function arguments look a little quirky but allow you to refer to <c>.</c> for one argument functions, <c>.x</c> and <c>.y</c> for two argument functions, and <c>..1</c>, <c>..2</c>, <c>..3</c>, etc, for functions with an arbitrary number of arguments. <c>.</c> remains for backward compatibility but I don't recommend using it because it's easily confused with the <c>.</c> used by magrittr's pipe.</p>
+
+        <p>This shortcut is particularly useful for generating random data:</p>
+
+        <program language="r">
+          <code>
+x &lt;- map(1:3, ~ runif(2))
+str(x)
+          </code>
+        </program>
+
+        <p>Reserve this syntax for short and simple functions. A good rule of thumb is that if your function spans lines or uses <c>{}</c>, it's time to give it a name.</p>
+
+        <p>The map functions also have shortcuts for extracting elements from a vector, powered by <c>purrr::pluck()</c>. You can use a character vector to select elements by name, an integer vector to select by position, or a list to select by both name and position. These are very useful for working with deeply nested lists, which often arise when working with JSON.</p>
+
+        <program language="r">
+          <code>
+x &lt;- list(
+  list(-1, x = 1, y = c(2), z = "a"),
+  list(-2, x = 4, y = c(5, 6), z = "b"),
+  list(-3, x = 8, y = c(9, 10, 11))
+)
+
+# Select by name
+map_dbl(x, "x")
+
+# Or by position
+map_dbl(x, 1)
+
+# Or by both
+map_dbl(x, list("y", 1))
+
+# You'll get an error if a component doesn't exist:
+map_chr(x, "z")
+
+# Unless you supply a .default value
+map_chr(x, "z", .default = NA)
+          </code>
+        </program>
+
+        <remark>
+          <title>Base R</title>
+          <p>In base R functions, like <c>lapply()</c>, you can provide the name of the function as a string. This isn't tremendously useful as <c>lapply(x, "f")</c> is almost always equivalent to <c>lapply(x, f)</c> and is more typing.</p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="sec-passing-arguments">
+        <title>Passing arguments with <c>...</c></title>
+
+        <p>It's often convenient to pass along additional arguments to the function that you're calling. For example, you might want to pass <c>na.rm = TRUE</c> along to <c>mean()</c>. One way to do that is with an anonymous function:</p>
+
+        <program language="r">
+          <code>
+x &lt;- list(1:5, c(1:10, NA))
+map_dbl(x, ~ mean(.x, na.rm = TRUE))
+          </code>
+        </program>
+
+        <p>But because the map functions pass <c>...</c> along, there's a simpler form available:</p>
+
+        <program language="r">
+          <code>
+map_dbl(x, mean, na.rm = TRUE)
+          </code>
+        </program>
+
+        <p>This is easiest to understand with a picture: any arguments that come after <c>f</c> in the call to <c>map()</c> are inserted <em>after</em> the data in individual calls to <c>f()</c>:</p>
+
+        <figure><image source="functionals/map-arg.png"/></figure>
+
+        <p>It's important to note that these arguments are not decomposed; or said another way, <c>map()</c> is only vectorised over its first argument. If an argument after <c>f</c> is a vector, it will be passed along as is:</p>
+
+        <figure><image source="functionals/map-arg-recycle.png"/></figure>
+
+        <p>(You'll learn about map variants that <em>are</em> vectorised over multiple arguments in <xref ref="sec-map2"/> and <xref ref="sec-pmap"/>.)</p>
+
+        <p>Note there's a subtle difference between placing extra arguments inside an anonymous function compared with passing them to <c>map()</c>. Putting them in an anonymous function means that they will be evaluated every time <c>f()</c> is executed, not just once when you call <c>map()</c>. This is easiest to see if we make the additional argument random:</p>
+
+        <program language="r">
+          <code>
+plus &lt;- function(x, y) x + y
+
+x &lt;- c(0, 0, 0, 0)
+map_dbl(x, plus, runif(1))
+map_dbl(x, ~ plus(.x, runif(1)))
+          </code>
+        </program>
+      </subsection>
+
+      <subsection xml:id="subsec-argument-names">
+        <title>Argument names</title>
+
+        <p>In the diagrams, I've omitted argument names to focus on the overall structure. But I recommend writing out the full names in your code, as it makes it easier to read. <c>map(x, mean, 0.1)</c> is perfectly valid code, but will call <c>mean(x[[1]], 0.1)</c> so it relies on the reader remembering that the second argument to <c>mean()</c> is <c>trim</c>. To avoid unnecessary burden on the brain of the reader<fn>Who is highly likely to be future you!</fn>, be kind and write <c>map(x, mean, trim = 0.1)</c>.</p>
+
+        <p>This is the reason why the arguments to <c>map()</c> are a little odd: instead of being <c>x</c> and <c>f</c>, they are <c>.x</c> and <c>.f</c>. It's easiest to see the problem that leads to these names using <c>simple_map()</c> defined above. <c>simple_map()</c> has arguments <c>x</c> and <c>f</c> so you'll have problems whenever the function you are calling has arguments <c>x</c> or <c>f</c>:</p>
+
+        <program language="r">
+          <code>
+bootstrap_summary &lt;- function(x, f) {
+  f(sample(x, replace = TRUE))
+}
+
+simple_map(mtcars, bootstrap_summary, f = mean)
+          </code>
+        </program>
+
+        <p>The error is a little bewildering until you remember that the call to <c>simple_map()</c> is equivalent to <c>simple_map(x = mtcars, f = mean, bootstrap_summary)</c> because named matching beats positional matching.</p>
+
+        <p>purrr functions reduce the likelihood of such a clash by using <c>.f</c> and <c>.x</c> instead of the more common <c>f</c> and <c>x</c>. Of course this technique isn't perfect (because the function you are calling might still use <c>.f</c> and <c>.x</c>), but it avoids 99% of issues. The remaining 1% of the time, use an anonymous function.</p>
+
+        <remark>
+          <title>Base R</title>
+          <p>Base functions that pass along <c>...</c> use a variety of naming conventions to prevent undesired argument matching:</p>
+          <p><ul>
+            <li><p>The apply family mostly uses capital letters (e.g. <c>X</c> and <c>FUN</c>).</p></li>
+            <li><p><c>transform()</c> uses the more exotic prefix <c>_</c>: this makes the name non-syntactic so it must always be surrounded in backticks, as described in <xref ref="ch-vectors"/>. This makes undesired matches extremely unlikely.</p></li>
+            <li><p>Other functionals like <c>uniroot()</c> and <c>optim()</c> make no effort to avoid clashes but they tend to be used with specially created functions so clashes are less likely.</p></li>
+          </ul></p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="sec-change-argument">
+        <title>Varying another argument</title>
+
+        <p>So far the first argument to <c>map()</c> has always become the first argument to the function. But what happens if the first argument should be constant, and you want to vary a different argument? How do you get the result in this picture?</p>
+
+        <figure><image source="functionals/map-arg-flipped.png"/></figure>
+
+        <p>It turns out that there's no way to do it directly, but there are two tricks you can use instead. To illustrate them, imagine I have a vector that contains a few unusual values, and I want to explore the effect of different amounts of trimming when computing the mean. In this case, the first argument to <c>mean()</c> will be constant, and I want to vary the second argument, <c>trim</c>.</p>
+
+        <program language="r">
+          <code>
+trims &lt;- c(0, 0.1, 0.2, 0.5)
+x &lt;- rcauchy(1000)
+          </code>
+        </program>
+
+        <p><ul>
+          <li>
+            <p>The simplest technique is to use an anonymous function to rearrange the argument order:</p>
+            <program language="r">
+              <code>
+map_dbl(trims, ~ mean(x, trim = .x))
+              </code>
+            </program>
+            <p>This is still a little confusing because I'm using both <c>x</c> and <c>.x</c>. You can make it a little clearer by abandoning the <c>~</c> helper:</p>
+            <program language="r">
+              <code>
+map_dbl(trims, function(trim) mean(x, trim = trim))
+              </code>
+            </program>
+          </li>
+          <li>
+            <p>Sometimes, if you want to be (too) clever, you can take advantage of R's flexible argument matching rules (as described in <xref ref="ch-functions"/>). For example, in this example you can rewrite <c>mean(x, trim = 0.1)</c> as <c>mean(0.1, x = x)</c>, so you could write the call to <c>map_dbl()</c> as:</p>
+            <program language="r">
+              <code>
+map_dbl(trims, mean, x = x)
+              </code>
+            </program>
+            <p>I don't recommend this technique as it relies on the reader's familiarity with both the argument order to <c>.f</c>, and R's argument matching rules.</p>
+          </li>
+        </ul></p>
+
+        <p>You'll see one more alternative in <xref ref="sec-pmap"/>.</p>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>Use <c>as_mapper()</c> to explore how purrr generates anonymous functions for the integer, character, and list helpers. What helper allows you to extract attributes? Read the documentation to find out.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p><c>map(1:3, ~ runif(2))</c> is a useful pattern for generating random numbers, but <c>map(1:3, runif(2))</c> is not. Why not? Can you explain why it returns the result that it does?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Use the appropriate <c>map()</c> function to:</p>
+            <p><ol>
+              <li><p>Compute the standard deviation of every column in a numeric data frame.</p></li>
+              <li><p>Compute the standard deviation of every numeric column in a mixed data frame. (Hint: you'll need to do it in two steps.)</p></li>
+              <li><p>Compute the number of levels for every factor in a data frame.</p></li>
+            </ol></p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>The following code simulates the performance of a t-test for non-normal data. Extract the p-value from each test, then visualise.</p>
+            <program language="r">
+              <code>
+trials &lt;- map(1:100, ~ t.test(rpois(10, 10), rpois(7, 10)))
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>The following code uses a map nested inside another map to apply a function to every element of a nested list. Why does it fail, and what do you need to do to make it work?</p>
+            <program language="r">
+              <code>
+x &lt;- list(
+  list(1, c(3, 9)),
+  list(c(3, 6), 7, c(4, 7, 6))
+)
+
+triple &lt;- function(x) x * 3
+map(x, map, .f = triple)
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Use <c>map()</c> to fit linear models to the <c>mtcars</c> dataset using the formulas stored in this list:</p>
+            <program language="r">
+              <code>
+formulas &lt;- list(
+  mpg ~ disp,
+  mpg ~ I(1 / disp),
+  mpg ~ disp + wt,
+  mpg ~ I(1 / disp) + wt
+)
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Fit the model <c>mpg ~ disp</c> to each of the bootstrap replicates of <c>mtcars</c> in the list below, then extract the <m>R^2</m> of the model fit (Hint: you can compute the <m>R^2</m> with <c>summary()</c>.)</p>
+            <program language="r">
+              <code>
+bootstrap &lt;- function(df) {
+  df[sample(nrow(df), replace = TRUE), , drop = FALSE]
+}
+
+bootstraps &lt;- map(1:10, ~ bootstrap(mtcars))
+              </code>
+            </program>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-purrr-style">
+      <title>Purrr style</title>
+
+      <p>Before we go on to explore more map variants, let's take a quick look at how you tend to use multiple purrr functions to solve a moderately realistic problem: fitting a model to each subgroup and extracting a coefficient of the model. For this toy example, I'm going to break the <c>mtcars</c> data set down into groups defined by the number of cylinders, using the base <c>split</c> function:</p>
+
+      <program language="r">
+        <code>
+by_cyl &lt;- split(mtcars, mtcars$cyl)
+        </code>
+      </program>
+
+      <p>This creates a list of three data frames: the cars with 4, 6, and 8 cylinders respectively.</p>
+
+      <p>Now imagine we want to fit a linear model, then extract the second coefficient (i.e. the slope). The following code shows how you might do that with purrr:</p>
+
+      <program language="r">
+        <code>
+by_cyl %&gt;%
+  map(~ lm(mpg ~ wt, data = .x)) %&gt;%
+  map(coef) %&gt;%
+  map_dbl(2)
+        </code>
+      </program>
+
+      <p>(If you haven't seen <c>%&gt;%</c>, the pipe, before, it's described in <xref ref="ch-functions"/>.)</p>
+
+      <p>I think this code is easy to read because each line encapsulates a single step, you can easily distinguish the functional from what it does, and the purrr helpers allow us to very concisely describe what to do in each step.</p>
+
+      <p>How would you attack this problem with base R? You certainly <em>could</em> replace each purrr function with the equivalent base function:</p>
+
+      <program language="r">
+        <code>
+by_cyl %&gt;%
+  lapply(function(data) lm(mpg ~ wt, data = data)) %&gt;%
+  lapply(coef) %&gt;%
+  vapply(function(x) x[[2]], double(1))
+        </code>
+      </program>
+
+      <p>But this isn't really base R since we're using the pipe. To tackle purely in base I think you'd use an intermediate variable, and do more in each step:</p>
+
+      <program language="r">
+        <code>
+models &lt;- lapply(by_cyl, function(data) lm(mpg ~ wt, data = data))
+vapply(models, function(x) coef(x)[[2]], double(1))
+        </code>
+      </program>
+
+      <p>Or, of course, you could use a for loop:</p>
+
+      <program language="r">
+        <code>
+slopes &lt;- double(length(by_cyl))
+for (i in seq_along(by_cyl)) {
+  model &lt;- lm(mpg ~ wt, data = by_cyl[[i]])
+  slopes[[i]] &lt;- coef(model)[[2]]
+}
+slopes
+        </code>
+      </program>
+
+      <p>It's interesting to note that as you move from purrr to base apply functions to for loops you tend to do more and more in each iteration. In purrr we iterate 3 times (<c>map()</c>, <c>map()</c>, <c>map_dbl()</c>), with apply functions we iterate twice (<c>lapply()</c>, <c>vapply()</c>), and with a for loop we iterate once. I prefer more, but simpler, steps because I think it makes the code easier to understand and later modify.</p>
+    </section>
+
+    <section xml:id="sec-map-variants">
+      <title>Map variants</title>
+
+      <p>There are 23 primary variants of <c>map()</c>. So far, you've learned about five (<c>map()</c>, <c>map_lgl()</c>, <c>map_int()</c>, <c>map_dbl()</c> and <c>map_chr()</c>). That means that you've got 18 (!!) more to learn. That sounds like a lot, but fortunately the design of purrr means that you only need to learn five new ideas:</p>
+
+      <p><ul>
+        <li><p>Output same type as input with <c>modify()</c></p></li>
+        <li><p>Iterate over two inputs with <c>map2()</c>.</p></li>
+        <li><p>Iterate with an index using <c>imap()</c></p></li>
+        <li><p>Return nothing with <c>walk()</c>.</p></li>
+        <li><p>Iterate over any number of inputs with <c>pmap()</c>.</p></li>
+      </ul></p>
+
+      <p>The map family of functions has orthogonal input and outputs, meaning that we can organise all the family into a matrix, with inputs in the rows and outputs in the columns. Once you've mastered the idea in a row, you can combine it with any column; once you've mastered the idea in a column, you can combine it with any row. That relationship is summarised in the following table:</p>
+
+      <tabular>
+        <row header="yes">
+          <cell></cell>
+          <cell>List</cell>
+          <cell>Atomic</cell>
+          <cell>Same type</cell>
+          <cell>Nothing</cell>
+        </row>
+        <row>
+          <cell>One argument</cell>
+          <cell><c>map()</c></cell>
+          <cell><c>map_lgl()</c>, ...</cell>
+          <cell><c>modify()</c></cell>
+          <cell><c>walk()</c></cell>
+        </row>
+        <row>
+          <cell>Two arguments</cell>
+          <cell><c>map2()</c></cell>
+          <cell><c>map2_lgl()</c>, ...</cell>
+          <cell><c>modify2()</c></cell>
+          <cell><c>walk2()</c></cell>
+        </row>
+        <row>
+          <cell>One argument + index</cell>
+          <cell><c>imap()</c></cell>
+          <cell><c>imap_lgl()</c>, ...</cell>
+          <cell><c>imodify()</c></cell>
+          <cell><c>iwalk()</c></cell>
+        </row>
+        <row>
+          <cell>N arguments</cell>
+          <cell><c>pmap()</c></cell>
+          <cell><c>pmap_lgl()</c>, ...</cell>
+          <cell>---</cell>
+          <cell><c>pwalk()</c></cell>
+        </row>
+      </tabular>
+
+      <subsection xml:id="sec-modify">
+        <title>Same type of output as input: <c>modify()</c></title>
+
+        <p>Imagine you wanted to double every column in a data frame. You might first try using <c>map()</c>, but <c>map()</c> always returns a list:</p>
+
+        <program language="r">
+          <code>
+df &lt;- data.frame(
+  x = 1:3,
+  y = 6:4
+)
+
+map(df, ~ .x * 2)
+          </code>
+        </program>
+
+        <p>If you want to keep the output as a data frame, you can use <c>modify()</c>, which always returns the same type of output as the input:</p>
+
+        <program language="r">
+          <code>
+modify(df, ~ .x * 2)
+          </code>
+        </program>
+
+        <p>Despite the name, <c>modify()</c> doesn't modify in place, it returns a modified copy, so if you wanted to permanently modify <c>df</c>, you'd need to assign it:</p>
+
+        <program language="r">
+          <code>
+df &lt;- modify(df, ~ .x * 2)
+          </code>
+        </program>
+
+        <p>As usual, the basic implementation of <c>modify()</c> is simple, and in fact it's even simpler than <c>map()</c> because we don't need to create a new output vector; we can just progressively replace the input. (The real code is a little complex to handle edge cases more gracefully.)</p>
+
+        <program language="r">
+          <code>
+simple_modify &lt;- function(x, f, ...) {
+  for (i in seq_along(x)) {
+    x[[i]] &lt;- f(x[[i]], ...)
+  }
+  x
+}
+          </code>
+        </program>
+
+        <p>In <xref ref="sec-predicate-map"/> you'll learn about a very useful variant of <c>modify()</c>, called <c>modify_if()</c>. This allows you to (e.g.) only double <em>numeric</em> columns of a data frame with <c>modify_if(df, is.numeric, ~ .x * 2)</c>.</p>
+      </subsection>
+
+      <subsection xml:id="sec-map2">
+        <title>Two inputs: <c>map2()</c> and friends</title>
+
+        <p><c>map()</c> is vectorised over a single argument, <c>.x</c>. This means it only varies <c>.x</c> when calling <c>.f</c>, and all other arguments are passed along unchanged, thus making it poorly suited for some problems. For example, how would you find a weighted mean when you have a list of observations and a list of weights? Imagine we have the following data:</p>
+
+        <program language="r">
+          <code>
+xs &lt;- map(1:8, ~ runif(10))
+xs[[1]][[1]] &lt;- NA
+ws &lt;- map(1:8, ~ rpois(10, 5) + 1)
+          </code>
+        </program>
+
+        <p>You can use <c>map_dbl()</c> to compute the unweighted means:</p>
+
+        <program language="r">
+          <code>
+map_dbl(xs, mean)
+          </code>
+        </program>
+
+        <p>But passing <c>ws</c> as an additional argument doesn't work because arguments after <c>.f</c> are not transformed:</p>
+
+        <program language="r">
+          <code>
+map_dbl(xs, weighted.mean, w = ws)
+          </code>
+        </program>
+
+        <figure><image source="functionals/map-arg-recycle.png"/></figure>
+
+        <p>We need a new tool: a <c>map2()</c>, which is vectorised over two arguments. This means both <c>.x</c> and <c>.y</c> are varied in each call to <c>.f</c>:</p>
+
+        <program language="r">
+          <code>
+map2_dbl(xs, ws, weighted.mean)
+          </code>
+        </program>
+
+        <figure><image source="functionals/map2.png"/></figure>
+
+        <p>The arguments to <c>map2()</c> are slightly different to the arguments to <c>map()</c> as two vectors come before the function, rather than one. Additional arguments still go afterwards:</p>
+
+        <program language="r">
+          <code>
+map2_dbl(xs, ws, weighted.mean, na.rm = TRUE)
+          </code>
+        </program>
+
+        <figure><image source="functionals/map2-arg.png"/></figure>
+
+        <p>The basic implementation of <c>map2()</c> is simple, and quite similar to that of <c>map()</c>. Instead of iterating over one vector, we iterate over two in parallel:</p>
+
+        <program language="r">
+          <code>
+simple_map2 &lt;- function(x, y, f, ...) {
+  out &lt;- vector("list", length(x))
+  for (i in seq_along(x)) {
+    out[[i]] &lt;- f(x[[i]], y[[i]], ...)
+  }
+  out
+}
+          </code>
+        </program>
+
+        <p>One of the big differences between <c>map2()</c> and the simple function above is that <c>map2()</c> recycles its inputs to make sure that they're the same length:</p>
+
+        <figure><image source="functionals/map2-recycle.png"/></figure>
+
+        <p>In other words, <c>map2(x, y, f)</c> will automatically behave like <c>map(x, f, y)</c> when needed. This is helpful when writing functions; in scripts you'd generally just use the simpler form directly.</p>
+
+        <remark>
+          <title>Base R</title>
+          <p>The closest base equivalent to <c>map2()</c> is <c>Map()</c>, which is discussed in <xref ref="sec-pmap"/>.</p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="subsec-no-outputs-walk">
+        <title>No outputs: <c>walk()</c> and friends</title>
+
+        <p>Most functions are called for the value that they return, so it makes sense to capture and store the value with a <c>map()</c> function. But some functions are called primarily for their side-effects (e.g. <c>cat()</c>, <c>write.csv()</c>, or <c>ggsave()</c>) and it doesn't make sense to capture their results. Take this simple example that displays a welcome message using <c>cat()</c>. <c>cat()</c> returns <c>NULL</c>, so while <c>map()</c> works (in the sense that it generates the desired welcomes), it also returns <c>list(NULL, NULL)</c>.</p>
+
+        <program language="r">
+          <code>
+welcome &lt;- function(x) {
+  cat("Welcome ", x, "!
+", sep = "")
+}
+names &lt;- c("Hadley", "Jenny")
+
+# As well as generate the welcomes, it also shows
+# the return value of cat()
+map(names, welcome)
+          </code>
+        </program>
+
+        <p>You could avoid this problem by assigning the results of <c>map()</c> to a variable that you never use, but that would muddy the intent of the code. Instead, purrr provides the walk family of functions that ignore the return values of the <c>.f</c> and instead return <c>.x</c> invisibly<fn>In brief, invisible values are only printed if you explicitly request it. This makes them well suited for functions called primarily for their side-effects, as it allows their output to be ignored by default, while still giving an option to capture it. See <xref ref="ch-functions"/> for more details.</fn>.</p>
+
+        <program language="r">
+          <code>
+walk(names, welcome)
+          </code>
+        </program>
+
+        <p>My visual depiction of walk attempts to capture the important difference from <c>map()</c>: the outputs are ephemeral, and the input is returned invisibly.</p>
+
+        <figure><image source="functionals/walk.png"/></figure>
+
+        <p>One of the most useful <c>walk()</c> variants is <c>walk2()</c> because a very common side-effect is saving something to disk, and when saving something to disk you always have a pair of values: the object and the path that you want to save it to.</p>
+
+        <figure><image source="functionals/walk2.png"/></figure>
+
+        <p>For example, imagine you have a list of data frames (which I've created here using <c>split()</c>), and you'd like to save each one to a separate CSV file. That's easy with <c>walk2()</c>:</p>
+
+        <program language="r">
+          <code>
+temp &lt;- tempfile()
+dir.create(temp)
+
+cyls &lt;- split(mtcars, mtcars$cyl)
+paths &lt;- file.path(temp, paste0("cyl-", names(cyls), ".csv"))
+walk2(cyls, paths, write.csv)
+
+dir(temp)
+          </code>
+        </program>
+
+        <p>Here the <c>walk2()</c> is equivalent to <c>write.csv(cyls[[1]], paths[[1]])</c>, <c>write.csv(cyls[[2]], paths[[2]])</c>, <c>write.csv(cyls[[3]], paths[[3]])</c>.</p>
+
+        <remark>
+          <title>Base R</title>
+          <p>There is no base equivalent to <c>walk()</c>; either wrap the result of <c>lapply()</c> in <c>invisible()</c> or save it to a variable that is never used.</p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="subsec-iterating-over-values-and-indices">
+        <title>Iterating over values and indices</title>
+
+        <p>There are three basic ways to loop over a vector with a for loop:</p>
+
+        <p><ul>
+          <li><p>Loop over the elements: <c>for (x in xs)</c></p></li>
+          <li><p>Loop over the numeric indices: <c>for (i in seq_along(xs))</c></p></li>
+          <li><p>Loop over the names: <c>for (nm in names(xs))</c></p></li>
+        </ul></p>
+
+        <p>The first form is analogous to the <c>map()</c> family. The second and third forms are equivalent to the <c>imap()</c> family which allows you to iterate over the values and the indices of a vector in parallel.</p>
+
+        <p><c>imap()</c> is like <c>map2()</c> in the sense that your <c>.f</c> gets called with two arguments, but here both are derived from the vector. <c>imap(x, f)</c> is equivalent to <c>map2(x, names(x), f)</c> if x has names, and <c>map2(x, seq_along(x), f)</c> if it does not.</p>
+
+        <p><c>imap()</c> is often useful for constructing labels:</p>
+
+        <program language="r">
+          <code>
+imap_chr(iris, ~ paste0("The first value of ", .y, " is ", .x[[1]]))
+          </code>
+        </program>
+
+        <p>If the vector is unnamed, the second argument will be the index:</p>
+
+        <program language="r">
+          <code>
+x &lt;- map(1:6, ~ sample(1000, 10))
+imap_chr(x, ~ paste0("The highest value of ", .y, " is ", max(.x)))
+          </code>
+        </program>
+
+        <p><c>imap()</c> is a useful helper if you want to work with the values in a vector along with their positions.</p>
+      </subsection>
+
+      <subsection xml:id="sec-pmap">
+        <title>Any number of inputs: <c>pmap()</c> and friends</title>
+
+        <p>Since we have <c>map()</c> and <c>map2()</c>, you might expect <c>map3()</c>, <c>map4()</c>, <c>map5()</c>, ... But where would you stop? Instead of generalising <c>map2()</c> to an arbitrary number of arguments, purrr takes a slightly different tack with <c>pmap()</c>: you supply it a single list, which contains any number of arguments. In most cases, that will be a list of equal-length vectors, i.e. something very similar to a data frame. In diagrams, I'll emphasise that relationship by drawing the input similar to a data frame.</p>
+
+        <figure><image source="functionals/pmap.png"/></figure>
+
+        <p>There's a simple equivalence between <c>map2()</c> and <c>pmap()</c>: <c>map2(x, y, f)</c> is the same as <c>pmap(list(x, y), f)</c>. The <c>pmap()</c> equivalent to the <c>map2_dbl(xs, ws, weighted.mean)</c> used above is:</p>
+
+        <program language="r">
+          <code>
+pmap_dbl(list(xs, ws), weighted.mean)
+          </code>
+        </program>
+
+        <p>As before, the varying arguments come before <c>.f</c> (although now they must be wrapped in a list), and the constant arguments come afterwards.</p>
+
+        <program language="r">
+          <code>
+pmap_dbl(list(xs, ws), weighted.mean, na.rm = TRUE)
+          </code>
+        </program>
+
+        <figure><image source="functionals/pmap-arg.png"/></figure>
+
+        <p>A big difference between <c>pmap()</c> and the other map functions is that <c>pmap()</c> gives you much finer control over argument matching because you can name the components of the list. Returning to our example from <xref ref="sec-change-argument"/>, where we wanted to vary the <c>trim</c> argument to <c>x</c>, we could instead use <c>pmap()</c>:</p>
+
+        <program language="r">
+          <code>
+trims &lt;- c(0, 0.1, 0.2, 0.5)
+x &lt;- rcauchy(1000)
+
+pmap_dbl(list(trim = trims), mean, x = x)
+          </code>
+        </program>
+
+        <p>I think it's good practice to name the components of the list to make it very clear how the function will be called.</p>
+
+        <p>It's often convenient to call <c>pmap()</c> with a data frame. A handy way to create that data frame is with <c>tibble::tribble()</c>, which allows you to describe a data frame row-by-row (rather than column-by-column, as usual): thinking about the parameters to a function as a data frame is a very powerful pattern. The following example shows how you might draw random uniform numbers with varying parameters:</p>
+
+        <program language="r">
+          <code>
+params &lt;- tibble::tribble(
+  ~ n, ~ min, ~ max,
+   1L,     0,     1,
+   2L,    10,   100,
+   3L,   100,  1000
+)
+
+pmap(params, runif)
+          </code>
+        </program>
+
+        <figure><image source="functionals/pmap-3.png"/></figure>
+
+        <p>Here, the column names are critical: I've carefully chosen to match them to the arguments to <c>runif()</c>, so the <c>pmap(params, runif)</c> is equivalent to <c>runif(n = 1L, min = 0, max = 1)</c>, <c>runif(n = 2, min = 10, max = 100)</c>, <c>runif(n = 3L, min = 100, max = 1000)</c>. (If you have a data frame in hand, and the names don't match, use <c>dplyr::rename()</c> or similar.)</p>
+
+        <remark>
+          <title>Base R</title>
+          <p>There are two base equivalents to the <c>pmap()</c> family: <c>Map()</c> and <c>mapply()</c>. Both have significant drawbacks:</p>
+          <p><ul>
+            <li><p><c>Map()</c> vectorises over all arguments so you cannot supply arguments that do not vary.</p></li>
+            <li><p><c>mapply()</c> is the multidimensional version of <c>sapply()</c>; conceptually it takes the output of <c>Map()</c> and simplifies it if possible. This gives it similar issues to <c>sapply()</c>. There is no multi-input equivalent of <c>vapply()</c>.</p></li>
+          </ul></p>
+        </remark>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>Explain the results of <c>modify(mtcars, 1)</c>.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Rewrite the following code to use <c>iwalk()</c> instead of <c>walk2()</c>. What are the advantages and disadvantages?</p>
+            <program language="r">
+              <code>
+cyls &lt;- split(mtcars, mtcars$cyl)
+paths &lt;- file.path(temp, paste0("cyl-", names(cyls), ".csv"))
+walk2(cyls, paths, write.csv)
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Explain how the following code transforms a data frame using functions stored in a list.</p>
+            <program language="r">
+              <code>
+trans &lt;- list(
+  disp = function(x) x * 0.0163871,
+  am = function(x) factor(x, labels = c("auto", "manual"))
+)
+
+nm &lt;- names(trans)
+mtcars[nm] &lt;- map2(trans, mtcars[nm], function(f, var) f(var))
+              </code>
+            </program>
+            <p>Compare and contrast the <c>map2()</c> approach to this <c>map()</c> approach:</p>
+            <program language="r">
+              <code>
+mtcars[nm] &lt;- map(nm, ~ trans[[.x]](mtcars[[.x]]))
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>What does <c>write.csv()</c> return, i.e. what happens if you use it with <c>map2()</c> instead of <c>walk2()</c>?</p>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-reduce">
+      <title>Reduce family</title>
+
+      <p>After the map family, the next most important family of functions is the reduce family. This family is much smaller, with only two main variants, and is used less commonly, but it's a powerful idea, gives us the opportunity to discuss some useful algebra, and powers the map-reduce framework frequently used for processing very large datasets.</p>
+
+      <subsection xml:id="subsec-reduce-basics">
+        <title>Basics</title>
+
+        <p><c>reduce()</c> takes a vector of length <m>n</m> and produces a vector of length 1 by calling a function with a pair of values at a time: <c>reduce(1:4, f)</c> is equivalent to <c>f(f(f(1, 2), 3), 4)</c>.</p>
+
+        <figure><image source="functionals/reduce.png"/></figure>
+
+        <p><c>reduce()</c> is a useful way to generalise a function that works with two inputs (a <term>binary</term> function) to work with any number of inputs. Imagine you have a list of numeric vectors, and you want to find the values that occur in every element. First we generate some sample data:</p>
+
+        <program language="r">
+          <code>
+l &lt;- map(1:4, ~ sample(1:10, 15, replace = T))
+str(l)
+          </code>
+        </program>
+
+        <p>To solve this challenge we need to use <c>intersect()</c> repeatedly:</p>
+
+        <program language="r">
+          <code>
+out &lt;- l[[1]]
+out &lt;- intersect(out, l[[2]])
+out &lt;- intersect(out, l[[3]])
+out &lt;- intersect(out, l[[4]])
+out
+          </code>
+        </program>
+
+        <p><c>reduce()</c> automates this solution for us, so we can write:</p>
+
+        <program language="r">
+          <code>
+reduce(l, intersect)
+          </code>
+        </program>
+
+        <p>We could apply the same idea if we wanted to list all the elements that appear in at least one entry. All we have to do is switch from <c>intersect()</c> to <c>union()</c>:</p>
+
+        <program language="r">
+          <code>
+reduce(l, union)
+          </code>
+        </program>
+
+        <p>Like the map family, you can also pass additional arguments. <c>intersect()</c> and <c>union()</c> don't take extra arguments so I can't demonstrate them here, but the principle is straightforward and I drew you a picture.</p>
+
+        <figure><image source="functionals/reduce-arg.png"/></figure>
+
+        <p>As usual, the essence of <c>reduce()</c> can be reduced to a simple wrapper around a for loop:</p>
+
+        <program language="r">
+          <code>
+simple_reduce &lt;- function(x, f) {
+  out &lt;- x[[1]]
+  for (i in seq(2, length(x))) {
+    out &lt;- f(out, x[[i]])
+  }
+  out
+}
+          </code>
+        </program>
+
+        <remark>
+          <title>Base R</title>
+          <p>The base equivalent is <c>Reduce()</c>. Note that the argument order is different: the function comes first, followed by the vector, and there is no way to supply additional arguments.</p>
+        </remark>
+      </subsection>
+
+      <subsection xml:id="subsec-accumulate">
+        <title>Accumulate</title>
+
+        <p>The first <c>reduce()</c> variant, <c>accumulate()</c>, is useful for understanding how reduce works, because instead of returning just the final result, it returns all the intermediate results as well:</p>
+
+        <program language="r">
+          <code>
+accumulate(l, intersect)
+          </code>
+        </program>
+
+        <p>Another useful way to understand reduce is to think about <c>sum()</c>: <c>sum(x)</c> is equivalent to <c>x[[1]] + x[[2]] + x[[3]] + ...</c>, i.e. <c>reduce(x, `+`)</c>. Then <c>accumulate(x, `+`)</c> is the cumulative sum:</p>
+
+        <program language="r">
+          <code>
+x &lt;- c(4, 3, 10)
+reduce(x, `+`)
+
+accumulate(x, `+`)
+          </code>
+        </program>
+      </subsection>
+
+      <subsection xml:id="subsec-output-types">
+        <title>Output types</title>
+
+        <p>In the above example using <c>+</c>, what should <c>reduce()</c> return when <c>x</c> is short, i.e. length 1 or 0? Without additional arguments, <c>reduce()</c> just returns the input when <c>x</c> is length 1:</p>
+
+        <program language="r">
+          <code>
+reduce(1, `+`)
+          </code>
+        </program>
+
+        <p>This means that <c>reduce()</c> has no way to check that the input is valid:</p>
+
+        <program language="r">
+          <code>
+reduce("a", `+`)
+          </code>
+        </program>
+
+        <p>What if it's length 0? We get an error that suggests we need to use the <c>.init</c> argument:</p>
+
+        <program language="r">
+          <code>
+reduce(integer(), `+`)
+          </code>
+        </program>
+
+        <p>What should <c>.init</c> be here? To figure that out, we need to see what happens when <c>.init</c> is supplied:</p>
+
+        <figure><image source="functionals/reduce-init.png"/></figure>
+
+        <p>So if we call <c>reduce(1, `+`, init)</c> the result will be <c>1 + init</c>. Now we know that the result should be just <c>1</c>, so that suggests that <c>.init</c> should be 0:</p>
+
+        <program language="r">
+          <code>
+reduce(integer(), `+`, .init = 0)
+          </code>
+        </program>
+
+        <p>This also ensures that <c>reduce()</c> checks that length 1 inputs are valid for the function that you're calling:</p>
+
+        <program language="r">
+          <code>
+reduce("a", `+`, .init = 0)
+          </code>
+        </program>
+
+        <p>If you want to get algebraic about it, 0 is called the <term>identity</term> of the real numbers under the operation of addition: if you add a 0 to any number, you get the same number back. R applies the same principle to determine what a summary function with a zero length input should return:</p>
+
+        <program language="r">
+          <code>
+sum(integer())  # x + 0 = x
+prod(integer()) # x * 1 = x
+min(integer())  # min(x, Inf) = x
+max(integer())  # max(x, -Inf) = x
+          </code>
+        </program>
+
+        <p>If you're using <c>reduce()</c> in a function, you should always supply <c>.init</c>. Think carefully about what your function should return when you pass a vector of length 0 or 1, and make sure to test your implementation.</p>
+      </subsection>
+
+      <subsection xml:id="subsec-multiple-inputs">
+        <title>Multiple inputs</title>
+
+        <p>Very occasionally you need to pass two arguments to the function that you're reducing. For example, you might have a list of data frames that you want to join together, and the variables you use to join will vary from element to element. This is a very specialised scenario, so I don't want to spend much time on it, but I do want you to know that <c>reduce2()</c> exists.</p>
+
+        <p>The length of the second argument varies based on whether or not <c>.init</c> is supplied: if you have four elements of <c>x</c>, <c>f</c> will only be called three times. If you supply init, <c>f</c> will be called four times.</p>
+
+        <figure><image source="functionals/reduce2.png"/></figure>
+        <figure><image source="functionals/reduce2-init.png"/></figure>
+      </subsection>
+
+      <subsection xml:id="subsec-map-reduce">
+        <title>Map-reduce</title>
+
+        <p>You might have heard of map-reduce, the idea that powers technology like Hadoop. Now you can see how simple and powerful the underlying idea is: map-reduce is a map combined with a reduce. The difference for large data is that the data is spread over multiple computers. Each computer performs the map on the data that it has, then it sends the result to back to a coordinator which <em>reduces</em> the individual results back to a single result.</p>
+
+        <p>As a simple example, imagine computing the mean of a very large vector, so large that it has to be split over multiple computers. You could ask each computer to calculate the sum and the length, and then return those to the coordinator which computes the overall mean by dividing the total sum by the total length.</p>
+      </subsection>
+    </section>
+
+    <section xml:id="sec-predicate-functionals">
+      <title>Predicate functionals</title>
+
+      <p>A <term>predicate</term> is a function that returns a single <c>TRUE</c> or <c>FALSE</c>, like <c>is.character()</c>, <c>is.null()</c>, or <c>all()</c>, and we say a predicate <term>matches</term> a vector if it returns <c>TRUE</c>.</p>
+
+      <subsection xml:id="subsec-predicate-basics">
+        <title>Basics</title>
+
+        <p>A <term>predicate functional</term> applies a predicate to each element of a vector. purrr provides seven useful functions which come in three groups:</p>
+
+        <p><ul>
+          <li>
+            <p><c>some(.x, .p)</c> returns <c>TRUE</c> if <em>any</em> element matches;
+            <c>every(.x, .p)</c> returns <c>TRUE</c> if <em>all</em> elements match;
+            <c>none(.x, .p)</c> returns <c>TRUE</c> if <em>no</em> element matches.</p>
+            <p>These are similar to <c>any(map_lgl(.x, .p))</c>, <c>all(map_lgl(.x, .p))</c> and <c>all(map_lgl(.x, negate(.p)))</c> but they terminate early: <c>some()</c> returns <c>TRUE</c> when it sees the first <c>TRUE</c>, and <c>every()</c> and <c>none()</c> return <c>FALSE</c> when they see the first <c>FALSE</c> or <c>TRUE</c> respectively.</p>
+          </li>
+          <li><p><c>detect(.x, .p)</c> returns the <em>value</em> of the first match; <c>detect_index(.x, .p)</c> returns the <em>location</em> of the first match.</p></li>
+          <li><p><c>keep(.x, .p)</c> <em>keeps</em> all matching elements; <c>discard(.x, .p)</c> <em>drops</em> all matching elements.</p></li>
+        </ul></p>
+
+        <p>The following example shows how you might use these functionals with a data frame:</p>
+
+        <program language="r">
+          <code>
+df &lt;- data.frame(x = 1:3, y = c("a", "b", "c"))
+detect(df, is.factor)
+detect_index(df, is.factor)
+
+str(keep(df, is.factor))
+str(discard(df, is.factor))
+          </code>
+        </program>
+      </subsection>
+
+      <subsection xml:id="sec-predicate-map">
+        <title>Map variants</title>
+
+        <p><c>map()</c> and <c>modify()</c> come in variants that also take predicate functions, transforming only the elements of <c>.x</c> where <c>.p</c> is <c>TRUE</c>.</p>
+
+        <program language="r">
+          <code>
+df &lt;- data.frame(
+  num1 = c(0, 10, 20),
+  num2 = c(5, 6, 7),
+  chr1 = c("a", "b", "c"),
+  stringsAsFactors = FALSE
+)
+
+str(map_if(df, is.numeric, mean))
+str(modify_if(df, is.numeric, mean))
+str(map(keep(df, is.numeric), mean))
+          </code>
+        </program>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>Why isn't <c>is.na()</c> a predicate function? What base R function is closest to being a predicate version of <c>is.na()</c>?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p><c>simple_reduce()</c> has a problem when <c>x</c> is length 0 or length 1. Describe the source of the problem and how you might go about fixing it.</p>
+            <program language="r">
+              <code>
+simple_reduce &lt;- function(x, f) {
+  out &lt;- x[[1]]
+  for (i in seq(2, length(x))) {
+    out &lt;- f(out, x[[i]])
+  }
+  out
+}
+              </code>
+            </program>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Implement the <c>span()</c> function from Haskell: given a list <c>x</c> and a predicate function <c>f</c>, <c>span(x, f)</c> returns the location of the longest sequential run of elements where the predicate is true. (Hint: you might find <c>rle()</c> helpful.)</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Implement <c>arg_max()</c>. It should take a function and a vector of inputs, and return the elements of the input where the function returns the highest value. For example, <c>arg_max(-10:5, function(x) x ^ 2)</c> should return -10. <c>arg_max(-5:5, function(x) x ^ 2)</c> should return <c>c(-5, 5)</c>. Also implement the matching <c>arg_min()</c> function.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>The function below scales a vector so it falls in the range [0, 1]. How would you apply it to every column of a data frame? How would you apply it to every numeric column in a data frame?</p>
+            <program language="r">
+              <code>
+scale01 &lt;- function(x) {
+  rng &lt;- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+              </code>
+            </program>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-base-functionals">
+      <title>Base functionals</title>
+
+      <p>To finish up the chapter, here I provide a survey of important base functionals that are not members of the map, reduce, or predicate families, and hence have no equivalent in purrr. This is not to say that they're not important, but they have more of a mathematical or statistical flavour, and they are generally less useful in data analysis.</p>
+
+      <subsection xml:id="subsec-matrices-and-arrays">
+        <title>Matrices and arrays</title>
+
+        <p><c>map()</c> and friends are specialised to work with one-dimensional vectors. <c>base::apply()</c> is specialised to work with two-dimensional and higher vectors, i.e. matrices and arrays. You can think of <c>apply()</c> as an operation that summarises a matrix or array by collapsing each row or column to a single value. It has four arguments:</p>
+
+        <p><ul>
+          <li><p><c>X</c>, the matrix or array to summarise.</p></li>
+          <li><p><c>MARGIN</c>, an integer vector giving the dimensions to summarise over, 1 = rows, 2 = columns, etc. (The argument name comes from thinking about the margins of a joint distribution.)</p></li>
+          <li><p><c>FUN</c>, a summary function.</p></li>
+          <li><p><c>...</c> other arguments passed on to <c>FUN</c>.</p></li>
+        </ul></p>
+
+        <p>A typical example of <c>apply()</c> looks like this</p>
+
+        <program language="r">
+          <code>
+a2d &lt;- matrix(1:20, nrow = 5)
+apply(a2d, 1, mean)
+apply(a2d, 2, mean)
+          </code>
+        </program>
+
+        <p>You can specify multiple dimensions to <c>MARGIN</c>, which is useful for high-dimensional arrays:</p>
+
+        <program language="r">
+          <code>
+a3d &lt;- array(1:24, c(2, 3, 4))
+apply(a3d, 1, mean)
+apply(a3d, c(1, 2), mean)
+          </code>
+        </program>
+
+        <p>There are two caveats to using <c>apply()</c>:</p>
+
+        <p><ul>
+          <li><p>Like <c>base::sapply()</c>, you have no control over the output type; it will automatically be simplified to a list, matrix, or vector. However, you usually use <c>apply()</c> with numeric arrays and a numeric summary function so you are less likely to encounter a problem than with <c>sapply()</c>.</p></li>
+          <li>
+            <p><c>apply()</c> is also not idempotent in the sense that if the summary function is the identity operator, the output is not always the same as the input.</p>
+            <program language="r">
+              <code>
+a1 &lt;- apply(a2d, 1, identity)
+identical(a2d, a1)
+
+a2 &lt;- apply(a2d, 2, identity)
+identical(a2d, a2)
+              </code>
+            </program>
+          </li>
+          <li>
+            <p>Never use <c>apply()</c> with a data frame. It always coerces it to a matrix, which will lead to undesirable results if your data frame contains anything other than numbers.</p>
+            <program language="r">
+              <code>
+df &lt;- data.frame(x = 1:3, y = c("a", "b", "c"))
+apply(df, 2, mean)
+              </code>
+            </program>
+          </li>
+        </ul></p>
+      </subsection>
+
+      <subsection xml:id="subsec-mathematical-concerns">
+        <title>Mathematical concerns</title>
+
+        <p>Functionals are very common in mathematics. The limit, the maximum, the roots (the set of points where <c>f(x) = 0</c>), and the definite integral are all functionals: given a function, they return a single number (or vector of numbers). At first glance, these functions don't seem to fit in with the theme of eliminating loops, but if you dig deeper you'll find out that they are all implemented using an algorithm that involves iteration.</p>
+
+        <p>Base R provides a useful set:</p>
+
+        <p><ul>
+          <li><p><c>integrate()</c> finds the area under the curve defined by <c>f()</c></p></li>
+          <li><p><c>uniroot()</c> finds where <c>f()</c> hits zero</p></li>
+          <li><p><c>optimise()</c> finds the location of the lowest (or highest) value of <c>f()</c></p></li>
+        </ul></p>
+
+        <p>The following example shows how functionals might be used with a simple function, <c>sin()</c>:</p>
+
+        <program language="r">
+          <code>
+integrate(sin, 0, pi)
+str(uniroot(sin, pi * c(1 / 2, 3 / 2)))
+str(optimise(sin, c(0, 2 * pi)))
+str(optimise(sin, c(0, pi), maximum = TRUE))
+          </code>
+        </program>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>How does <c>apply()</c> arrange the output? Read the documentation and perform some experiments.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>What do <c>eapply()</c> and <c>rapply()</c> do? Does purrr have equivalents?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Challenge: read about the <url href="https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-12.html#%25_idx_1096">fixed point algorithm</url>. Complete the exercises using R.</p>
+          </statement>
+        </exercise>
+      </exercises>
     </section>
 
   </chapter>

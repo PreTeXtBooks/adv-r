@@ -4,13 +4,14 @@
 
     <introduction>
       <p>
-        A <em>function factory</em> is a function that makes functions. Here's
-        a very simple example: we use a function factory (<c>power1()</c>) to
-        make two child functions (<c>square()</c> and <c>cube()</c>):
+        A <term>function factory</term> is a function that makes functions.
+        Here's a very simple example: we use a function factory
+        (<c>power1()</c>) to make two child functions (<c>square()</c> and
+        <c>cube()</c>):
       </p>
 
       <program language="r">
-        <input>
+        <code>
 power1 &lt;- function(exp) {
   function(x) {
     x ^ exp
@@ -19,23 +20,1365 @@ power1 &lt;- function(exp) {
 
 square &lt;- power1(2)
 cube &lt;- power1(3)
-        </input>
+        </code>
       </program>
 
       <p>
         Don't worry if this doesn't make sense yet, it should by the end of
         the chapter!
       </p>
+
+      <p>
+        I'll call <c>square()</c> and <c>cube()</c>
+        <term>manufactured functions</term>, but this is just a term to ease
+        communication with other humans: from R's perspective they are no
+        different to functions created any other way.
+      </p>
+
+      <program language="r">
+        <code>
+square(3)
+cube(3)
+        </code>
+      </program>
+
+      <p>
+        You have already learned about the individual components that make
+        function factories possible:
+      </p>
+
+      <p>
+        <ul>
+          <li>
+            <p>
+              In Section <xref ref="sec-function-fundamentals"/>, you learned
+              about R's first-class functions. In R, you bind a function to a
+              name in the same way as you bind any object to a name: with
+              <c>&lt;-</c>.
+            </p>
+          </li>
+          <li>
+            <p>
+              In Section <xref ref="sec-env-basics"/>, you learned
+              that a function captures (encloses) the environment in which it
+              is created.
+            </p>
+          </li>
+          <li>
+            <p>
+              In Section <xref ref="sec-env-basics"/>, you learned
+              that a function creates a new execution environment every time it
+              is run. This environment is usually ephemeral, but here it
+              becomes the enclosing environment of the manufactured function.
+            </p>
+          </li>
+        </ul>
+      </p>
+
+      <p>
+        In this chapter, you'll learn how the non-obvious combination of these
+        three features leads to the function factory. You'll also see examples
+        of their usage in visualisation and statistics.
+      </p>
+
+      <p>
+        Of the three main functional programming tools (functionals, function
+        factories, and function operators), function factories are the least
+        used. Generally, they don't tend to reduce overall code complexity but
+        instead partition complexity into more easily digested chunks. Function
+        factories are also an important building block for the very useful
+        function operators, which you'll learn about in Chapter
+        <xref ref="ch-function-operators"/>.
+      </p>
+
+      <p><em>Outline</em></p>
+
+      <p>
+        <ul>
+          <li>
+            <p>
+              Section <xref ref="sec-factory-fundamentals"/> begins the chapter
+              with an explanation of how function factories work, pulling
+              together ideas from scoping and environments. You'll also see how
+              function factories can be used to implement a memory for
+              functions, allowing data to persist across calls.
+            </p>
+          </li>
+          <li>
+            <p>
+              Section <xref ref="sec-graph-fact"/> illustrates the use of
+              function factories with examples from ggplot2. You'll see two
+              examples of how ggplot2 works with user supplied function
+              factories, and one example of where ggplot2 uses a function
+              factory internally.
+            </p>
+          </li>
+          <li>
+            <p>
+              Section <xref ref="sec-stat-fact"/> uses function factories to
+              tackle three challenges from statistics: understanding the
+              Box-Cox transform, solving maximum likelihood problems, and
+              drawing bootstrap resamples.
+            </p>
+          </li>
+          <li>
+            <p>
+              Section <xref ref="sec-functional-factories"/> shows how you can
+              combine function factories and functionals to rapidly generate a
+              family of functions from data.
+            </p>
+          </li>
+        </ul>
+      </p>
+
+      <p><em>Prerequisites</em></p>
+
+      <p>
+        Make sure you're familiar with the contents of Sections
+        <xref ref="sec-function-fundamentals"/> (first-class functions),
+        <xref ref="sec-env-basics"/> (the function environment), and
+        <xref ref="sec-env-basics"/> (execution environments)
+        mentioned above.
+      </p>
+
+      <p>
+        Function factories only need base R. We'll use a little
+        <url href="https://rlang.r-lib.org">rlang</url> to peek inside of them
+        more easily, and we'll use
+        <url href="https://ggplot2.tidyverse.org">ggplot2</url> and
+        <url href="https://scales.r-lib.org">scales</url> to explore the use
+        of function factories in visualisation.
+      </p>
+
+      <program language="r">
+        <code>
+library(rlang)
+library(ggplot2)
+library(scales)
+        </code>
+      </program>
     </introduction>
 
     <section xml:id="sec-factory-fundamentals">
       <title>Factory fundamentals</title>
 
       <p>
-        The key idea that makes function factories work can be expressed
-        concisely, but requires a bit of background: function factories work
-        because of first-class functions and lexical scoping.
+        The key idea that makes function factories work can be expressed very
+        concisely:
       </p>
+
+      <blockquote>
+        <p>
+          The enclosing environment of the manufactured function is an
+          execution environment of the function factory.
+        </p>
+      </blockquote>
+
+      <p>
+        It only takes few words to express these big ideas, but it takes a lot
+        more work to really understand what this means. This section will help
+        you put the pieces together with interactive exploration and some
+        diagrams.
+      </p>
+
+      <subsection xml:id="subsec-environments">
+        <title>Environments</title>
+
+        <p>Let's start by taking a look at <c>square()</c> and <c>cube()</c>:</p>
+
+        <program language="r">
+          <code>
+square
+
+cube
+          </code>
+        </program>
+
+        <p>
+          It's obvious where <c>x</c> comes from, but how does R find the
+          value associated with <c>exp</c>? Simply printing the manufactured
+          functions is not revealing because the bodies are identical; the
+          contents of the enclosing environment are the important factors. We
+          can get a little more insight by using <c>rlang::env_print()</c>.
+          That shows us that we have two different environments (each of which
+          was originally an execution environment of <c>power1()</c>). The
+          environments have the same parent, which is the enclosing environment
+          of <c>power1()</c>, the global environment.
+        </p>
+
+        <program language="r">
+          <code>
+env_print(square)
+
+env_print(cube)
+          </code>
+        </program>
+
+        <p>
+          <c>env_print()</c> shows us that both environments have a binding to
+          <c>exp</c>, but we want to see its value. We can do that by first
+          getting the environment of the function, and then extracting the
+          values:
+        </p>
+
+        <program language="r">
+          <code>
+fn_env(square)$exp
+
+fn_env(cube)$exp
+          </code>
+        </program>
+
+        <p>
+          This is what makes manufactured functions behave differently from one
+          another: names in the enclosing environment are bound to different
+          values.
+        </p>
+      </subsection>
+
+      <subsection xml:id="subsec-diagram-conventions">
+        <title>Diagram conventions</title>
+
+        <p>We can also show these relationships in a diagram:</p>
+
+        <figure>
+          <image source="function-factories/power-full.png"/>
+        </figure>
+
+        <p>
+          There's a lot going on this diagram and some of the details aren't
+          that important. We can simplify considerably by using two
+          conventions:
+        </p>
+
+        <p>
+          <ul>
+            <li><p>Any free floating symbol lives in the global environment.</p></li>
+            <li>
+              <p>
+                Any environment without an explicit parent inherits from the
+                global environment.
+              </p>
+            </li>
+          </ul>
+        </p>
+
+        <figure>
+          <image source="function-factories/power-simple.png"/>
+        </figure>
+
+        <p>
+          This view, which focuses on the environments, doesn't show any
+          direct link between <c>cube()</c> and <c>square()</c>. That's
+          because the link is through the body of the function, which is
+          identical for both, but is not shown in this diagram.
+        </p>
+
+        <p>
+          To finish up, let's look at the execution environment of
+          <c>square(10)</c>. When <c>square()</c> executes <c>x ^ exp</c> it
+          finds <c>x</c> in the execution environment and <c>exp</c> in its
+          enclosing environment.
+        </p>
+
+        <program language="r">
+          <code>
+square(10)
+          </code>
+        </program>
+
+        <figure>
+          <image source="function-factories/power-exec.png"/>
+        </figure>
+      </subsection>
+
+      <subsection xml:id="subsec-forcing-evaluation">
+        <title>Forcing evaluation</title>
+
+        <p>
+          There's a subtle bug in <c>power1()</c> caused by lazy evaluation.
+          To see the problem we need to introduce some indirection:
+        </p>
+
+        <program language="r">
+          <code>
+x &lt;- 2
+square &lt;- power1(x)
+x &lt;- 3
+          </code>
+        </program>
+
+        <p>
+          What should <c>square(2)</c> return? You would hope it returns 4:
+        </p>
+
+        <program language="r">
+          <code>
+square(2)
+          </code>
+        </program>
+
+        <p>
+          Unfortunately it doesn't because <c>x</c> is only evaluated lazily
+          when <c>square()</c> is run, not when <c>power1()</c> is run. In
+          general, this problem will arise whenever a binding changes in
+          between calling the factory function and calling the manufactured
+          function. This is likely to only happen rarely, but when it does, it
+          will lead to a real head-scratcher of a bug.
+        </p>
+
+        <p>
+          We can fix this problem by <term>forcing</term> evaluation with
+          <c>force()</c>:
+        </p>
+
+        <program language="r">
+          <code>
+power2 &lt;- function(exp) {
+  force(exp)
+  function(x) {
+    x ^ exp
+  }
+}
+
+x &lt;- 2
+square &lt;- power2(x)
+x &lt;- 3
+square(2)
+          </code>
+        </program>
+
+        <p>
+          Whenever you create a function factory, make sure every argument is
+          evaluated, using <c>force()</c> as necessary if the argument is only
+          used by the manufactured function.
+        </p>
+      </subsection>
+
+      <subsection xml:id="sec-stateful-funs">
+        <title>Stateful functions</title>
+
+        <p>
+          Function factories also allow you to maintain state across function
+          invocations, which is generally hard to do because of the fresh start
+          principle described in Section <xref ref="sec-env-basics"/>.
+        </p>
+
+        <p>There are two things that make this possible:</p>
+
+        <p>
+          <ul>
+            <li>
+              <p>
+                The enclosing environment of the manufactured function is
+                unique and constant.
+              </p>
+            </li>
+            <li>
+              <p>
+                R has a special assignment operator, <c>&lt;&lt;-</c>, which
+                modifies bindings in the enclosing environment.
+              </p>
+            </li>
+          </ul>
+        </p>
+
+        <p>
+          The usual assignment operator, <c>&lt;-</c>, always creates a
+          binding in the current environment. The
+          <term>super assignment operator</term>, <c>&lt;&lt;-</c> rebinds an
+          existing name found in a parent environment.
+        </p>
+
+        <p>
+          The following example shows how we can combine these ideas to create
+          a function that records how many times it has been called:
+        </p>
+
+        <program language="r">
+          <code>
+new_counter &lt;- function() {
+  i &lt;- 0
+
+  function() {
+    i &lt;&lt;- i + 1
+    i
+  }
+}
+
+counter_one &lt;- new_counter()
+counter_two &lt;- new_counter()
+          </code>
+        </program>
+
+        <figure>
+          <image source="function-factories/counter-1.png"/>
+        </figure>
+
+        <p>
+          When the manufactured function is run <c>i &lt;&lt;- i + 1</c> will
+          modify <c>i</c> in its enclosing environment. Because manufactured
+          functions have independent enclosing environments, they have
+          independent counts:
+        </p>
+
+        <program language="r">
+          <code>
+counter_one()
+counter_one()
+counter_two()
+          </code>
+        </program>
+
+        <figure>
+          <image source="function-factories/counter-2.png"/>
+        </figure>
+
+        <p>
+          Stateful functions are best used in moderation. As soon as your
+          function starts managing the state of multiple variables, it's better
+          to switch to R6, the topic of Chapter <xref ref="ch-r6"/>.
+        </p>
+      </subsection>
+
+      <subsection xml:id="sec-factory-pitfalls">
+        <title>Garbage collection</title>
+
+        <p>
+          With most functions, you can rely on the garbage collector to clean
+          up any large temporary objects created inside a function. However,
+          manufactured functions hold on to the execution environment, so
+          you'll need to explicitly unbind any large temporary objects with
+          <c>rm()</c>. Compare the sizes of <c>g1()</c> and <c>g2()</c> in
+          the example below:
+        </p>
+
+        <program language="r">
+          <code>
+f1 &lt;- function(n) {
+  x &lt;- runif(n)
+  m &lt;- mean(x)
+  function() m
+}
+
+g1 &lt;- f1(1e6)
+lobstr::obj_size(g1)
+
+f2 &lt;- function(n) {
+  x &lt;- runif(n)
+  m &lt;- mean(x)
+  rm(x)
+  function() m
+}
+
+g2 &lt;- f2(1e6)
+lobstr::obj_size(g2)
+          </code>
+        </program>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>The definition of <c>force()</c> is simple:</p>
+            <program language="r">
+              <code>
+force
+              </code>
+            </program>
+            <p>Why is it better to <c>force(x)</c> instead of just <c>x</c>?</p>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              Base R contains two function factories, <c>approxfun()</c> and
+              <c>ecdf()</c>. Read their documentation and experiment to figure
+              out what the functions do and what they return.
+            </p>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              Create a function <c>pick()</c> that takes an index, <c>i</c>,
+              as an argument and returns a function with an argument <c>x</c>
+              that subsets <c>x</c> with <c>i</c>.
+            </p>
+            <program language="r">
+              <code>
+pick(1)(x)
+# should be equivalent to
+x[[1]]
+
+lapply(mtcars, pick(5))
+# should be equivalent to
+lapply(mtcars, function(x) x[[5]])
+              </code>
+            </program>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              Create a function that creates functions that compute the
+              <m>i^{\text{th}}</m>
+              <url href="http://en.wikipedia.org/wiki/Central_moment">central
+              moment</url> of a numeric vector. You can test it by running the
+              following code:
+            </p>
+            <program language="r">
+              <code>
+m1 &lt;- moment(1)
+m2 &lt;- moment(2)
+
+x &lt;- runif(100)
+stopifnot(all.equal(m1(x), 0))
+stopifnot(all.equal(m2(x), var(x) * 99 / 100))
+              </code>
+            </program>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              What happens if you don't use a closure? Make predictions, then
+              verify with the code below.
+            </p>
+            <program language="r">
+              <code>
+i &lt;- 0
+new_counter2 &lt;- function() {
+  i &lt;&lt;- i + 1
+  i
+}
+              </code>
+            </program>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              What happens if you use <c>&lt;-</c> instead of <c>&lt;&lt;-</c>?
+              Make predictions, then verify with the code below.
+            </p>
+            <program language="r">
+              <code>
+new_counter3 &lt;- function() {
+  i &lt;- 0
+  function() {
+    i &lt;- i + 1
+    i
+  }
+}
+              </code>
+            </program>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-graph-fact">
+      <title>Graphical factories</title>
+
+      <p>
+        We'll begin our exploration of useful function factories with a few
+        examples from ggplot2.
+      </p>
+
+      <subsection xml:id="subsec-labelling">
+        <title>Labelling</title>
+
+        <p>
+          One of the goals of the
+          <url href="http://scales.r-lib.org">scales</url> package is to make
+          it easy to customise the labels on ggplot2. It provides many
+          functions to control the fine details of axes and legends. The
+          formatter functions are a useful class of functions which make it
+          easier to control the appearance of axis breaks. The design of these
+          functions might initially seem a little odd: they all return a
+          function, which you have to call in order to format a number.
+        </p>
+
+        <program language="r">
+          <code>
+y &lt;- c(12345, 123456, 1234567)
+comma_format()(y)
+
+number_format(scale = 1e-3, suffix = " K")(y)
+          </code>
+        </program>
+
+        <p>
+          In other words, the primary interface is a function factory. At
+          first glance, this seems to add extra complexity for little gain.
+          But it enables a nice interaction with ggplot2's scales, because
+          they accept functions in the <c>label</c> argument:
+        </p>
+
+        <program language="r">
+          <code>
+df &lt;- data.frame(x = 1, y = y)
+core &lt;- ggplot(df, aes(x, y)) +
+  geom_point() +
+  scale_x_continuous(breaks = 1, labels = NULL) +
+  labs(x = NULL, y = NULL)
+
+core
+core + scale_y_continuous(
+  labels = comma_format()
+)
+core + scale_y_continuous(
+  labels = number_format(scale = 1e-3, suffix = " K")
+)
+core + scale_y_continuous(
+  labels = scientific_format()
+)
+          </code>
+        </program>
+      </subsection>
+
+      <subsection xml:id="subsec-histogram-bins">
+        <title>Histogram bins</title>
+
+        <p>
+          A little known feature of <c>geom_histogram()</c> is that the
+          <c>binwidth</c> argument can be a function. This is particularly
+          useful because the function is executed once for each group, which
+          means you can have different binwidths in different facets, which is
+          otherwise not possible.
+        </p>
+
+        <p>
+          To illustrate this idea, and see where variable binwidth might be
+          useful, I'm going to construct an example where a fixed binwidth
+          isn't great.
+        </p>
+
+        <program language="r">
+          <code>
+# construct some sample data with very different numbers in each cell
+sd &lt;- c(1, 5, 15)
+n &lt;- 100
+
+df &lt;- data.frame(x = rnorm(3 * n, sd = sd), sd = rep(sd, n))
+
+ggplot(df, aes(x)) +
+  geom_histogram(binwidth = 2) +
+  facet_wrap(~ sd, scales = "free_x") +
+  labs(x = NULL)
+          </code>
+        </program>
+
+        <p>
+          Here each facet has the same number of observations, but the
+          variability is very different. It would be nice if we could request
+          that the binwidths vary so we get approximately the same number of
+          observations in each bin. One way to do that is with a function
+          factory that inputs the desired number of bins (<c>n</c>), and
+          outputs a function that takes a numeric vector and returns a
+          binwidth:
+        </p>
+
+        <program language="r">
+          <code>
+binwidth_bins &lt;- function(n) {
+  force(n)
+
+  function(x) {
+    (max(x) - min(x)) / n
+  }
+}
+
+ggplot(df, aes(x)) +
+  geom_histogram(binwidth = binwidth_bins(20)) +
+  facet_wrap(~ sd, scales = "free_x") +
+  labs(x = NULL)
+          </code>
+        </program>
+
+        <p>
+          We could use this same pattern to wrap around the base R functions
+          that automatically find the so-called optimal binwidth,
+          <c>nclass.Sturges()</c>, <c>nclass.scott()</c>, and
+          <c>nclass.FD()</c>:
+        </p>
+
+        <program language="r">
+          <code>
+base_bins &lt;- function(type) {
+  fun &lt;- switch(type,
+    Sturges = nclass.Sturges,
+    scott = nclass.scott,
+    FD = nclass.FD,
+    stop("Unknown type", call. = FALSE)
+  )
+
+  function(x) {
+    (max(x) - min(x)) / fun(x)
+  }
+}
+
+ggplot(df, aes(x)) +
+  geom_histogram(binwidth = base_bins("FD")) +
+  facet_wrap(~ sd, scales = "free_x") +
+  labs(x = NULL)
+          </code>
+        </program>
+      </subsection>
+
+      <subsection xml:id="subsec-ggsave">
+        <title><c>ggsave()</c></title>
+
+        <p>
+          Finally, I want to show a function factory used internally by
+          ggplot2. <c>ggplot2:::plot_dev()</c> is used by <c>ggsave()</c> to
+          go from a file extension (e.g. <c>png</c>, <c>jpeg</c> etc) to a
+          graphics device function (e.g. <c>png()</c>, <c>jpeg()</c>). The
+          challenge here arises because the base graphics devices have some
+          minor inconsistencies which we need to paper over:
+        </p>
+
+        <p>
+          <ul>
+            <li>
+              <p>Most have <c>filename</c> as first argument but some have <c>file</c>.</p>
+            </li>
+            <li>
+              <p>
+                The <c>width</c> and <c>height</c> of raster graphic devices
+                use pixels units by default, but the vector graphics use
+                inches.
+              </p>
+            </li>
+          </ul>
+        </p>
+
+        <p>A mildly simplified version of <c>plot_dev()</c> is shown below:</p>
+
+        <program language="r">
+          <code>
+plot_dev &lt;- function(ext, dpi = 96) {
+  force(dpi)
+
+  switch(ext,
+    eps =  ,
+    ps  =  function(path, ...) {
+      grDevices::postscript(
+        file = filename, ..., onefile = FALSE,
+        horizontal = FALSE, paper = "special"
+      )
+    },
+    pdf = function(filename, ...) grDevices::pdf(file = filename, ...),
+    svg = function(filename, ...) svglite::svglite(file = filename, ...),
+    emf = ,
+    wmf = function(...) grDevices::win.metafile(...),
+    png = function(...) grDevices::png(..., res = dpi, units = "in"),
+    jpg = ,
+    jpeg = function(...) grDevices::jpeg(..., res = dpi, units = "in"),
+    bmp = function(...) grDevices::bmp(..., res = dpi, units = "in"),
+    tiff = function(...) grDevices::tiff(..., res = dpi, units = "in"),
+    stop("Unknown graphics extension: ", ext, call. = FALSE)
+  )
+}
+
+plot_dev("pdf")
+plot_dev("png")
+          </code>
+        </program>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>
+              Compare and contrast <c>ggplot2::label_bquote()</c> with
+              <c>scales::number_format()</c>.
+            </p>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-stat-fact">
+      <title>Statistical factories</title>
+
+      <p>More motivating examples for function factories come from statistics:</p>
+
+      <p>
+        <ul>
+          <li><p>The Box-Cox transformation.</p></li>
+          <li><p>Bootstrap resampling.</p></li>
+          <li><p>Maximum likelihood estimation.</p></li>
+        </ul>
+      </p>
+
+      <p>
+        All of these examples can be tackled without function factories, but I
+        think function factories are a good fit for these problems and provide
+        elegant solutions. These examples expect some statistical background,
+        so feel free to skip if they don't make much sense to you.
+      </p>
+
+      <subsection xml:id="subsec-box-cox-transformation">
+        <title>Box-Cox transformation</title>
+
+        <p>
+          The Box-Cox transformation (a type of
+          <url href="https://en.wikipedia.org/wiki/Power_transform">power
+          transformation</url>) is a flexible transformation often used to
+          transform data towards normality. It has a single parameter,
+          <m>\lambda</m>, which controls the strength of the transformation.
+          We could express the transformation as a simple two argument
+          function:
+        </p>
+
+        <program language="r">
+          <code>
+boxcox1 &lt;- function(x, lambda) {
+  stopifnot(length(lambda) == 1)
+
+  if (lambda == 0) {
+    log(x)
+  } else {
+    (x ^ lambda - 1) / lambda
+  }
+}
+          </code>
+        </program>
+
+        <p>
+          But re-formulating as a function factory makes it easy to explore
+          its behaviour with <c>stat_function()</c>:
+        </p>
+
+        <program language="r">
+          <code>
+boxcox2 &lt;- function(lambda) {
+  if (lambda == 0) {
+    function(x) log(x)
+  } else {
+    function(x) (x ^ lambda - 1) / lambda
+  }
+}
+
+stat_boxcox &lt;- function(lambda) {
+  stat_function(aes(colour = lambda), fun = boxcox2(lambda), size = 1)
+}
+
+ggplot(data.frame(x = c(0, 5)), aes(x)) +
+  lapply(c(0.5, 1, 1.5), stat_boxcox) +
+  scale_colour_viridis_c(limits = c(0, 1.5))
+
+# visually, log() does seem to make sense as the transformation
+# for lambda = 0; as values get smaller and smaller, the function
+# gets close and closer to a log transformation
+ggplot(data.frame(x = c(0.01, 1)), aes(x)) +
+  lapply(c(0.5, 0.25, 0.1, 0), stat_boxcox) +
+  scale_colour_viridis_c(limits = c(0, 1.5))
+          </code>
+        </program>
+
+        <p>
+          In general, this allows you to use a Box-Cox transformation with any
+          function that accepts a unary transformation function: you don't have
+          to worry about that function providing <c>...</c> to pass along
+          additional arguments. I also think that the partitioning of
+          <c>lambda</c> and <c>x</c> into two different function arguments is
+          natural since <c>lambda</c> plays quite a different role than
+          <c>x</c>.
+        </p>
+      </subsection>
+
+      <subsection xml:id="subsec-bootstrap-generators">
+        <title>Bootstrap generators</title>
+
+        <p>
+          Function factories are a useful approach for bootstrapping. Instead
+          of thinking about a single bootstrap (you always need more than
+          one!), you can think about a bootstrap <term>generator</term>, a
+          function that yields a fresh bootstrap every time it is called:
+        </p>
+
+        <program language="r">
+          <code>
+boot_permute &lt;- function(df, var) {
+  n &lt;- nrow(df)
+  force(var)
+
+  function() {
+    col &lt;- df[[var]]
+    col[sample(n, replace = TRUE)]
+  }
+}
+
+boot_mtcars1 &lt;- boot_permute(mtcars, "mpg")
+head(boot_mtcars1())
+head(boot_mtcars1())
+          </code>
+        </program>
+
+        <p>
+          The advantage of a function factory is more clear with a parametric
+          bootstrap where we have to first fit a model. We can do this setup
+          step once, when the factory is called, rather than once every time
+          we generate the bootstrap:
+        </p>
+
+        <program language="r">
+          <code>
+boot_model &lt;- function(df, formula) {
+  mod &lt;- lm(formula, data = df)
+  fitted &lt;- unname(fitted(mod))
+  resid &lt;- unname(resid(mod))
+  rm(mod)
+
+  function() {
+    fitted + sample(resid)
+  }
+}
+
+boot_mtcars2 &lt;- boot_model(mtcars, mpg ~ wt)
+head(boot_mtcars2())
+head(boot_mtcars2())
+          </code>
+        </program>
+
+        <p>
+          I use <c>rm(mod)</c> because linear model objects are quite large
+          (they include complete copies of the model matrix and input data)
+          and I want to keep the manufactured function as small as possible.
+        </p>
+      </subsection>
+
+      <subsection xml:id="sec-MLE">
+        <title>Maximum likelihood estimation</title>
+
+        <p>
+          The goal of maximum likelihood estimation (MLE) is to find the
+          parameter values for a distribution that make the observed data most
+          likely. To do MLE, you start with a probability function. For
+          example, take the Poisson distribution. If we know <m>\lambda</m>,
+          we can compute the probability of getting a vector
+          <m>\mathbf{x}</m> of values (<m>x_1</m>, <m>x_2</m>, ...,
+          <m>x_n</m>) by multiplying the Poisson probability function as
+          follows:
+        </p>
+
+        <me>P(\lambda, \mathbf{x}) = \prod_{i=1}^{n} \frac{\lambda ^ {x_i} e^{-\lambda}}{x_i!}</me>
+
+        <p>
+          In statistics, we almost always work with the log of this function.
+          The log is a monotonic transformation which preserves important
+          properties (i.e. the extrema occur in the same place), but has
+          specific advantages:
+        </p>
+
+        <p>
+          <ul>
+            <li>
+              <p>The log turns a product into a sum, which is easier to work with.</p>
+            </li>
+            <li>
+              <p>
+                Multiplying small numbers yields even smaller numbers, which
+                makes the floating point approximation used by a computer less
+                accurate.
+              </p>
+            </li>
+          </ul>
+        </p>
+
+        <p>
+          Let's apply a log transformation to this probability function and
+          simplify it as much as possible:
+        </p>
+
+        <me>\log(P(\lambda, \mathbf{x})) = \sum_{i=1}^{n} \log\!\left(\frac{\lambda ^ {x_i} e^{-\lambda}}{x_i!}\right)</me>
+
+        <me>\log(P(\lambda, \mathbf{x})) = \sum_{i=1}^{n} \left( x_i \log(\lambda) - \lambda - \log(x_i!) \right)</me>
+
+        <me>\log(P(\lambda, \mathbf{x})) =
+           \sum_{i=1}^{n} x_i \log(\lambda)
+         - \sum_{i=1}^{n} \lambda
+         - \sum_{i=1}^{n} \log(x_i!)</me>
+
+        <me>\log(P(\lambda, \mathbf{x})) =
+           \log(\lambda) \sum_{i=1}^{n} x_i - n \lambda - \sum_{i=1}^{n} \log(x_i!)</me>
+
+        <p>
+          We can now turn this function into an R function. The R function is
+          quite elegant because R is vectorised and, because it's a statistical
+          programming language, R comes with built-in functions like the
+          log-factorial (<c>lfactorial()</c>).
+        </p>
+
+        <program language="r">
+          <code>
+lprob_poisson &lt;- function(lambda, x) {
+  n &lt;- length(x)
+  (log(lambda) * sum(x)) - (n * lambda) - sum(lfactorial(x))
+}
+          </code>
+        </program>
+
+        <p>Consider this vector of observations:</p>
+
+        <program language="r">
+          <code>
+x1 &lt;- c(41, 30, 31, 38, 29, 24, 30, 29, 31, 38)
+          </code>
+        </program>
+
+        <p>
+          We can use <c>lprob_poisson()</c> to compute the (logged)
+          probability of <c>x1</c> for different values of <c>lambda</c>.
+        </p>
+
+        <program language="r">
+          <code>
+lprob_poisson(10, x1)
+lprob_poisson(20, x1)
+lprob_poisson(30, x1)
+          </code>
+        </program>
+
+        <p>
+          So far we've been thinking of <c>lambda</c> as fixed and known and
+          the function told us the probability of getting different values of
+          <c>x</c>. But in real-life, we observe <c>x</c> and it is
+          <c>lambda</c> that is unknown. The likelihood is the probability
+          function seen through this lens: we want to find the <c>lambda</c>
+          that makes the observed <c>x</c> the most likely. That is, given
+          <c>x</c>, what value of <c>lambda</c> gives us the highest value of
+          <c>lprob_poisson()</c>?
+        </p>
+
+        <p>
+          In statistics, we highlight this change in perspective by writing
+          <m>f_{\mathbf{x}}(\lambda)</m> instead of
+          <m>f(\lambda, \mathbf{x})</m>. In R, we can use a function
+          factory. We provide <c>x</c> and generate a function with a single
+          parameter, <c>lambda</c>:
+        </p>
+
+        <program language="r">
+          <code>
+ll_poisson1 &lt;- function(x) {
+  n &lt;- length(x)
+
+  function(lambda) {
+    log(lambda) * sum(x) - n * lambda - sum(lfactorial(x))
+  }
+}
+          </code>
+        </program>
+
+        <p>
+          (We don't need <c>force()</c> because <c>length()</c> implicitly
+          forces evaluation of <c>x</c>.)
+        </p>
+
+        <p>
+          One nice thing about this approach is that we can do some
+          precomputation: any term that only involves <c>x</c> can be computed
+          once in the factory. This is useful because we're going to need to
+          call this function many times to find the best <c>lambda</c>.
+        </p>
+
+        <program language="r">
+          <code>
+ll_poisson2 &lt;- function(x) {
+  n &lt;- length(x)
+  sum_x &lt;- sum(x)
+  c &lt;- sum(lfactorial(x))
+
+  function(lambda) {
+    log(lambda) * sum_x - n * lambda - c
+  }
+}
+          </code>
+        </program>
+
+        <p>
+          Now we can use this function to find the value of <c>lambda</c> that
+          maximizes the (log) likelihood:
+        </p>
+
+        <program language="r">
+          <code>
+ll1 &lt;- ll_poisson2(x1)
+
+ll1(10)
+ll1(20)
+ll1(30)
+          </code>
+        </program>
+
+        <p>
+          Rather than trial and error, we can automate the process of finding
+          the best value with <c>optimise()</c>. It will evaluate <c>ll1()</c>
+          many times, using mathematical tricks to narrow in on the largest
+          value as quickly as possible. The results tell us that the highest
+          value is <c>-30.27</c> which occurs when <c>lambda = 32.1</c>:
+        </p>
+
+        <program language="r">
+          <code>
+optimise(ll1, c(0, 100), maximum = TRUE)
+          </code>
+        </program>
+
+        <p>
+          Now, we could have solved this problem without using a function
+          factory because <c>optimise()</c> passes <c>...</c> on to the
+          function being optimised. That means we could use the log-probability
+          function directly:
+        </p>
+
+        <program language="r">
+          <code>
+optimise(lprob_poisson, c(0, 100), x = x1, maximum = TRUE)
+          </code>
+        </program>
+
+        <p>
+          The advantage of using a function factory here is fairly small, but
+          there are two niceties:
+        </p>
+
+        <p>
+          <ul>
+            <li>
+              <p>
+                We can precompute some values in the factory, saving
+                computation time in each iteration.
+              </p>
+            </li>
+            <li>
+              <p>
+                The two-level design better reflects the mathematical structure
+                of the underlying problem.
+              </p>
+            </li>
+          </ul>
+        </p>
+
+        <p>
+          These advantages get bigger in more complex MLE problems, where you
+          have multiple parameters and multiple data vectors.
+        </p>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>
+              In <c>boot_model()</c>, why don't I need to force the evaluation
+              of <c>df</c> or <c>formula</c>?
+            </p>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>Why might you formulate the Box-Cox transformation like this?</p>
+            <program language="r">
+              <code>
+boxcox3 &lt;- function(x) {
+  function(lambda) {
+    if (lambda == 0) {
+      log(x)
+    } else {
+      (x ^ lambda - 1) / lambda
+    }
+  }
+}
+              </code>
+            </program>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              Why don't you need to worry that <c>boot_permute()</c> stores a
+              copy of the data inside the function that it generates?
+            </p>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              How much time does <c>ll_poisson2()</c> save compared to
+              <c>ll_poisson1()</c>? Use <c>bench::mark()</c> to see how much
+              faster the optimisation occurs. How does changing the length of
+              <c>x</c> change the results?
+            </p>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-functional-factories">
+      <title>Function factories + functionals</title>
+
+      <p>
+        To finish off the chapter, I'll show how you might combine functionals
+        and function factories to turn data into many functions. The following
+        code creates many specially named power functions by iterating over a
+        list of arguments:
+      </p>
+
+      <program language="r">
+        <code>
+names &lt;- list(
+  square = 2,
+  cube = 3,
+  root = 1/2,
+  cuberoot = 1/3,
+  reciprocal = -1
+)
+funs &lt;- purrr::map(names, power1)
+
+funs$root(64)
+funs$root
+        </code>
+      </program>
+
+      <p>
+        This idea extends in a straightforward way if your function factory
+        takes two (replace <c>map()</c> with <c>map2()</c>) or more (replace
+        with <c>pmap()</c>) arguments.
+      </p>
+
+      <p>
+        One downside of the current construction is that you have to prefix
+        every function call with <c>funs$</c>. There are three ways to
+        eliminate this additional syntax:
+      </p>
+
+      <p>
+        <ul>
+          <li>
+            <p>For a very temporary effect, you can use <c>with()</c>:</p>
+            <program language="r">
+              <code>
+with(funs, root(100))
+              </code>
+            </program>
+            <p>
+              I recommend this because it makes it very clear when code is
+              being executed in a special context and what that context is.
+            </p>
+          </li>
+          <li>
+            <p>
+              For a longer effect, you can <c>attach()</c> the functions to
+              the search path, then <c>detach()</c> when you're done:
+            </p>
+            <program language="r">
+              <code>
+attach(funs)
+root(100)
+detach(funs)
+              </code>
+            </program>
+            <p>
+              You've probably been told to avoid using <c>attach()</c>, and
+              that's generally good advice. However, the situation is a little
+              different to the usual because we're attaching a list of
+              functions, not a data frame. It's less likely that you'll modify
+              a function than a column in a data frame, so the some of the
+              worst problems with <c>attach()</c> don't apply.
+            </p>
+          </li>
+          <li>
+            <p>
+              Finally, you could copy the functions to the global environment
+              with <c>env_bind()</c> (you'll learn about <c>!!!</c> in Section
+              <xref ref="ch-quasiquotation"/>). This is mostly permanent:
+            </p>
+            <program language="r">
+              <code>
+rlang::env_bind(globalenv(), !!!funs)
+root(100)
+              </code>
+            </program>
+            <p>
+              You can later unbind those same names, but there's no guarantee
+              that they haven't been rebound in the meantime, and you might be
+              deleting an object that someone else created.
+            </p>
+            <program language="r">
+              <code>
+rlang::env_unbind(globalenv(), names(funs))
+              </code>
+            </program>
+          </li>
+        </ul>
+      </p>
+
+      <p>
+        You'll learn an alternative approach to the same problem in Section
+        <xref ref="ch-r6"/>. Instead of using a function factory,
+        you could construct the function with quasiquotation. This requires
+        additional knowledge, but generates functions with readable bodies,
+        and avoids accidentally capturing large objects in the enclosing scope.
+        We use that idea in Section <xref ref="ch-translation"/> when we
+        work on tools for generating HTML from R.
+      </p>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>
+              Which of the following commands is equivalent to
+              <c>with(x, f(z))</c>?
+            </p>
+            <p>
+              <ol>
+                <li><p><c>x$f(x$z)</c>.</p></li>
+                <li><p><c>f(x$z)</c>.</p></li>
+                <li><p><c>x$f(z)</c>.</p></li>
+                <li><p><c>f(z)</c>.</p></li>
+                <li><p>It depends.</p></li>
+              </ol>
+            </p>
+          </statement>
+        </exercise>
+
+        <exercise>
+          <statement>
+            <p>
+              Compare and contrast the effects of <c>env_bind()</c> vs.
+              <c>attach()</c> for the following code.
+            </p>
+            <program language="r">
+              <code>
+funs &lt;- list(
+  mean = function(x) mean(x, na.rm = TRUE),
+  sum = function(x) sum(x, na.rm = TRUE)
+)
+
+attach(funs)
+mean &lt;- function(x) stop("Hi!")
+detach(funs)
+
+env_bind(globalenv(), !!!funs)
+mean &lt;- function(x) stop("Hi!")
+env_unbind(globalenv(), names(funs))
+              </code>
+            </program>
+          </statement>
+        </exercise>
+      </exercises>
     </section>
 
   </chapter>

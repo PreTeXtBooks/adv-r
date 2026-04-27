@@ -4,36 +4,442 @@
 
     <introduction>
       <p>
-        In this chapter, you'll learn about function operators. A
-        <em>function operator</em> is a function that takes one (or more)
-        functions as input and returns a function as output. The following code
-        shows a simple function operator, <c>chatty()</c>. It wraps a function,
-        making a new function that prints out its first argument. You might
-        create a function like this because it gives you a window to see how
-        functionals, like <c>map_int()</c>, work.
+        In this chapter, you'll learn about function operators. A <term>function operator</term> is a function that takes one (or more) functions as input and returns a function as output. The following code shows a simple function operator, <c>chatty()</c>. It wraps a function, making a new function that prints out its first argument. You might create a function like this because it gives you a window to see how functionals, like <c>map_int()</c>, work.
       </p>
 
       <program language="r">
-        <input>
+        <code>
 chatty &lt;- function(f) {
   force(f)
   
   function(x, ...) {
-    res &lt;- f(x, ...)
-    cat("Processing ", x, "\n", sep = "")
-    res
+    message("Processing ", x)
+    f(x, ...)
   }
 }
 f &lt;- function(x) x ^ 2
 s &lt;- c(3, 2, 1)
 
 purrr::map_dbl(s, chatty(f))
-#&gt; Processing 3
-#&gt; Processing 2
-#&gt; Processing 1
-#&gt; [1] 9 4 1
-        </input>
+        </code>
+      </program>
+
+      <p>
+        Function operators are closely related to function factories; indeed they're just a function factory that takes a function as input. Like factories, there's nothing you can't do without them, but they often allow you to factor out complexity in order to make your code more readable and reusable.
+      </p>
+
+      <p>
+        Function operators are typically paired with functionals. If you're using a for-loop, there's rarely a reason to use a function operator, as it will make your code more complex for little gain.
+      </p>
+
+      <p>
+        If you're familiar with Python, decorators is just another name for function operators.
+      </p>
+
+      <p><ul>
+        <li><p>Section <xref ref="sec-existing-fos"/> introduces you to two extremely useful existing function operators, and shows you how to use them to solve real problems.</p></li>
+        <li><p>Section <xref ref="sec-fo-case-study"/> works through a problem amenable to solution with function operators: downloading many web pages.</p></li>
+      </ul></p>
+
+      <p>
+        Function operators are a type of function factory, so make sure you're familiar with at least Section <xref ref="sec-function-fundamentals"/> before you go on.
+      </p>
+
+      <p>
+        We'll use <url href="https://purrr.tidyverse.org">purrr</url> for a couple of functionals that you learned about in <xref ref="ch-functionals"/>, and some function operators that you'll learn about below. We'll also use the <url href="https://memoise.r-lib.org">memoise package</url> for the <c>memoise()</c> operator.
+      </p>
+
+      <program language="r">
+        <code>
+library(purrr)
+library(memoise)
+        </code>
       </program>
     </introduction>
+
+    <section xml:id="sec-existing-fos">
+      <title>Existing function operators</title>
+
+      <p>
+        There are two very useful function operators that will both help you solve common recurring problems, and give you a sense for what function operators can do: <c>purrr::safely()</c> and <c>memoise::memoise()</c>.
+      </p>
+
+      <subsection xml:id="subsec-safely">
+        <title>Capturing errors with <c>purrr::safely()</c></title>
+
+        <p>
+          One advantage of for-loops is that if one of the iterations fails, you can still access all the results up to the failure:
+        </p>
+
+        <program language="r">
+          <code>
+x &lt;- list(
+  c(0.512, 0.165, 0.717),
+  c(0.064, 0.781, 0.427),
+  c(0.890, 0.785, 0.495),
+  "oops"
+)
+
+out &lt;- rep(NA_real_, length(x))
+for (i in seq_along(x)) {
+  out[[i]] &lt;- sum(x[[i]])
+}
+out
+          </code>
+        </program>
+
+        <p>
+          If you do the same thing with a functional, you get no output, making it hard to figure out where the problem lies:
+        </p>
+
+        <program language="r">
+          <code>
+map_dbl(x, sum)
+          </code>
+        </program>
+
+        <p>
+          <c>purrr::safely()</c> provides a tool to help with this problem. <c>safely()</c> is a function operator that transforms a function to turn errors into data. (You can learn the basic idea that makes it work in Section <xref ref="sec-signalling-conditions"/>.) Let's start by taking a look at it outside of <c>map_dbl()</c>:
+        </p>
+
+        <program language="r">
+          <code>
+safe_sum &lt;- safely(sum)
+safe_sum
+          </code>
+        </program>
+
+        <p>
+          Like all function operators, <c>safely()</c> takes a function and returns a wrapped function which we can call as usual:
+        </p>
+
+        <program language="r">
+          <code>
+str(safe_sum(x[[1]]))
+str(safe_sum(x[[4]]))
+          </code>
+        </program>
+
+        <p>
+          You can see that a function transformed by <c>safely()</c> always returns a list with two elements, <c>result</c> and <c>error</c>. If the function runs successfully, <c>error</c> is <c>NULL</c> and <c>result</c> contains the result; if the function fails, <c>result</c> is <c>NULL</c> and <c>error</c> contains the error.
+        </p>
+
+        <p>Now lets use <c>safely()</c> with a functional:</p>
+
+        <program language="r">
+          <code>
+out &lt;- map(x, safely(sum))
+str(out)
+          </code>
+        </program>
+
+        <p>
+          The output is in a slightly inconvenient form, since we have four lists, each of which is a list containing the <c>result</c> and the <c>error</c>. We can make the output easier to use by turning it "inside-out" with <c>purrr::transpose()</c>, so that we get a list of <c>result</c>s and a list of <c>error</c>s:
+        </p>
+
+        <program language="r">
+          <code>
+out &lt;- transpose(map(x, safely(sum)))
+str(out)
+          </code>
+        </program>
+
+        <p>Now we can easily find the results that worked, or the inputs that failed:</p>
+
+        <program language="r">
+          <code>
+ok &lt;- map_lgl(out$error, is.null)
+ok
+
+x[!ok]
+
+out$result[ok]
+          </code>
+        </program>
+
+        <p>
+          You can use this same technique in many different situations. For example, imagine you're fitting a generalised linear model (GLM) to a list of data frames. GLMs can sometimes fail because of optimisation problems, but you still want to be able to try to fit all the models, and later look back at those that failed:
+        </p>
+
+        <program language="r">
+          <code>
+fit_model &lt;- function(df) {
+  glm(y ~ x1 + x2 * x3, data = df)
+}
+
+models &lt;- transpose(map(datasets, safely(fit_model)))
+ok &lt;- map_lgl(models$error, is.null)
+
+# which data failed to converge?
+datasets[!ok]
+
+# which models were successful?
+models[ok]
+          </code>
+        </program>
+
+        <p>
+          I think this is a great example of the power of combining functionals and function operators: <c>safely()</c> lets you succinctly express what you need to solve a common data analysis problem.
+        </p>
+
+        <p>purrr comes with three other function operators in a similar vein:</p>
+
+        <p><ul>
+          <li><p><c>possibly()</c>: returns a default value when there's an error. It provides no way to tell if an error occured or not, so it's best reserved for cases when there's some obvious sentinel value (like <c>NA</c>).</p></li>
+          <li><p><c>quietly()</c>: turns output, messages, and warning side-effects into <c>output</c>, <c>message</c>, and <c>warning</c> components of the output.</p></li>
+          <li><p><c>auto_browse()</c>: automatically executes <c>browser()</c> inside the function when there's an error.</p></li>
+        </ul></p>
+
+        <p>See their documentation for more details.</p>
+      </subsection>
+
+      <subsection xml:id="subsec-memoise">
+        <title>Caching computations with <c>memoise::memoise()</c></title>
+
+        <p>
+          Another handy function operator is <c>memoise::memoise()</c>. It <term>memoises</term> a function, meaning that the function will remember previous inputs and return cached results. Memoisation is an example of the classic computer science tradeoff of memory versus speed. A memoised function can run much faster, but because it stores all of the previous inputs and outputs, it uses more memory.
+        </p>
+
+        <p>Let's explore this idea with a toy function that simulates an expensive operation:</p>
+
+        <program language="r">
+          <code>
+slow_function &lt;- function(x) {
+  Sys.sleep(1)
+  x * 10 * runif(1)
+}
+system.time(print(slow_function(1)))
+
+system.time(print(slow_function(1)))
+          </code>
+        </program>
+
+        <p>
+          When we memoise this function, it's slow when we call it with new arguments. But when we call it with arguments that it's seen before it's instantaneous: it retrieves the previous value of the computation.
+        </p>
+
+        <program language="r">
+          <code>
+fast_function &lt;- memoise::memoise(slow_function)
+system.time(print(fast_function(1)))
+
+system.time(print(fast_function(1)))
+          </code>
+        </program>
+
+        <p>
+          A relatively realistic use of memoisation is computing the Fibonacci series. The Fibonacci series is defined recursively: the first two values are defined by convention, <m>f(0) = 0</m>, <m>f(1) = 1</m>, and then <m>f(n) = f(n - 1) + f(n - 2)</m> (for any positive integer). A naive version is slow because, for example, <c>fib(10)</c> computes <c>fib(9)</c> and <c>fib(8)</c>, and <c>fib(9)</c> computes <c>fib(8)</c> and <c>fib(7)</c>, and so on.
+        </p>
+
+        <program language="r">
+          <code>
+fib &lt;- function(n) {
+  if (n &lt; 2) return(n)
+  fib(n - 2) + fib(n - 1)
+}
+system.time(fib(23))
+system.time(fib(24))
+          </code>
+        </program>
+
+        <p>Memoising <c>fib()</c> makes the implementation much faster because each value is computed only once:</p>
+
+        <program language="r">
+          <code>
+fib2 &lt;- memoise::memoise(function(n) {
+  if (n &lt; 2) return(n)
+  fib2(n - 2) + fib2(n - 1)
+})
+system.time(fib2(23))
+          </code>
+        </program>
+
+        <p>And future calls can rely on previous computations:</p>
+
+        <program language="r">
+          <code>
+system.time(fib2(24))
+          </code>
+        </program>
+
+        <p>
+          This is an example of <term>dynamic programming</term>, where a complex problem can be broken down into many overlapping subproblems, and remembering the results of a subproblem considerably improves performance.
+        </p>
+
+        <p>
+          Think carefully before memoising a function. If the function is not <term>pure</term>, i.e. the output does not depend only on the input, you will get misleading and confusing results. I created a subtle bug in devtools because I memoised the results of <c>available.packages()</c>, which is rather slow because it has to download a large file from CRAN. The available packages don't change that frequently, but if you have an R process that's been running for a few days, the changes can become important, and because the problem only arose in long-running R processes, the bug was very painful to find.
+        </p>
+      </subsection>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>Base R provides a function operator in the form of <c>Vectorize()</c>. What does it do? When might you use it?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Read the source code for <c>possibly()</c>. How does it work?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Read the source code for <c>safely()</c>. How does it work?</p>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
+
+    <section xml:id="sec-fo-case-study">
+      <title>Case study: Creating your own function operators</title>
+
+      <p>
+        <c>memoise()</c> and <c>safely()</c> are very useful but also quite complex. In this case study you'll learn how to create your own simpler function operators. Imagine you have a named vector of URLs and you'd like to download each one to disk. That's pretty simple with <c>walk2()</c> and <c>file.download()</c>:
+      </p>
+
+      <program language="r">
+        <code>
+urls &lt;- c(
+  "adv-r" = "https://adv-r.hadley.nz", 
+  "r4ds" = "http://r4ds.had.co.nz/"
+  # and many many more
+)
+path &lt;- paste0(tempdir(), names(urls), ".html")
+
+walk2(urls, path, download.file, quiet = TRUE)
+        </code>
+      </program>
+
+      <p>This approach is fine for a handful of URLs, but as the vector gets longer, you might want to add a couple more features:</p>
+
+      <p><ul>
+        <li><p>Add a small delay between each request to avoid hammering the server.</p></li>
+        <li><p>Display a <c>.</c> every few URLs so that we know that the function is still working.</p></li>
+      </ul></p>
+
+      <p>It's relatively easy to add these extra features if we're using a for loop:</p>
+
+      <program language="r">
+        <code>
+for(i in seq_along(urls)) {
+  Sys.sleep(0.1)
+  if (i %% 10 == 0) cat(".")
+  download.file(urls[[i]], paths[[i]])
+}
+        </code>
+      </program>
+
+      <p>
+        I think this for loop is suboptimal because it interleaves different concerns: pausing, showing progress, and downloading. This makes the code harder to read, and it makes it harder to reuse the components in new situations. Instead, let's see if we can use function operators to extract out pausing and showing progress and make them reusable.
+      </p>
+
+      <p>
+        First, let's write a function operator that adds a small delay. I'm going to call it <c>delay_by()</c> for reasons that will be more clear shortly, and it has two arguments: the function to wrap, and the amount of delay to add. The actual implementation is quite simple. The main trick is forcing evaluation of all arguments as described in Section <xref ref="sec-factory-pitfalls"/>, because function operators are a special type of function factory:
+      </p>
+
+      <program language="r">
+        <code>
+delay_by &lt;- function(f, amount) {
+  force(f)
+  force(amount)
+  
+  function(...) {
+    Sys.sleep(amount)
+    f(...)
+  }
+}
+system.time(runif(100))
+system.time(delay_by(runif, 0.1)(100))
+        </code>
+      </program>
+
+      <p>And we can use it with the original <c>walk2()</c>:</p>
+
+      <program language="r">
+        <code>
+walk2(urls, path, delay_by(download.file, 0.1), quiet = TRUE)
+        </code>
+      </program>
+
+      <p>
+        Creating a function to display the occasional dot is a little harder, because we can no longer rely on the index from the loop. We could pass the index along as another argument, but that breaks encapsulation: a concern of the progress function now becomes a problem that the higher level wrapper needs to handle. Instead, we'll use another function factory trick (from Section <xref ref="sec-stateful-funs"/>), so that the progress wrapper can manage its own internal counter:
+      </p>
+
+      <program language="r">
+        <code>
+dot_every &lt;- function(f, n) {
+  force(f)
+  force(n)
+  
+  i &lt;- 0
+  function(...) {
+    i &lt;&lt;- i + 1
+    if (i %% n == 0) cat(".")
+    f(...)
+  }
+}
+walk(1:100, runif)
+walk(1:100, dot_every(runif, 10))
+        </code>
+      </program>
+
+      <p>Now we can express our original for loop as:</p>
+
+      <program language="r">
+        <code>
+walk2(
+  urls, path, 
+  dot_every(delay_by(download.file, 0.1), 10), 
+  quiet = TRUE
+)
+        </code>
+      </program>
+
+      <p>
+        This is starting to get a little hard to read because we are composing many function calls, and the arguments are getting spread out. One way to resolve that is to use the pipe:
+      </p>
+
+      <program language="r">
+        <code>
+walk2(
+  urls, path, 
+  download.file %>% dot_every(10) %>% delay_by(0.1), 
+  quiet = TRUE
+)
+        </code>
+      </program>
+
+      <p>
+        The pipe works well here because I've carefully chosen the function names to yield an (almost) readable sentence: take <c>download.file</c> then (add) a dot every 10 iterations, then delay by 0.1s. The more clearly you can express the intent of your code through function names, the more easily others (including future you!) can read and understand the code.
+      </p>
+
+      <exercises>
+        <exercise>
+          <statement>
+            <p>Weigh the pros and cons of <c>download.file %&gt;% dot_every(10) %&gt;% delay_by(0.1)</c> versus <c>download.file %&gt;% delay_by(0.1) %&gt;% dot_every(10)</c>.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Should you memoise <c>download.file()</c>? Why or why not?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Create a function operator that reports whenever a file is created or deleted in the working directory, using <c>dir()</c> and <c>setdiff()</c>. What other global function effects might you want to track?</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Write a function operator that logs a timestamp and message to a file every time a function is run.</p>
+          </statement>
+        </exercise>
+        <exercise>
+          <statement>
+            <p>Modify <c>delay_by()</c> so that instead of delaying by a fixed amount of time, it ensures that a certain amount of time has elapsed since the function was last called. That is, if you called <c>g &lt;- delay_by(1, f); g(); Sys.sleep(2); g()</c> there shouldn't be an extra delay.</p>
+          </statement>
+        </exercise>
+      </exercises>
+    </section>
 
   </chapter>
