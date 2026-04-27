@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
   <chapter xml:id="ch-introduction" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <introduction>
     <title>Introduction</title>
-
     <p>
       I have now been programming in R for over 15 years, and have been doing
       it full-time for the last five years. This has given me the luxury of
@@ -14,6 +14,7 @@
       sometimes frustrating quirks, R is, at its heart, an elegant and
       beautiful language, well tailored for data science.
     </p>
+  </introduction>
 
     <section xml:id="sec-why-r">
       <title>Why R?</title>
