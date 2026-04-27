@@ -22,7 +22,9 @@
     </p>
 
     <figure>
-      <image source="../images/oo-venn.png"/>
+      <image source="../images/oo-venn.png" width="70%">
+        <description>Venn diagram showing the relationship between base objects and OO objects in R. OO objects form a subset of all R objects, and include S3, S4, and R5/R6 classes, while base objects include everything else.</description>
+      </image>
     </figure>
 
     <paragraphs xml:id="para-base-types-outline">
