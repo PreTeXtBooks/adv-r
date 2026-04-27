@@ -1,63 +1,750 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-subsetting" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Subsetting</title>
+<chapter xml:id="ch-subsetting" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Subsetting</title>
 
-    <introduction>
-      <p>
-        R's subsetting operators are powerful and fast. Mastery of subsetting
-        allows you to succinctly express complex operations in a way that few
-        other languages can match. Subsetting is hard to learn because you need
-        to master a number of interrelated concepts:
-      </p>
+  <introduction>
+    <p>R's subsetting operators are fast and powerful. Mastering them allows you to succinctly perform complex operations in a way that few other languages can match. Subsetting in R is easy to learn but hard to master because you need to internalise a number of interrelated concepts:</p>
+
+    <p><ul>
+      <li><p>There are six ways to subset atomic vectors.</p></li>
+      <li><p>There are three subsetting operators, <c>[[</c>, <c>[</c>, and <c>$</c>.</p></li>
+      <li><p>Subsetting operators interact differently with different vector types (e.g., atomic vectors, lists, factors, matrices, and data frames).</p></li>
+      <li><p>Subsetting can be combined with assignment.</p></li>
+    </ul></p>
+
+    <p>Subsetting is a natural complement to <c>str()</c>. While <c>str()</c> shows you all the pieces of any object (its structure), subsetting allows you to pull out the pieces that you're interested in. For large, complex objects, I highly recommend using the interactive RStudio Viewer, which you can activate with <c>View(my_object)</c>.</p>
+
+    <paragraphs xml:id="para-subsetting-quiz">
+      <title>Quiz</title>
+      <p>Take this short quiz to determine if you need to read this chapter. If the answers quickly come to mind, you can comfortably skip this chapter. Check your answers in <xref ref="sec-subsetting-answers"/>.</p>
+      <p><ol>
+        <li><p>What is the result of subsetting a vector with positive integers, negative integers, a logical vector, or a character vector?</p></li>
+        <li><p>What's the difference between <c>[</c>, <c>[[</c>, and <c>$</c> when applied to a list?</p></li>
+        <li><p>When should you use <c>drop = FALSE</c>?</p></li>
+        <li><p>If <c>x</c> is a matrix, what does <c>x[] &lt;- 0</c> do? How is it different from <c>x &lt;- 0</c>?</p></li>
+        <li><p>How can you use a named vector to relabel categorical variables?</p></li>
+      </ol></p>
+    </paragraphs>
+
+    <paragraphs xml:id="para-subsetting-outline">
+      <title>Outline</title>
+      <p><ul>
+        <li><p>Section <xref ref="sec-subset-multiple"/> starts by teaching you about <c>[</c>. You'll learn the six ways to subset atomic vectors. You'll then learn how those six ways act when used to subset lists, matrices, and data frames.</p></li>
+        <li><p>Section <xref ref="sec-subset-single"/> expands your knowledge of subsetting operators to include <c>[[</c> and <c>$</c> and focuses on the important principles of simplifying versus preserving.</p></li>
+        <li><p>In Section <xref ref="sec-subassignment"/> you'll learn the art of subassignment, which combines subsetting and assignment to modify parts of an object.</p></li>
+        <li><p>Section <xref ref="sec-applications"/> leads you through eight important, but not obvious, applications of subsetting to solve problems that you often encounter in data analysis.</p></li>
+      </ul></p>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-subset-multiple">
+    <title>Selecting multiple elements</title>
+
+    <p>Use <c>[</c> to select any number of elements from a vector. To illustrate, I'll apply <c>[</c> to 1D atomic vectors, and then show how this generalises to more complex objects and more dimensions.</p>
+
+    <subsection xml:id="subsec-atomic-vectors">
+      <title>Atomic vectors</title>
+
+      <p>Let's explore the different types of subsetting with a simple vector, <c>x</c>.</p>
+
+      <program language="r"><input>
+x &lt;- c(2.1, 4.2, 3.3, 5.4)
+</input></program>
+
+      <p>Note that the number after the decimal point represents the original position in the vector.</p>
+
+      <p>There are six things that you can use to subset a vector:</p>
 
       <p><ul>
-        <li><p>
-          The six types of thing that you can subset with.
-        </p></li>
-        <li><p>
-          The three subsetting operators: <c>[[</c>, <c>[</c>, and
-          <c>$</c>.
-        </p></li>
-        <li><p>
-          How different objects behave with subsetting.
-        </p></li>
-        <li><p>
-          The use of subsetting in conjunction with assignment.
-        </p></li>
+        <li>
+          <p><alert>Positive integers</alert> return elements at the specified positions:</p>
+          <program language="r"><input>
+x[c(3, 1)]
+x[order(x)]
+
+# Duplicate indices will duplicate values
+x[c(1, 1)]
+
+# Real numbers are silently truncated to integers
+x[c(2.1, 2.9)]
+</input></program>
+        </li>
+
+        <li>
+          <p><alert>Negative integers</alert> exclude elements at the specified positions:</p>
+          <program language="r"><input>
+x[-c(3, 1)]
+</input></program>
+          <p>Note that you can't mix positive and negative integers in a single subset:</p>
+          <program language="r"><input>
+x[c(-1, 2)]
+</input></program>
+        </li>
+
+        <li>
+          <p><alert>Logical vectors</alert> select elements where the corresponding logical value is <c>TRUE</c>. This is probably the most useful type of subsetting because you can write an expression that uses a logical vector:</p>
+          <program language="r"><input>
+x[c(TRUE, TRUE, FALSE, FALSE)]
+x[x &gt; 3]
+</input></program>
+          <p>In <c>x[y]</c>, what happens if <c>x</c> and <c>y</c> are different lengths? The behaviour is controlled by the <alert>recycling rules</alert> where the shorter of the two is recycled to the length of the longer. This is convenient and easy to understand when one of <c>x</c> and <c>y</c> is length one, but I recommend avoiding recycling for other lengths because the rules are inconsistently applied throughout base R.</p>
+          <program language="r"><input>
+x[c(TRUE, FALSE)]
+# Equivalent to
+x[c(TRUE, FALSE, TRUE, FALSE)]
+</input></program>
+          <p>Note that a missing value in the index always yields a missing value in the output:</p>
+          <program language="r"><input>
+x[c(TRUE, TRUE, NA, FALSE)]
+</input></program>
+        </li>
+
+        <li>
+          <p><alert>Nothing</alert> returns the original vector. This is not useful for 1D vectors, but, as you'll see shortly, is very useful for matrices, data frames, and arrays. It can also be useful in conjunction with assignment.</p>
+          <program language="r"><input>
+x[]
+</input></program>
+        </li>
+
+        <li>
+          <p><alert>Zero</alert> returns a zero-length vector. This is not something you usually do on purpose, but it can be helpful for generating test data.</p>
+          <program language="r"><input>
+x[0]
+</input></program>
+        </li>
+
+        <li>
+          <p>If the vector is named, you can also use <alert>character vectors</alert> to return elements with matching names.</p>
+          <program language="r"><input>
+(y &lt;- setNames(x, letters[1:4]))
+y[c("d", "c", "a")]
+
+# Like integer indices, you can repeat indices
+y[c("a", "a", "a")]
+
+# When subsetting with [, names are always matched exactly
+z &lt;- c(abc = 1, def = 2)
+z[c("a", "d")]
+</input></program>
+        </li>
       </ul></p>
-    </introduction>
 
-    <section xml:id="sec-subset-atomic">
-      <title>Selecting multiple elements</title>
+      <p>NB: Factors are not treated specially when subsetting. This means that subsetting will use the underlying integer vector, not the character levels. This is typically unexpected, so you should avoid subsetting with factors:</p>
 
-      <p>
-        Use <c>[</c> to select any number of elements from a vector. For
-        example, <c>x[c(2, 1)]</c> returns the second and first elements of
-        vector <c>x</c>. There are six types of thing you can subset a vector
-        with:
-      </p>
+      <program language="r"><input>
+y[factor("b")]
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-lists">
+      <title>Lists</title>
+
+      <p>Subsetting a list works in the same way as subsetting an atomic vector. Using <c>[</c> always returns a list; <c>[[</c> and <c>$</c>, as described in <xref ref="sec-subset-single"/>, let you pull out elements of a list.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-matrix-subsetting">
+      <title>Matrices and arrays</title>
+
+      <p>You can subset higher-dimensional structures in three ways:</p>
 
       <p><ul>
-        <li><p>
-          <em>Positive integers</em> return elements at the specified positions.
-        </p></li>
-        <li><p>
-          <em>Negative integers</em> exclude elements at the specified positions.
-        </p></li>
-        <li><p>
-          <em>Logical vectors</em> select elements where the corresponding
-          logical value is <c>TRUE</c>.
-        </p></li>
-        <li><p>
-          <em>Nothing</em> returns the original vector.
-        </p></li>
-        <li><p>
-          <em>Zero</em> returns a zero-length vector.
-        </p></li>
-        <li><p>
-          <em>Character vectors</em> return elements with matching names.
-        </p></li>
+        <li><p>With multiple vectors.</p></li>
+        <li><p>With a single vector.</p></li>
+        <li><p>With a matrix.</p></li>
       </ul></p>
-    </section>
 
-  </chapter>
+      <p>The most common way of subsetting matrices (2D) and arrays (&gt;2D) is a simple generalisation of 1D subsetting: supply a 1D index for each dimension, separated by a comma. Blank subsetting is now useful because it lets you keep all rows or all columns.</p>
+
+      <program language="r"><input>
+a &lt;- matrix(1:9, nrow = 3)
+colnames(a) &lt;- c("A", "B", "C")
+a[1:2, ]
+a[c(TRUE, FALSE, TRUE), c("B", "A")]
+a[0, -2]
+</input></program>
+
+      <p>By default, <c>[</c> simplifies the results to the lowest possible dimensionality. For example, both of the following expressions return 1D vectors. You'll learn how to avoid "dropping" dimensions in <xref ref="subsec-simplify-preserve"/>:</p>
+
+      <program language="r"><input>
+a[1, ]
+a[1, 1]
+</input></program>
+
+      <p>Because both matrices and arrays are just vectors with special attributes, you can subset them with a single vector, as if they were a 1D vector. Note that arrays in R are stored in column-major order:</p>
+
+      <program language="r"><input>
+vals &lt;- outer(1:5, 1:5, FUN = "paste", sep = ",")
+vals
+
+vals[c(4, 15)]
+</input></program>
+
+      <p>You can also subset higher-dimensional data structures with an integer matrix (or, if named, a character matrix). Each row in the matrix specifies the location of one value, and each column corresponds to a dimension in the array. This means that you can use a 2 column matrix to subset a matrix, a 3 column matrix to subset a 3D array, and so on. The result is a vector of values:</p>
+
+      <program language="r"><input>
+select &lt;- matrix(ncol = 2, byrow = TRUE, c(
+  1, 1,
+  3, 1,
+  2, 4
+))
+vals[select]
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-df-subsetting">
+      <title>Data frames and tibbles</title>
+
+      <p>Data frames have the characteristics of both lists and matrices:</p>
+
+      <p><ul>
+        <li><p>When subsetting with a single index, they behave like lists and index the columns, so <c>df[1:2]</c> selects the first two columns.</p></li>
+        <li><p>When subsetting with two indices, they behave like matrices, so <c>df[1:3, ]</c> selects the first three <em>rows</em> (and all the columns).<fn>If you're coming from Python this is likely to be confusing, as you'd probably expect <c>df[1:3, 1:2]</c> to select three columns and two rows. Generally, R "thinks" about dimensions in terms of rows and columns while Python does so in terms of columns and rows.</fn></p></li>
+      </ul></p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = 1:3, y = 3:1, z = letters[1:3])
+
+df[df$x == 2, ]
+df[c(1, 3), ]
+
+# There are two ways to select columns from a data frame
+# Like a list
+df[c("x", "z")]
+# Like a matrix
+df[, c("x", "z")]
+
+# There's an important difference if you select a single 
+# column: matrix subsetting simplifies by default, list 
+# subsetting does not.
+str(df["x"])
+str(df[, "x"])
+</input></program>
+
+      <p>Subsetting a tibble with <c>[</c> always returns a tibble:</p>
+
+      <program language="r"><input>
+df &lt;- tibble::tibble(x = 1:3, y = 3:1, z = letters[1:3])
+
+str(df["x"])
+str(df[, "x"])
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-simplify-preserve">
+      <title>Preserving dimensionality</title>
+
+      <p>By default, subsetting a matrix or data frame with a single number, a single name, or a logical vector containing a single <c>TRUE</c>, will simplify the returned output, i.e. it will return an object with lower dimensionality. To preserve the original dimensionality, you must use <c>drop = FALSE</c>.</p>
+
+      <p><ul>
+        <li>
+          <p>For matrices and arrays, any dimensions with length 1 will be dropped:</p>
+          <program language="r"><input>
+a &lt;- matrix(1:4, nrow = 2)
+str(a[1, ])
+
+str(a[1, , drop = FALSE])
+</input></program>
+        </li>
+
+        <li>
+          <p>Data frames with a single column will return just the content of that column:</p>
+          <program language="r"><input>
+df &lt;- data.frame(a = 1:2, b = 1:2)
+str(df[, "a"])
+
+str(df[, "a", drop = FALSE])
+</input></program>
+        </li>
+      </ul></p>
+
+      <p>The default <c>drop = TRUE</c> behaviour is a common source of bugs in functions: you check your code with a data frame or matrix with multiple columns, and it works. Six months later, you (or someone else) uses it with a single column data frame and it fails with a mystifying error. When writing functions, get in the habit of always using <c>drop = FALSE</c> when subsetting a 2D object. For this reason, tibbles default to <c>drop = FALSE</c>, and <c>[</c> always returns another tibble.</p>
+
+      <p>Factor subsetting also has a <c>drop</c> argument, but its meaning is rather different. It controls whether or not levels (rather than dimensions) are preserved, and it defaults to <c>FALSE</c>. If you find you're using <c>drop = TRUE</c> a lot it's often a sign that you should be using a character vector instead of a factor.</p>
+
+      <program language="r"><input>
+z &lt;- factor(c("a", "b"))
+z[1]
+z[1, drop = TRUE]
+</input></program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Fix each of the following common data frame subsetting errors:</p>
+        <program language="r"><input>
+mtcars[mtcars$cyl = 4, ]
+mtcars[-1:4, ]
+mtcars[mtcars$cyl &lt;= 5]
+mtcars[mtcars$cyl == 4 | 6, ]
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Why does the following code yield five missing values? (Hint: why is it different from <c>x[NA_real_]</c>?)</p>
+        <program language="r"><input>
+x &lt;- 1:5
+x[NA]
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>What does <c>upper.tri()</c> return? How does subsetting a matrix with it work? Do we need any additional subsetting rules to describe its behaviour?</p>
+        <program language="r"><input>
+x &lt;- outer(1:5, 1:5, FUN = "*")
+x[upper.tri(x)]
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Why does <c>mtcars[1:20]</c> return an error? How does it differ from the similar <c>mtcars[1:20, ]</c>?</p>
+      </exercise>
+
+      <exercise>
+        <p>Implement your own function that extracts the diagonal entries from a matrix (it should behave like <c>diag(x)</c> where <c>x</c> is a matrix).</p>
+      </exercise>
+
+      <exercise>
+        <p>What does <c>df[is.na(df)] &lt;- 0</c> do? How does it work?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-subset-single">
+    <title>Selecting a single element</title>
+
+    <p>There are two other subsetting operators: <c>[[</c> and <c>$</c>. <c>[[</c> is used for extracting single items, while <c>x$y</c> is a useful shorthand for <c>x[["y"]]</c>.</p>
+
+    <subsection xml:id="subsec-double-bracket">
+      <title><c>[[</c></title>
+
+      <p><c>[[</c> is most important when working with lists because subsetting a list with <c>[</c> always returns a smaller list. To help make this easier to understand we can use a metaphor:</p>
+
+      <blockquote>
+        <p>If list <c>x</c> is a train carrying objects, then <c>x[[5]]</c> is the object in car 5; <c>x[4:6]</c> is a train of cars 4-6.</p>
+        <p>--- @RLangTip, <url href="https://twitter.com/RLangTip/status/268375867468681216"/></p>
+      </blockquote>
+
+      <p>Let's use this metaphor to make a simple list:</p>
+
+      <program language="r"><input>
+x &lt;- list(1:3, "a", 4:6)
+</input></program>
+
+      <figure>
+        <image source="../images/subsetting/train.png"/>
+      </figure>
+
+      <p>When extracting a single element, you have two options: you can create a smaller train, i.e., fewer carriages, or you can extract the contents of a particular carriage. This is the difference between <c>[</c> and <c>[[</c>:</p>
+
+      <figure>
+        <image source="../images/subsetting/train-single.png"/>
+      </figure>
+
+      <p>When extracting multiple (or even zero!) elements, you have to make a smaller train:</p>
+
+      <figure>
+        <image source="../images/subsetting/train-multiple.png"/>
+      </figure>
+
+      <p>Because <c>[[</c> can return only a single item, you must use it with either a single positive integer or a single string. If you use a vector with <c>[[</c>, it will subset recursively, i.e. <c>x[[c(1, 2)]]</c> is equivalent to <c>x[[1]][[2]]</c>. This is a quirky feature that few know about, so I recommend avoiding it in favour of <c>purrr::pluck()</c>, which you'll learn about in <xref ref="subsec-subsetting-oob"/>.</p>
+
+      <p>While you must use <c>[[</c> when working with lists, I'd also recommend using it with atomic vectors whenever you want to extract a single value. For example, instead of writing:</p>
+
+      <program language="r"><input>
+for (i in 2:length(x)) {
+  out[i] &lt;- fun(x[i], out[i - 1])
+}
+</input></program>
+
+      <p>It's better to write:</p>
+
+      <program language="r"><input>
+for (i in 2:length(x)) {
+  out[[i]] &lt;- fun(x[[i]], out[[i - 1]])
+}
+</input></program>
+
+      <p>Doing so reinforces the expectation that you are getting and setting individual values.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-dollar-sign">
+      <title><c>$</c></title>
+
+      <p><c>$</c> is a shorthand operator: <c>x$y</c> is roughly equivalent to <c>x[["y", exact = FALSE]]</c>. It's often used to access variables in a data frame, as in <c>mtcars$cyl</c> or <c>diamonds$carat</c>. One common mistake with <c>$</c> is to use it when you have the name of a column stored in a variable:</p>
+
+      <program language="r"><input>
+var &lt;- "cyl"
+# Doesn't work - mtcars$var translated to mtcars[["var"]]
+mtcars$var
+
+# Instead use [[
+mtcars[[var]]
+</input></program>
+
+      <p>The one important difference between <c>$</c> and <c>[[</c> is that <c>$</c> automatically does (left-to-right) partial matching without warning:</p>
+
+      <program language="r"><input>
+x &lt;- list(abc = 1)
+x$a
+x[["a"]]
+</input></program>
+
+      <p>To help avoid this behaviour I highly recommend setting the global option <c>warnPartialMatchDollar</c> to <c>TRUE</c>:</p>
+
+      <program language="r"><input>
+options(warnPartialMatchDollar = TRUE)
+x$a
+</input></program>
+
+      <p>(For data frames, you can also avoid this problem by using tibbles, which never do partial matching.)</p>
+    </subsection>
+
+    <subsection xml:id="subsec-subsetting-oob">
+      <title>Missing and out-of-bounds indices</title>
+
+      <p>It's useful to understand what happens with <c>[[</c> when you use an "invalid" index. The following table summarises what happens when you subset a logical vector, list, and <c>NULL</c> with a zero-length object (like <c>NULL</c> or <c>logical()</c>), out-of-bounds values (OOB), or a missing value (e.g. <c>NA_integer_</c>) with <c>[[</c>. Each cell shows the result of subsetting the data structure named in the row by the type of index described in the column. I've only shown the results for logical vectors, but other atomic vectors behave similarly, returning elements of the same type (NB: int = integer; chr = character).</p>
+
+      <tabular>
+        <row header="yes">
+          <cell><c>row[[col]]</c></cell>
+          <cell>Zero-length</cell>
+          <cell>OOB (int)</cell>
+          <cell>OOB (chr)</cell>
+          <cell>Missing</cell>
+        </row>
+        <row>
+          <cell>Atomic</cell>
+          <cell>Error</cell>
+          <cell>Error</cell>
+          <cell>Error</cell>
+          <cell>Error</cell>
+        </row>
+        <row>
+          <cell>List</cell>
+          <cell>Error</cell>
+          <cell>Error</cell>
+          <cell><c>NULL</c></cell>
+          <cell><c>NULL</c></cell>
+        </row>
+        <row>
+          <cell><c>NULL</c></cell>
+          <cell><c>NULL</c></cell>
+          <cell><c>NULL</c></cell>
+          <cell><c>NULL</c></cell>
+          <cell><c>NULL</c></cell>
+        </row>
+      </tabular>
+
+      <p>If the vector being indexed is named, then the names of OOB, missing, or <c>NULL</c> components will be <c>&lt;NA&gt;</c>.</p>
+
+      <p>The inconsistencies in the table above led to the development of <c>purrr::pluck()</c> and <c>purrr::chuck()</c>. When the element is missing, <c>pluck()</c> always returns <c>NULL</c> (or the value of the <c>.default</c> argument) and <c>chuck()</c> always throws an error. The behaviour of <c>pluck()</c> makes it well suited for indexing into deeply nested data structures where the component you want may not exist (as is common when working with JSON data from web APIs). <c>pluck()</c> also allows you to mix integer and character indices, and provides an alternative default value if an item does not exist:</p>
+
+      <program language="r"><input>
+x &lt;- list(
+  a = list(1, 2, 3),
+  b = list(3, 4, 5)
+)
+
+purrr::pluck(x, "a", 1)
+
+purrr::pluck(x, "c", 1)
+
+purrr::pluck(x, "c", 1, .default = NA)
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-at-slot">
+      <title><c>@</c> and <c>slot()</c></title>
+
+      <p>There are two additional subsetting operators, which are needed for S4 objects: <c>@</c> (equivalent to <c>$</c>), and <c>slot()</c> (equivalent to <c>[[</c>). <c>@</c> is more restrictive than <c>$</c> in that it will return an error if the slot does not exist. These are described in more detail in <xref ref="ch-s4"/>.</p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Brainstorm as many ways as possible to extract the third value from the <c>cyl</c> variable in the <c>mtcars</c> dataset.</p>
+      </exercise>
+
+      <exercise>
+        <p>Given a linear model, e.g., <c>mod &lt;- lm(mpg ~ wt, data = mtcars)</c>, extract the residual degrees of freedom. Then extract the R squared from the model summary (<c>summary(mod)</c>)</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-subassignment">
+    <title>Subsetting and assignment</title>
+
+    <p>All subsetting operators can be combined with assignment to modify selected values of an input vector: this is called subassignment. The basic form is <c>x[i] &lt;- value</c>:</p>
+
+    <program language="r"><input>
+x &lt;- 1:5
+x[c(1, 2)] &lt;- c(101, 102)
+x
+</input></program>
+
+    <p>I recommend that you should make sure that <c>length(value)</c> is the same as <c>length(x[i])</c>, and that <c>i</c> is unique. This is because, while R will recycle if needed, those rules are complex (particularly if <c>i</c> contains missing or duplicated values) and may cause problems.</p>
+
+    <p>With lists, you can use <c>x[[i]] &lt;- NULL</c> to remove a component. To add a literal <c>NULL</c>, use <c>x[i] &lt;- list(NULL)</c>:</p>
+
+    <program language="r"><input>
+x &lt;- list(a = 1, b = 2)
+x[["b"]] &lt;- NULL
+str(x)
+
+y &lt;- list(a = 1, b = 2)
+y["b"] &lt;- list(NULL)
+str(y)
+</input></program>
+
+    <p>Subsetting with nothing can be useful with assignment because it preserves the structure of the original object. Compare the following two expressions. In the first, <c>mtcars</c> remains a data frame because you are only changing the contents of <c>mtcars</c>, not <c>mtcars</c> itself. In the second, <c>mtcars</c> becomes a list because you are changing the object it is bound to.</p>
+
+    <program language="r"><input>
+mtcars[] &lt;- lapply(mtcars, as.integer)
+is.data.frame(mtcars)
+
+mtcars &lt;- lapply(mtcars, as.integer)
+is.data.frame(mtcars)
+</input></program>
+  </section>
+
+  <section xml:id="sec-applications">
+    <title>Applications</title>
+
+    <p>The principles described above have a wide variety of useful applications. Some of the most important are described below. While many of the basic principles of subsetting have already been incorporated into functions like <c>subset()</c>, <c>merge()</c>, and <c>dplyr::arrange()</c>, a deeper understanding of how those principles have been implemented will be valuable when you run into situations where the functions you need don't exist.</p>
+
+    <subsection xml:id="subsec-lookup-tables">
+      <title>Lookup tables (character subsetting)</title>
+
+      <p>Character matching is a powerful way to create lookup tables. Say you want to convert abbreviations:</p>
+
+      <program language="r"><input>
+x &lt;- c("m", "f", "u", "f", "f", "m", "m")
+lookup &lt;- c(m = "Male", f = "Female", u = NA)
+lookup[x]
+</input></program>
+
+      <p>Note that if you don't want names in the result, use <c>unname()</c> to remove them.</p>
+
+      <program language="r"><input>
+unname(lookup[x])
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-matching-merging">
+      <title>Matching and merging by hand (integer subsetting)</title>
+
+      <p>You can also have more complicated lookup tables with multiple columns of information. For example, suppose we have a vector of integer grades, and a table that describes their properties:</p>
+
+      <program language="r"><input>
+grades &lt;- c(1, 2, 2, 3, 1)
+
+info &lt;- data.frame(
+  grade = 3:1,
+  desc = c("Excellent", "Good", "Poor"),
+  fail = c(F, F, T)
+)
+</input></program>
+
+      <p>Then, let's say we want to duplicate the <c>info</c> table so that we have a row for each value in <c>grades</c>. An elegant way to do this is by combining <c>match()</c> and integer subsetting (<c>match(needles, haystack)</c> returns the position where each <c>needle</c> is found in the <c>haystack</c>).</p>
+
+      <program language="r"><input>
+id &lt;- match(grades, info$grade)
+id
+info[id, ]
+</input></program>
+
+      <p>If you're matching on multiple columns, you'll need to first collapse them into a single column (with e.g. <c>interaction()</c>). Typically, however, you're better off switching to a function designed specifically for joining multiple tables like <c>merge()</c>, or <c>dplyr::left_join()</c>.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-random-samples">
+      <title>Random samples and bootstraps (integer subsetting)</title>
+
+      <p>You can use integer indices to randomly sample or bootstrap a vector or data frame. Just use <c>sample(n)</c> to generate a random permutation of <c>1:n</c>, and then use the results to subset the values:</p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = c(1, 2, 3, 1, 2), y = 5:1, z = letters[1:5])
+
+# Randomly reorder
+df[sample(nrow(df)), ]
+
+# Select 3 random rows
+df[sample(nrow(df), 3), ]
+
+# Select 6 bootstrap replicates
+df[sample(nrow(df), 6, replace = TRUE), ]
+</input></program>
+
+      <p>The arguments of <c>sample()</c> control the number of samples to extract, and also whether sampling is done with or without replacement.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-ordering">
+      <title>Ordering (integer subsetting)</title>
+
+      <p><c>order()</c> takes a vector as its input and returns an integer vector describing how to order the subsetted vector<fn>These are "pull" indices, i.e., <c>order(x)[i]</c> is an index of where each <c>x[i]</c> is located. It is not an index of where <c>x[i]</c> should be sent.</fn>:</p>
+
+      <program language="r"><input>
+x &lt;- c("b", "c", "a")
+order(x)
+x[order(x)]
+</input></program>
+
+      <p>To break ties, you can supply additional variables to <c>order()</c>. You can also change the order from ascending to descending by using <c>decreasing = TRUE</c>. By default, any missing values will be put at the end of the vector; however, you can remove them with <c>na.last = NA</c> or put them at the front with <c>na.last = FALSE</c>.</p>
+
+      <p>For two or more dimensions, <c>order()</c> and integer subsetting makes it easy to order either the rows or columns of an object:</p>
+
+      <program language="r"><input>
+# Randomly reorder df
+df2 &lt;- df[sample(nrow(df)), 3:1]
+df2
+
+df2[order(df2$x), ]
+df2[, order(names(df2))]
+</input></program>
+
+      <p>You can sort vectors directly with <c>sort()</c>, or similarly <c>dplyr::arrange()</c>, to sort a data frame.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-expanding-counts">
+      <title>Expanding aggregated counts (integer subsetting)</title>
+
+      <p>Sometimes you get a data frame where identical rows have been collapsed into one and a count column has been added. <c>rep()</c> and integer subsetting make it easy to uncollapse, because we can take advantage of <c>rep()</c>s vectorisation: <c>rep(x, y)</c> repeats <c>x[i]</c> <c>y[i]</c> times.</p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = c(2, 4, 1), y = c(9, 11, 6), n = c(3, 5, 1))
+rep(1:nrow(df), df$n)
+
+df[rep(1:nrow(df), df$n), ]
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-removing-columns">
+      <title>Removing columns from data frames (character subsetting)</title>
+
+      <p>There are two ways to remove columns from a data frame. You can set individual columns to <c>NULL</c>:</p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = 1:3, y = 3:1, z = letters[1:3])
+df$z &lt;- NULL
+</input></program>
+
+      <p>Or you can subset to return only the columns you want:</p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = 1:3, y = 3:1, z = letters[1:3])
+df[c("x", "y")]
+</input></program>
+
+      <p>If you only know the columns you don't want, use set operations to work out which columns to keep:</p>
+
+      <program language="r"><input>
+df[setdiff(names(df), "z")]
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-selecting-rows">
+      <title>Selecting rows based on a condition (logical subsetting)</title>
+
+      <p>Because logical subsetting allows you to easily combine conditions from multiple columns, it's probably the most commonly used technique for extracting rows out of a data frame.</p>
+
+      <program language="r"><input>
+mtcars[mtcars$gear == 5, ]
+
+mtcars[mtcars$gear == 5 &amp; mtcars$cyl == 4, ]
+</input></program>
+
+      <p>Remember to use the vector boolean operators <c>&amp;</c> and <c>|</c>, not the short-circuiting scalar operators <c>&amp;&amp;</c> and <c>||</c>, which are more useful inside if statements. And don't forget <url href="https://en.wikipedia.org/wiki/De_Morgan%27s_laws">De Morgan's laws</url>, which can be useful to simplify negations:</p>
+
+      <p><ul>
+        <li><p><c>!(X &amp; Y)</c> is the same as <c>!X | !Y</c></p></li>
+        <li><p><c>!(X | Y)</c> is the same as <c>!X &amp; !Y</c></p></li>
+      </ul></p>
+
+      <p>For example, <c>!(X &amp; !(Y | Z))</c> simplifies to <c>!X | !!(Y|Z)</c>, and then to <c>!X | Y | Z</c>.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-boolean-sets">
+      <title>Boolean algebra versus sets (logical and integer subsetting)</title>
+
+      <p>It's useful to be aware of the natural equivalence between set operations (integer subsetting) and Boolean algebra (logical subsetting). Using set operations is more effective when:</p>
+
+      <p><ul>
+        <li><p>You want to find the first (or last) <c>TRUE</c>.</p></li>
+        <li><p>You have very few <c>TRUE</c>s and very many <c>FALSE</c>s; a set representation may be faster and require less storage.</p></li>
+      </ul></p>
+
+      <p><c>which()</c> allows you to convert a Boolean representation to an integer representation. There's no reverse operation in base R but we can easily create one:</p>
+
+      <program language="r"><input>
+x &lt;- sample(10) &lt; 4
+which(x)
+
+unwhich &lt;- function(x, n) {
+  out &lt;- rep_len(FALSE, n)
+  out[x] &lt;- TRUE
+  out
+}
+unwhich(which(x), 10)
+</input></program>
+
+      <p>Let's create two logical vectors and their integer equivalents, and then explore the relationship between Boolean and set operations.</p>
+
+      <program language="r"><input>
+(x1 &lt;- 1:10 %% 2 == 0)
+(x2 &lt;- which(x1))
+(y1 &lt;- 1:10 %% 5 == 0)
+(y2 &lt;- which(y1))
+
+# X &amp; Y &lt;-&gt; intersect(x, y)
+x1 &amp; y1
+intersect(x2, y2)
+
+# X | Y &lt;-&gt; union(x, y)
+x1 | y1
+union(x2, y2)
+
+# X &amp; !Y &lt;-&gt; setdiff(x, y)
+x1 &amp; !y1
+setdiff(x2, y2)
+
+# xor(X, Y) &lt;-&gt; setdiff(union(x, y), intersect(x, y))
+xor(x1, y1)
+setdiff(union(x2, y2), intersect(x2, y2))
+</input></program>
+
+      <p>When first learning subsetting, a common mistake is to use <c>x[which(y)]</c> instead of <c>x[y]</c>. Here the <c>which()</c> achieves nothing: it switches from logical to integer subsetting but the result is exactly the same. In more general cases, there are two important differences.</p>
+
+      <p><ul>
+        <li><p>When the logical vector contains <c>NA</c>, logical subsetting replaces these values with <c>NA</c> while <c>which()</c> simply drops these values. It's not uncommon to use <c>which()</c> for this side-effect, but I don't recommend it: nothing about the name "which" implies the removal of missing values.</p></li>
+        <li><p><c>x[-which(y)]</c> is <alert>not</alert> equivalent to <c>x[!y]</c>: if <c>y</c> is all FALSE, <c>which(y)</c> will be <c>integer(0)</c> and <c>-integer(0)</c> is still <c>integer(0)</c>, so you'll get no values, instead of all values.</p></li>
+      </ul></p>
+
+      <p>In general, avoid switching from logical to integer subsetting unless you want, for example, the first or last <c>TRUE</c> value.</p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>How would you randomly permute the columns of a data frame? (This is an important technique in random forests.) Can you simultaneously permute the rows and columns in one step?</p>
+      </exercise>
+
+      <exercise>
+        <p>How would you select a random sample of <c>m</c> rows from a data frame? What if the sample had to be contiguous (i.e., with an initial row, a final row, and every row in between)?</p>
+      </exercise>
+
+      <exercise>
+        <p>How could you put the columns in a data frame in alphabetical order?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-subsetting-answers">
+    <title>Quiz Answers</title>
+
+    <p><ol>
+      <li><p>Positive integers select elements at specific positions, negative integers drop elements; logical vectors keep elements at positions corresponding to <c>TRUE</c>; character vectors select elements with matching names.</p></li>
+      <li><p><c>[</c> selects sub-lists: it always returns a list. If you use it with a single positive integer, it returns a list of length one. <c>[[</c> selects an element within a list. <c>$</c> is a convenient shorthand: <c>x$y</c> is equivalent to <c>x[["y"]]</c>.</p></li>
+      <li><p>Use <c>drop = FALSE</c> if you are subsetting a matrix, array, or data frame and you want to preserve the original dimensions. You should almost always use it when subsetting inside a function.</p></li>
+      <li><p>If <c>x</c> is a matrix, <c>x[] &lt;- 0</c> will replace every element with 0, keeping the same number of rows and columns. In contrast, <c>x &lt;- 0</c> completely replaces the matrix with the value 0.</p></li>
+      <li><p>A named character vector can act as a simple lookup table: <c>c(x = 1, y = 2, z = 3)[c("y", "z", "x")]</c></p></li>
+    </ol></p>
+  </section>
+
+</chapter>
