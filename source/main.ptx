@@ -81,24 +81,29 @@
         combining the building blocks in novel ways.
       </p></li>
       <li><p>
-        <xref ref="ch-control-flow"/> covers tools that control the flow of
-        execution: choices and loops.
+        <xref ref="ch-control-flow"/> presents tools of control flow that allow
+        you to only execute code under certain conditions, or to repeatedly execute
+        code with changing inputs. These include the important <c>if</c> and <c>for</c>
+        constructs, as well as related tools like <c>switch()</c> and <c>while</c>.
       </p></li>
       <li><p>
-        <xref ref="ch-functions"/> deals with the most important building block
-        of R code: the function. You'll learn exactly how functions work, and
-        the properties that underlie the functional programming style.
+        <xref ref="ch-functions"/> deals with functions, the most important building
+        blocks of R code. You’ll learn exactly how they work, including the scoping rules,
+        which govern how R looks up values from names. You’ll also learn more of the details
+        behind lazy evaluation, and how you can control what happens when you exit a function.
       </p></li>
       <li><p>
         <xref ref="ch-environments"/> describes a data structure that is crucial
-        for understanding how R works: the environment. Environments are the
-        data structure that binds names to values, and they power both scoping
-        and packages.
+        for understanding how R works, but quite unimportant for data analysis: the environment.
+        Environments are the data structure that binds names to values, and they power important
+        tools like package namespaces. Unlike most programming languages, environments in R are
+        "first class" which means that you can manipulate them just like other objects.
       </p></li>
       <li><p>
-        <xref ref="ch-conditions"/> describes the condition system, which
-        powers messages, warnings, and errors. You'll learn how to signal them,
-        and how to handle them when they happen in code you call.
+        <xref ref="ch-conditions"/> concludes the foundations of R with an exploration of "conditions",
+        the umbrella term used to describe errors, warnings, and messages. You've certainly encountered
+        these before, so in this chapter you learn how to signal them appropriately in your own
+        functions, and how to handle them when signalled elsewhere.
       </p></li>
     </ol></p>
   </introduction>
