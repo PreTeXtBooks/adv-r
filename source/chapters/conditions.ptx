@@ -1,42 +1,897 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-conditions" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Conditions</title>
+<chapter xml:id="ch-conditions" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Conditions</title>
 
-    <introduction>
-      <p>
-        The <em>condition</em> system provides a paired set of tools that allow
-        the author of a function to indicate that something unusual is happening,
-        and the user of that function to deal with it. The function author
-        <em>signals</em> conditions with functions like <c>stop()</c> (for
-        errors), <c>warning()</c> (for warnings), and <c>message()</c> (for
-        messages), then the function user can handle them with functions like
-        <c>tryCatch()</c> and <c>withCallingHandlers()</c>.
-      </p>
-    </introduction>
-
-    <section xml:id="sec-signalling-conditions">
-      <title>Signalling conditions</title>
-
-      <p>
-        There are three conditions that you can signal in code: errors,
-        warnings, and messages.
-      </p>
-
+  <introduction>
+    <p>
+      The <alert>condition</alert> system provides a paired set of tools that allow the author of a function to indicate that something unusual is happening, and the user of that function to deal with it. The function author <alert>signals</alert> conditions with functions like <c>stop()</c> (for errors), <c>warning()</c> (for warnings), and <c>message()</c> (for messages), then the function user can handle them with functions like <c>tryCatch()</c> and <c>withCallingHandlers()</c>. Understanding the condition system is important because you'll often need to play both roles: signalling conditions from the functions you create, and handle conditions signalled by the functions you call.
+    </p>
+    <p>
+      R offers a very powerful condition system based on ideas from Common Lisp. Like R's approach to object-oriented programming, it is rather different to currently popular programming languages so it is easy to misunderstand, and there has been relatively little written about how to use it effectively. Historically, this has meant that few people (myself included) have taken full advantage of its power. The goal of this chapter is to remedy that situation. Here you will learn about the big ideas of R's condition system, as well as learning a bunch of practical tools that will make your code stronger.
+    </p>
+    <p>I found two resources particularly useful when writing this chapter. You may also want to read them if you want to learn more about the inspirations and motivations for the system:</p>
+    <p><ul>
+      <li><p><url href="http://homepage.stat.uiowa.edu/~luke/R/exceptions/simpcond.html">A prototype of a condition system for R</url> by Robert Gentleman and Luke Tierney. This describes an early version of R's condition system. While the implementation has changed somewhat since this document was written, it provides a good overview of how the pieces fit together, and some motivation for its design.</p></li>
+      <li><p><url href="http://www.gigamonkeys.com/book/beyond-exception-handling-conditions-and-restarts.html">Beyond exception handling: conditions and restarts</url> by Peter Seibel. This describes exception handling in Lisp, which happens to be very similar to R's approach. It provides useful motivation and more sophisticated examples. I have provided an R translation of the chapter at <url href="http://adv-r.had.co.nz/beyond-exception-handling.html">http://adv-r.had.co.nz/beyond-exception-handling.html</url>.</p></li>
+    </ul></p>
+    <subsection xml:id="subsec-conditions-quiz">
+      <title>Quiz</title>
+      <p>Want to skip this chapter? Go for it, if you can answer the questions below. Find the answers at the end of the chapter in <xref ref="sec-conditions-answers"/>.</p>
+      <p><ol>
+        <li><p>What are the three most important types of condition?</p></li>
+        <li><p>What function do you use to ignore errors in block of code?</p></li>
+        <li><p>What's the main difference between <c>tryCatch()</c> and <c>withCallingHandlers()</c>?</p></li>
+        <li><p>Why might you want to create a custom error object?</p></li>
+      </ol></p>
+    </subsection>
+    <subsection xml:id="subsec-conditions-outline">
+      <title>Outline</title>
       <p><ul>
-        <li><p>
-          Errors are the most severe; they indicate that there is no way for a
-          function to continue and execution must stop.
-        </p></li>
-        <li><p>
-          Warnings are somewhat less severe, and signify that something has
-          gone wrong but the function has been able to at least partially
-          recover.
-        </p></li>
-        <li><p>
-          Messages are the mildest; they are way of informing the user that
-          some action has been performed on their behalf.
-        </p></li>
+        <li><p><xref ref="sec-signalling-conditions"/> introduces the basic tools for signalling conditions, and discusses when it is appropriate to use each type.</p></li>
+        <li><p><xref ref="sec-ignoring-conditions"/> teaches you about the simplest tools for handling conditions: functions like <c>try()</c> and <c>suppressMessages()</c> that swallow conditions and prevent them from getting to the top level.</p></li>
+        <li><p><xref ref="sec-handling-conditions"/> introduces the condition <alert>object</alert>, and the two fundamental tools of condition handling: <c>tryCatch()</c> for error conditions, and <c>withCallingHandlers()</c> for everything else.</p></li>
+        <li><p><xref ref="sec-custom-conditions"/> shows you how to extend the built-in condition objects to store useful data that condition handlers can use to make more informed decisions.</p></li>
+        <li><p><xref ref="sec-condition-applications"/> closes out the chapter with a grab bag of practical applications based on the low-level tools found in earlier sections.</p></li>
       </ul></p>
-    </section>
+    </subsection>
+    <subsection xml:id="subsec-conditions-prerequisites">
+      <title>Prerequisites</title>
+      <p>As well as base R functions, this chapter uses condition signalling and handling functions from <url href="https://rlang.r-lib.org">rlang</url>.</p>
+      <program language="r"><input>
+library(rlang)
+      </input></program>
+    </subsection>
+  </introduction>
 
-  </chapter>
+  <section xml:id="sec-signalling-conditions">
+    <title>Signalling conditions</title>
+    <p>There are three conditions that you can signal in code: errors, warnings, and messages.</p>
+    <p><ul>
+      <li><p>Errors are the most severe; they indicate that there is no way for a function to continue and execution must stop.</p></li>
+      <li><p>Warnings fall somewhat in between errors and message, and typically indicate that something has gone wrong but the function has been able to at least partially recover.</p></li>
+      <li><p>Messages are the mildest; they are way of informing users that some action has been performed on their behalf.</p></li>
+    </ul></p>
+    <p>There is a final condition that can only be generated interactively: an interrupt, which indicates that the user has interrupted execution by pressing Escape, Ctrl + Break, or Ctrl + C (depending on the platform).</p>
+    <p>Conditions are usually displayed prominently, in a bold font or coloured red, depending on the R interface. You can tell them apart because errors always start with "Error", warnings with "Warning" or "Warning message", and messages with nothing.</p>
+    <program language="r"><input>
+stop("This is what an error looks like")
+
+warning("This is what a warning looks like")
+
+message("This is what a message looks like")
+    </input></program>
+    <p>The following three sections describe errors, warnings, and messages in more detail.</p>
+    <subsection xml:id="subsec-errors-signalling">
+      <title>Errors</title>
+      <p>In base R, errors are signalled, or <alert>thrown</alert>, by <c>stop()</c>:</p>
+      <program language="r"><input>
+f &lt;- function() g()
+g &lt;- function() h()
+h &lt;- function() stop("This is an error!")
+
+f()
+      </input></program>
+      <p>By default, the error message includes the call, but this is typically not useful (and recapitulates information that you can easily get from <c>traceback()</c>), so I think it's good practice to use <c>call. = FALSE</c><fn>The trailing <c>.</c> in <c>call.</c> is a peculiarity of <c>stop()</c>; don't read anything into it.</fn>:</p>
+      <program language="r"><input>
+h &lt;- function() stop("This is an error!", call. = FALSE)
+f()
+      </input></program>
+      <p>The rlang equivalent to <c>stop()</c>, <c>rlang::abort()</c>, does this automatically. We'll use <c>abort()</c> throughout this chapter, but we won't get to its most compelling feature, the ability to add additional metadata to the condition object, until we're near the end of the chapter.</p>
+      <program language="r"><input>
+h &lt;- function() abort("This is an error!")
+f()
+      </input></program>
+      <p>(NB: <c>stop()</c> pastes together multiple inputs, while <c>abort()</c> does not. To create complex error messages with abort, I recommend using <c>glue::glue()</c>. This allows us to use other arguments to <c>abort()</c> for useful features that you'll learn about in <xref ref="sec-custom-conditions"/>.)</p>
+      <p>The best error messages tell you what is wrong and point you in the right direction to fix the problem. Writing good error messages is hard because errors usually occur when the user has a flawed mental model of the function. As a developer, it's hard to imagine how the user might be thinking incorrectly about your function, and thus it's hard to write a message that will steer the user in the correct direction. That said, the tidyverse style guide discusses a few general principles that we have found useful: <url href="http://style.tidyverse.org/error-messages.html">http://style.tidyverse.org/error-messages.html</url>.</p>
+    </subsection>
+    <subsection xml:id="subsec-warnings-signalling">
+      <title>Warnings</title>
+      <p>Warnings, signalled by <c>warning()</c>, are weaker than errors: they signal that something has gone wrong, but the code has been able to recover and continue. Unlike errors, you can have multiple warnings from a single function call:</p>
+      <program language="r"><input>
+fw &lt;- function() {
+  cat("1\n")
+  warning("W1")
+  cat("2\n")
+  warning("W2")
+  cat("3\n")
+  warning("W3")
+}
+      </input></program>
+      <p>By default, warnings are cached and printed only when control returns to the top level:</p>
+      <program language="r"><input>
+fw()
+#> 1
+#> 2
+#> 3
+#> Warning messages:
+#> 1: In f() : W1
+#> 2: In f() : W2
+#> 3: In f() : W3
+      </input></program>
+      <p>You can control this behaviour with the <c>warn</c> option:</p>
+      <p><ul>
+        <li><p>To make warnings appear immediately, set <c>options(warn = 1)</c>.</p></li>
+        <li><p>To turn warnings into errors, set <c>options(warn = 2)</c>. This is usually the easiest way to debug a warning, as once it's an error you can use tools like <c>traceback()</c> to find the source.</p></li>
+        <li><p>Restore the default behaviour with <c>options(warn = 0)</c>.</p></li>
+      </ul></p>
+      <p>Like <c>stop()</c>, <c>warning()</c> also has a call argument. It is slightly more useful (since warnings are often more distant from their source), but I still generally suppress it with <c>call. = FALSE</c>. Like <c>rlang::abort()</c>, the rlang equivalent of <c>warning()</c>, <c>rlang::warn()</c>, also suppresses the <c>call.</c> by default.</p>
+      <p>Warnings occupy a somewhat challenging place between messages ("you should know about this") and errors ("you must fix this!"), and it's hard to give precise advice on when to use them. Generally, be restrained, as warnings are easy to miss if there's a lot of other output, and you don't want your function to recover too easily from clearly invalid input. In my opinion, base R tends to overuse warnings, and many warnings in base R would be better off as errors. For example, I think these warnings would be more helpful as errors:</p>
+      <program language="r"><input>
+formals(1)
+
+file.remove("this-file-doesn't-exist")
+
+lag(1:3, k = 1.5)
+
+as.numeric(c("18", "30", "50+", "345,678"))
+      </input></program>
+      <p>There are only a couple of cases where using a warning is clearly appropriate:</p>
+      <p><ul>
+        <li><p>When you <alert>deprecate</alert> a function you want to allow older code to continue to work (so ignoring the warning is OK) but you want to encourage the user to switch to a new function.</p></li>
+        <li><p>When you are reasonably certain you can recover from a problem: If you were 100% certain that you could fix the problem, you wouldn't need any message; if you were more uncertain that you could correctly fix the issue, you'd throw an error.</p></li>
+      </ul></p>
+      <p>Otherwise use warnings with restraint, and carefully consider if an error would be more appropriate.</p>
+    </subsection>
+    <subsection xml:id="subsec-messages-signalling">
+      <title>Messages</title>
+      <p>Messages, signalled by <c>message()</c>, are informational; use them to tell the user that you've done something on their behalf. Good messages are a balancing act: you want to provide just enough information so the user knows what's going on, but not so much that they're overwhelmed.</p>
+      <p><c>message()</c>s are displayed immediately and do not have a <c>call.</c> argument:</p>
+      <program language="r"><input>
+fm &lt;- function() {
+  cat("1\n")
+  message("M1")
+  cat("2\n")
+  message("M2")
+  cat("3\n")
+  message("M3")
+}
+
+fm()
+      </input></program>
+      <p>Good places to use a message are:</p>
+      <p><ul>
+        <li><p>When a default argument requires some non-trivial amount of computation and you want to tell the user what value was used. For example, ggplot2 reports the number of bins used if you don't supply a <c>binwidth</c>.</p></li>
+        <li><p>In functions that are called primarily for their side-effects which would otherwise be silent. For example, when writing files to disk, calling a web API, or writing to a database, it's useful to provide regular status messages telling the user what's happening.</p></li>
+        <li><p>When you're about to start a long running process with no intermediate output. A progress bar (e.g. with progress) is better, but a message is a good place to start.</p></li>
+        <li><p>When writing a package, you sometimes want to display a message when your package is loaded (i.e. in <c>.onAttach()</c>); here you must use <c>packageStartupMessage()</c>.</p></li>
+      </ul></p>
+      <p>Generally any function that produces a message should have some way to suppress it, like a <c>quiet = TRUE</c> argument. It is possible to suppress all messages with <c>suppressMessages()</c>, as you'll learn shortly, but it is nice to also give finer grained control.</p>
+      <p>It's important to compare <c>message()</c> to the closely related <c>cat()</c>. In terms of usage and result, they appear quite similar<fn>But note that <c>cat()</c> requires an explicit trailing <c>"\n"</c> to print a new line.</fn>:</p>
+      <program language="r"><input>
+cat("Hi!\n")
+
+message("Hi!")
+      </input></program>
+      <p>However, the <em>purposes</em> of <c>cat()</c> and <c>message()</c> are different. Use <c>cat()</c> when the primary role of the function is to print to the console, like <c>print()</c> or <c>str()</c> methods. Use <c>message()</c> as a side-channel to print to the console when the primary purpose of the function is something else. In other words, <c>cat()</c> is for when the user <em>asks</em> for something to be printed and <c>message()</c> is for when the developer <em>elects</em> to print something.</p>
+    </subsection>
+    <exercises>
+      <exercise><p>Write a wrapper around <c>file.remove()</c> that throws an error if the file to be deleted does not exist.</p></exercise>
+      <exercise><p>What does the <c>appendLF</c> argument to <c>message()</c> do? How is it related to <c>cat()</c>?</p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-ignoring-conditions">
+    <title>Ignoring conditions</title>
+    <p>The simplest way of handling conditions in R is to simply ignore them:</p>
+    <p><ul>
+      <li><p>Ignore errors with <c>try()</c>.</p></li>
+      <li><p>Ignore warnings with <c>suppressWarnings()</c>.</p></li>
+      <li><p>Ignore messages with <c>suppressMessages()</c>.</p></li>
+    </ul></p>
+    <p>These functions are heavy handed as you can't use them to suppress a single type of condition that you know about, while allowing everything else to pass through. We'll come back to that challenge later in the chapter.</p>
+    <p><c>try()</c> allows execution to continue even after an error has occurred. Normally if you run a function that throws an error, it terminates immediately and doesn't return a value:</p>
+    <program language="r"><input>
+f1 &lt;- function(x) {
+  log(x)
+  10
+}
+f1("x")
+    </input></program>
+    <p>However, if you wrap the statement that creates the error in <c>try()</c>, the error message will be displayed<fn>You can suppress the message with <c>try(..., silent = TRUE)</c>.</fn> but execution will continue:</p>
+    <program language="r"><input>
+f2 &lt;- function(x) {
+  try(log(x))
+  10
+}
+f2("a")
+#> Error in log(x) : non-numeric argument to mathematical function
+#> [1] 10
+    </input></program>
+    <p>It is possible, but not recommended, to save the result of <c>try()</c> and perform different actions based on whether or not the code succeeded or failed<fn>You can tell if the expression failed because the result will have class <c>try-error</c>.</fn>. Instead, it is better to use <c>tryCatch()</c> or a higher-level helper; you'll learn about those shortly.</p>
+    <p>A simple, but useful, pattern is to do assignment inside the call: this lets you define a default value to be used if the code does not succeed. This works because the argument is evaluated in the calling environment, not inside the function. (See <xref ref="subsec-promises"/> for more details.)</p>
+    <program language="r"><input>
+default &lt;- NULL
+try(default &lt;- read.csv("possibly-bad-input.csv"), silent = TRUE)
+    </input></program>
+    <p><c>suppressWarnings()</c> and <c>suppressMessages()</c> suppress all warnings and messages. Unlike errors, messages and warnings don't terminate execution, so there may be multiple warnings and messages signalled in a single block.</p>
+    <program language="r"><input>
+suppressWarnings({
+  warning("Uhoh!")
+  warning("Another warning")
+  1
+})
+
+suppressMessages({
+  message("Hello there")
+  2
+})
+
+suppressWarnings({
+  message("You can still see me")
+  3
+})
+    </input></program>
+  </section>
+
+  <section xml:id="sec-handling-conditions">
+    <title>Handling conditions</title>
+    <p>Every condition has default behaviour: errors stop execution and return to the top level, warnings are captured and displayed in aggregate, and messages are immediately displayed. Condition <alert>handlers</alert> allow us to temporarily override or supplement the default behaviour.</p>
+    <p>Two functions, <c>tryCatch()</c> and <c>withCallingHandlers()</c>, allow us to register handlers, functions that take the signalled condition as their single argument. The registration functions have the same basic form:</p>
+    <program language="r"><input>
+tryCatch(
+  error = function(cnd) {
+    # code to run when error is thrown
+  },
+  code_to_run_while_handlers_are_active
+)
+
+withCallingHandlers(
+  warning = function(cnd) {
+    # code to run when warning is signalled
+  },
+  message = function(cnd) {
+    # code to run when message is signalled
+  },
+  code_to_run_while_handlers_are_active
+)
+    </input></program>
+    <p>They differ in the type of handlers that they create:</p>
+    <p><ul>
+      <li><p><c>tryCatch()</c> defines <alert>exiting</alert> handlers; after the condition is handled, control returns to the context where <c>tryCatch()</c> was called. This makes <c>tryCatch()</c> most suitable for working with errors and interrupts, as these have to exit anyway.</p></li>
+      <li><p><c>withCallingHandlers()</c> defines <alert>calling</alert> handlers; after the condition is captured control returns to the context where the condition was signalled. This makes it most suitable for working with non-error conditions.</p></li>
+    </ul></p>
+    <p>But before we can learn about and use these handlers, we need to talk a little bit about condition <alert>objects</alert>. These are created implicitly whenever you signal a condition, but become explicit inside the handler.</p>
+    <subsection xml:id="subsec-condition-objects">
+      <title>Condition objects</title>
+      <p>So far we've just signalled conditions, and not looked at the objects that are created behind the scenes. The easiest way to see a condition object is to catch one from a signalled condition. That's the job of <c>rlang::catch_cnd()</c>:</p>
+      <program language="r"><input>
+cnd &lt;- catch_cnd(stop("An error"))
+str(cnd)
+      </input></program>
+      <p>Built-in conditions are lists with two elements:</p>
+      <p><ul>
+        <li><p><c>message</c>, a length-1 character vector containing the text to display to a user. To extract the message, use <c>conditionMessage(cnd)</c>.</p></li>
+        <li><p><c>call</c>, the call which triggered the condition. As described above, we don't use the call, so it will often be <c>NULL</c>. To extract it, use <c>conditionCall(cnd)</c>.</p></li>
+      </ul></p>
+      <p>Custom conditions may contain other components, which we'll discuss in <xref ref="sec-custom-conditions"/>.</p>
+      <p>Conditions also have a <c>class</c> attribute, which makes them S3 objects. We won't discuss S3 until <xref ref="ch-s3"/>, but fortunately, even if you don't know about S3, condition objects are quite simple. The most important thing to know is that the <c>class</c> attribute is a character vector, and it determines which handlers will match the condition.</p>
+    </subsection>
+    <subsection xml:id="subsec-exiting-handlers">
+      <title>Exiting handlers</title>
+      <p><c>tryCatch()</c> registers exiting handlers, and is typically used to handle error conditions. It allows you to override the default error behaviour. For example, the following code will return <c>NA</c> instead of throwing an error:</p>
+      <program language="r"><input>
+f3 &lt;- function(x) {
+  tryCatch(
+    error = function(cnd) NA,
+    log(x)
+  )
+}
+
+f3("x")
+      </input></program>
+      <p>If no conditions are signalled, or the class of the signalled condition does not match the handler name, the code executes normally:</p>
+      <program language="r"><input>
+tryCatch(
+  error = function(cnd) 10,
+  1 + 1
+)
+
+tryCatch(
+  error = function(cnd) 10,
+  {
+    message("Hi!")
+    1 + 1
+  }
+)
+      </input></program>
+      <p>The handlers set up by <c>tryCatch()</c> are called <alert>exiting</alert> handlers because after the condition is signalled, control passes to the handler and never returns to the original code, effectively meaning that the code exits:</p>
+      <program language="r"><input>
+tryCatch(
+  message = function(cnd) "There",
+  {
+    message("Here")
+    stop("This code is never run!")
+  }
+)
+      </input></program>
+      <p>The protected code is evaluated in the environment of <c>tryCatch()</c>, but the handler code is not, because the handlers are functions. This is important to remember if you're trying to modify objects in the parent environment.</p>
+      <p>The handler functions are called with a single argument, the condition object. I call this argument <c>cnd</c>, by convention. This value is only moderately useful for the base conditions because they contain relatively little data. It's more useful when you make your own custom conditions, as you'll see shortly.</p>
+      <program language="r"><input>
+tryCatch(
+  error = function(cnd) {
+    paste0("--", conditionMessage(cnd), "--")
+  },
+  stop("This is an error")
+)
+      </input></program>
+      <p><c>tryCatch()</c> has one other argument: <c>finally</c>. It specifies a block of code (not a function) to run regardless of whether the initial expression succeeds or fails. This can be useful for clean up, like deleting files, or closing connections. This is functionally equivalent to using <c>on.exit()</c> (and indeed that's how it's implemented) but it can wrap smaller chunks of code than an entire function.</p>
+      <program language="r"><input>
+path &lt;- tempfile()
+tryCatch(
+  {
+    writeLines("Hi!", path)
+    # ...
+  },
+  finally = {
+    # always run
+    unlink(path)
+  }
+)
+      </input></program>
+    </subsection>
+    <subsection xml:id="subsec-calling-handlers">
+      <title>Calling handlers</title>
+      <p>The handlers set up by <c>tryCatch()</c> are called exiting handlers, because they cause code to exit once the condition has been caught. By contrast, <c>withCallingHandlers()</c> sets up <alert>calling</alert> handlers: code execution continues normally once the handler returns. This tends to make <c>withCallingHandlers()</c> a more natural pairing with the non-error conditions. Exiting and calling handlers use "handler" in slightly different senses:</p>
+      <p><ul>
+        <li><p>An exiting handler handles a signal like you handle a problem; it makes the problem go away.</p></li>
+        <li><p>A calling handler handles a signal like you handle a car; the car still exists.</p></li>
+      </ul></p>
+      <p>Compare the results of <c>tryCatch()</c> and <c>withCallingHandlers()</c> in the example below. The messages are not printed in the first case, because the code is terminated once the exiting handler completes. They are printed in the second case, because a calling handler does not exit.</p>
+      <program language="r"><input>
+tryCatch(
+  message = function(cnd) cat("Caught a message!\n"), 
+  {
+    message("Someone there?")
+    message("Why, yes!")
+  }
+)
+
+withCallingHandlers(
+  message = function(cnd) cat("Caught a message!\n"), 
+  {
+    message("Someone there?")
+    message("Why, yes!")
+  }
+)
+      </input></program>
+      <p>Handlers are applied in order, so you don't need to worry about getting caught in an infinite loop. In the following example, the <c>message()</c> signalled by the handler doesn't also get caught:</p>
+      <program language="r"><input>
+withCallingHandlers(
+  message = function(cnd) message("Second message"),
+  message("First message")
+)
+      </input></program>
+      <p>(But beware if you have multiple handlers, and some handlers signal conditions that could be captured by another handler: you'll need to think through the order carefully.)</p>
+      <p>The return value of a calling handler is ignored because the code continues to execute after the handler completes; where would the return value go? That means that calling handlers are only useful for their side-effects.</p>
+      <p>One important side-effect unique to calling handlers is the ability to <alert>muffle</alert> the signal. By default, a condition will continue to propagate to parent handlers, all the way up to the default handler (or an exiting handler, if provided):</p>
+      <program language="r"><input>
+# Bubbles all the way up to default handler which generates the message
+withCallingHandlers(
+  message = function(cnd) cat("Level 2\n"),
+  withCallingHandlers(
+    message = function(cnd) cat("Level 1\n"),
+    message("Hello")
+  )
+)
+
+# Bubbles up to tryCatch
+tryCatch(
+  message = function(cnd) cat("Level 2\n"),
+  withCallingHandlers(
+    message = function(cnd) cat("Level 1\n"),
+    message("Hello")
+  )
+)
+      </input></program>
+      <p>If you want to prevent the condition "bubbling up" but still run the rest of the code in the block, you need to explicitly muffle it with <c>rlang::cnd_muffle()</c>:</p>
+      <program language="r"><input>
+# Muffles the default handler which prints the messages
+withCallingHandlers(
+  message = function(cnd) {
+    cat("Level 2\n")
+    cnd_muffle(cnd)
+  },
+  withCallingHandlers(
+    message = function(cnd) cat("Level 1\n"),
+    message("Hello")
+  )
+)
+
+# Muffles level 2 handler and the default handler
+withCallingHandlers(
+  message = function(cnd) cat("Level 2\n"),
+  withCallingHandlers(
+    message = function(cnd) {
+      cat("Level 1\n")
+      cnd_muffle(cnd)
+    },
+    message("Hello")
+  )
+)
+      </input></program>
+    </subsection>
+    <subsection xml:id="subsec-conditions-call-stacks">
+      <title>Call stacks</title>
+      <p>To complete the section, there are some important differences between the call stacks of exiting and calling handlers. These differences are generally not important but I'm including them here because I've occasionally found them useful, and don't want to forget about them!</p>
+      <p>It's easiest to see the difference by setting up a small example that uses <c>lobstr::cst()</c>:</p>
+      <program language="r"><input>
+f &lt;- function() g()
+g &lt;- function() h()
+h &lt;- function() message("!")
+      </input></program>
+      <p>Calling handlers are called in the context of the call that signalled the condition:</p>
+      <program language="r"><input>
+withCallingHandlers(f(), message = function(cnd) {
+  lobstr::cst()
+  cnd_muffle(cnd)
+})
+      </input></program>
+      <p>Whereas exiting handlers are called in the context of the call to <c>tryCatch()</c>:</p>
+      <program language="r"><input>
+tryCatch(f(), message = function(cnd) lobstr::cst())
+      </input></program>
+    </subsection>
+    <exercises>
+      <exercise>
+        <p>What extra information does the condition generated by <c>abort()</c> contain compared to the condition generated by <c>stop()</c> i.e. what's the difference between these two objects? Read the help for <c>?abort</c> to learn more.</p>
+        <program language="r"><input>
+catch_cnd(stop("An error"))
+catch_cnd(abort("An error"))
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>Predict the results of evaluating the following code</p>
+        <program language="r"><input>
+show_condition &lt;- function(code) {
+  tryCatch(
+    error = function(cnd) "error",
+    warning = function(cnd) "warning",
+    message = function(cnd) "message",
+    {
+      code
+      NULL
+    }
+  )
+}
+
+show_condition(stop("!"))
+show_condition(10)
+show_condition(warning("?!"))
+show_condition({
+  10
+  message("?")
+  warning("?!")
+})
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>Explain the results of running this code:</p>
+        <program language="r"><input>
+withCallingHandlers(
+  message = function(cnd) message("b"),
+  withCallingHandlers(
+    message = function(cnd) message("a"),
+    message("c")
+  )
+)
+        </input></program>
+      </exercise>
+      <exercise><p>Read the source code for <c>catch_cnd()</c> and explain how it works.</p></exercise>
+      <exercise><p>How could you rewrite <c>show_condition()</c> to use a single handler?</p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-custom-conditions">
+    <title>Custom conditions</title>
+    <p>One of the challenges of error handling in R is that most functions generate one of the built-in conditions, which contain only a <c>message</c> and a <c>call</c>. That means that if you want to detect a specific type of error, you can only work with the text of the error message. This is error prone, not only because the message might change over time, but also because messages can be translated into other languages.</p>
+    <p>Fortunately R has a powerful, but little used feature: the ability to create custom conditions that can contain additional metadata. Creating custom conditions is a little fiddly in base R, but <c>rlang::abort()</c> makes it very easy as you can supply a custom <c>.subclass</c> and additional metadata.</p>
+    <p>The following example shows the basic pattern. I recommend using the following call structure for custom conditions. This takes advantage of R's flexible argument matching so that the name of the type of error comes first, followed by the user-facing text, followed by custom metadata.</p>
+    <program language="r"><input>
+abort(
+  "error_not_found",
+  message = "Path `blah.csv` not found", 
+  path = "blah.csv"
+)
+    </input></program>
+    <p>Custom conditions work just like regular conditions when used interactively, but allow handlers to do much more.</p>
+    <subsection xml:id="subsec-custom-conditions-motivation">
+      <title>Motivation</title>
+      <p>To explore these ideas in more depth, let's take <c>base::log()</c>. It does the minimum when throwing errors caused by invalid arguments:</p>
+      <program language="r"><input>
+log(letters)
+log(1:10, base = letters)
+      </input></program>
+      <p>I think we can do better by being explicit about which argument is the problem (i.e. <c>x</c> or <c>base</c>), and saying what the problematic input is (not just what it isn't).</p>
+      <program language="r"><input>
+my_log &lt;- function(x, base = exp(1)) {
+  if (!is.numeric(x)) {
+    abort(paste0(
+      "`x` must be a numeric vector; not ", typeof(x), "."
+    ))
+  }
+  if (!is.numeric(base)) {
+    abort(paste0(
+      "`base` must be a numeric vector; not ", typeof(base), "."
+    ))
+  }
+
+  base::log(x, base = base)
+}
+      </input></program>
+      <p>This gives us:</p>
+      <program language="r"><input>
+my_log(letters)
+my_log(1:10, base = letters)
+      </input></program>
+      <p>This is an improvement for interactive usage as the error messages are more likely to guide the user towards a correct fix. However, they're no better if you want to programmatically handle the errors: all the useful metadata about the error is jammed into a single string.</p>
+    </subsection>
+    <subsection xml:id="subsec-custom-conditions-signalling">
+      <title>Signalling</title>
+      <p>Let's build some infrastructure to improve this situation. We'll start by providing a custom <c>abort()</c> function for bad arguments. This is a little over-generalised for the example at hand, but it reflects common patterns that I've seen across other functions. The pattern is fairly simple. We create a nice error message for the user, using <c>glue::glue()</c>, and store metadata in the condition call for the developer.</p>
+      <program language="r"><input>
+abort_bad_argument &lt;- function(arg, must, not = NULL) {
+  msg &lt;- glue::glue("`{arg}` must {must}")
+  if (!is.null(not)) {
+    not &lt;- typeof(not)
+    msg &lt;- glue::glue("{msg}; not {not}.")
+  }
+  
+  abort("error_bad_argument", 
+    message = msg, 
+    arg = arg, 
+    must = must, 
+    not = not
+  )
+}
+      </input></program>
+      <aside>
+        <p>If you want to throw a custom error without adding a dependency on rlang, you can create a condition object "by hand" and then pass it to <c>stop()</c>:</p>
+        <program language="r"><input>
+stop_custom &lt;- function(.subclass, message, call = NULL, ...) {
+  err &lt;- structure(
+    list(
+      message = message,
+      call = call,
+      ...
+    ),
+    class = c(.subclass, "error", "condition")
+  )
+  stop(err)
+}
+
+err &lt;- catch_cnd(
+  stop_custom("error_new", "This is a custom error", x = 10)
+)
+class(err)
+err$x
+        </input></program>
+      </aside>
+      <p>We can now rewrite <c>my_log()</c> to use this new helper:</p>
+      <program language="r"><input>
+my_log &lt;- function(x, base = exp(1)) {
+  if (!is.numeric(x)) {
+    abort_bad_argument("x", must = "be numeric", not = x)
+  }
+  if (!is.numeric(base)) {
+    abort_bad_argument("base", must = "be numeric", not = base)
+  }
+
+  base::log(x, base = base)
+}
+      </input></program>
+      <p><c>my_log()</c> itself is not much shorter, but is a little more meaningful, and it ensures that error messages for bad arguments are consistent across functions. It yields the same interactive error messages as before:</p>
+      <program language="r"><input>
+my_log(letters)
+my_log(1:10, base = letters)
+      </input></program>
+    </subsection>
+    <subsection xml:id="subsec-custom-conditions-handling">
+      <title>Handling</title>
+      <p>These structured condition objects are much easier to program with. The first place you might want to use this capability is when testing your function. Unit testing is not a subject of this book (see R packages for details), but the basics are easy to understand. The following code captures the error, and then asserts it has the structure that we expect.</p>
+      <program language="r"><input>
+library(testthat)
+
+err &lt;- catch_cnd(my_log("a"))
+expect_s3_class(err, "error_bad_argument")
+expect_equal(err$arg, "x")
+expect_equal(err$not, "character")
+      </input></program>
+      <p>We can also use the class (<c>error_bad_argument</c>) in <c>tryCatch()</c> to only handle that specific error:</p>
+      <program language="r"><input>
+tryCatch(
+  error_bad_argument = function(cnd) "bad_argument",
+  error = function(cnd) "other error",
+  my_log("a")
+)
+      </input></program>
+      <p>When using <c>tryCatch()</c> with multiple handlers and custom classes, the first handler to match any class in the signal's class vector is called, not the best match. For this reason, you need to make sure to put the most specific handlers first. The following code does not do what you might hope:</p>
+      <program language="r"><input>
+tryCatch(
+  error = function(cnd) "other error",
+  error_bad_argument = function(cnd) "bad_argument",
+  my_log("a")
+)
+      </input></program>
+    </subsection>
+    <exercises>
+      <exercise><p>Inside a package, it's occasionally useful to check that a package is installed before using it. Write a function that checks if a package is installed (with <c>requireNamespace("pkg", quietly = FALSE)</c>) and if not, throws a custom condition that includes the package name in the metadata.</p></exercise>
+      <exercise><p>Inside a package you often need to stop with an error when something is not right. Other packages that depend on your package might be tempted to check these errors in their unit tests. How could you help these packages to avoid relying on the error message which is part of the user interface rather than the API and might change without notice?</p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-condition-applications">
+    <title>Applications</title>
+    <p>Now that you've learned the basic tools of R's condition system, it's time to dive into some applications. The goal of this section is not to show every possible usage of <c>tryCatch()</c> and <c>withCallingHandlers()</c> but to illustrate some common patterns that frequently crop up. Hopefully these will get your creative juices flowing, so when you encounter a new problem you can come up with a useful solution.</p>
+    <subsection xml:id="subsec-failure-value">
+      <title>Failure value</title>
+      <p>There are a few simple, but useful, <c>tryCatch()</c> patterns based on returning a value from the error handler. The simplest case is a wrapper to return a default value if an error occurs:</p>
+      <program language="r"><input>
+fail_with &lt;- function(expr, value = NULL) {
+  tryCatch(
+    error = function(cnd) value,
+    expr
+  )
+}
+
+fail_with(log(10), NA_real_)
+fail_with(log("x"), NA_real_)
+      </input></program>
+      <p>A more sophisticated application is <c>base::try()</c>. Below, <c>try2()</c> extracts the essence of <c>base::try()</c>; the real function is more complicated in order to make the error message look more like what you'd see if <c>tryCatch()</c> wasn't used.</p>
+      <program language="r"><input>
+try2 &lt;- function(expr, silent = FALSE) {
+  tryCatch(
+    error = function(cnd) {
+      msg &lt;- conditionMessage(cnd)
+      if (!silent) {
+        message("Error: ", msg)
+      }
+      structure(msg, class = "try-error")
+    },
+    expr
+  )
+}
+
+try2(1)
+try2(stop("Hi"))
+try2(stop("Hi"), silent = TRUE)
+      </input></program>
+    </subsection>
+    <subsection xml:id="subsec-try-success-failure">
+      <title>Success and failure values</title>
+      <p>We can extend this pattern to return one value if the code evaluates successfully (<c>success_val</c>), and another if it fails (<c>error_val</c>). This pattern just requires one small trick: evaluating the user supplied code, then <c>success_val</c>. If the code throws an error, we'll never get to <c>success_val</c> and will instead return <c>error_val</c>.</p>
+      <program language="r"><input>
+foo &lt;- function(expr) {
+  tryCatch(
+    error = function(cnd) error_val,
+    {
+      expr
+      success_val
+    }
+  )
+}
+      </input></program>
+      <p>We can use this to determine if an expression fails:</p>
+      <program language="r"><input>
+does_error &lt;- function(expr) {
+  tryCatch(
+    error = function(cnd) TRUE,
+    {
+      expr
+      FALSE
+    }
+  )
+}
+      </input></program>
+      <p>Or to capture any condition, like just <c>rlang::catch_cnd()</c>:</p>
+      <program language="r"><input>
+catch_cnd &lt;- function(expr) {
+  tryCatch(
+    condition = function(cnd) cnd, 
+    {
+      expr
+      NULL
+    }
+  )
+}
+      </input></program>
+      <p>We can also use this pattern to create a <c>try()</c> variant. One challenge with <c>try()</c> is that it's slightly challenging to determine if the code succeeded or failed. Rather than returning an object with a special class, I think it's slightly nicer to return a list with two components <c>result</c> and <c>error</c>.</p>
+      <program language="r"><input>
+safety &lt;- function(expr) {
+  tryCatch(
+    error = function(cnd) {
+      list(result = NULL, error = cnd)
+    },
+    list(result = expr, error = NULL)
+  )
+}
+
+str(safety(1 + 10))
+str(safety(stop("Error!")))
+      </input></program>
+      <p>(This is closely related to <c>purrr::safely()</c>, a function operator, which we'll come back to in <xref ref="subsec-safely"/>.)</p>
+    </subsection>
+    <subsection xml:id="subsec-resignal">
+      <title>Resignal</title>
+      <p>As well as returning default values when a condition is signalled, handlers can be used to make more informative error messages. One simple application is to make a function that works like <c>options(warn = 2)</c> for a single block of code. The idea is simple: we handle warnings by throwing an error:</p>
+      <program language="r"><input>
+warning2error &lt;- function(expr) {
+  withCallingHandlers(
+    warning = function(cnd) abort(conditionMessage(cnd)),
+    expr
+  )
+}
+      </input></program>
+      <program language="r"><input>
+warning2error({
+  x &lt;- 2 ^ 4
+  warn("Hello")
+})
+      </input></program>
+      <p>You could write a similar function if you were trying to find the source of an annoying message.</p>
+    </subsection>
+    <subsection xml:id="subsec-record-conditions">
+      <title>Record</title>
+      <p>Another common pattern is to record conditions for later investigation. The new challenge here is that calling handlers are called only for their side-effects so we can't return values, but instead need to modify some object in place.</p>
+      <program language="r"><input>
+catch_cnds &lt;- function(expr) {
+  conds &lt;- list()
+  add_cond &lt;- function(cnd) {
+    conds &lt;&lt;- append(conds, list(cnd))
+    cnd_muffle(cnd)
+  }
+  
+  withCallingHandlers(
+    message = add_cond,
+    warning = add_cond,
+    expr
+  )
+  
+  conds
+}
+
+catch_cnds({
+  inform("a")
+  warn("b")
+  inform("c")
+})
+      </input></program>
+      <p>What if you also want to capture errors? You'll need to wrap the <c>withCallingHandlers()</c> in a <c>tryCatch()</c>. If an error occurs, it will be the last condition.</p>
+      <program language="r"><input>
+catch_cnds &lt;- function(expr) {
+  conds &lt;- list()
+  add_cond &lt;- function(cnd) {
+    conds &lt;&lt;- append(conds, list(cnd))
+    cnd_muffle(cnd)
+  }
+  
+  tryCatch(
+    error = function(cnd) {
+      conds &lt;&lt;- append(conds, list(cnd))
+    },
+    withCallingHandlers(
+      message = add_cond,
+      warning = add_cond,
+      expr
+    )
+  )
+  
+  conds
+}
+
+catch_cnds({
+  inform("a")
+  warn("b")
+  abort("C")
+})
+      </input></program>
+      <p>This is the key idea underlying the evaluate package which powers knitr: it captures every output into a special data structure so that it can be later replayed. As a whole, the evaluate package is quite a lot more complicated than the code here because it also needs to handle plots and text output.</p>
+    </subsection>
+    <subsection xml:id="subsec-no-default-behaviour">
+      <title>No default behaviour</title>
+      <p>A final useful pattern is to signal a condition that doesn't inherit from <c>message</c>, <c>warning</c> or <c>error</c>. Because there is no default behaviour, this means the condition has no effect unless the user specifically requests it. For example, you could imagine a logging system based on conditions:</p>
+      <program language="r"><input>
+log &lt;- function(message, level = c("info", "error", "fatal")) {
+  level &lt;- match.arg(level)
+  signal(message, "log", level = level)
+}
+      </input></program>
+      <p>When you call <c>log()</c> a condition is signalled, but nothing happens because it has no default handler:</p>
+      <program language="r"><input>
+log("This code was run")
+      </input></program>
+      <p>To activate logging you need a handler that does something with the <c>log</c> condition. Below I define a <c>record_log()</c> function that will record all logging messages to a file:</p>
+      <program language="r"><input>
+record_log &lt;- function(expr, path = stdout()) {
+  withCallingHandlers(
+    log = function(cnd) {
+      cat(
+        "[", cnd$level, "] ", cnd$message, "\n", sep = "",
+        file = path, append = TRUE
+      )
+    },
+    expr
+  )
+}
+
+record_log(log("Hello"))
+      </input></program>
+      <p>You could even imagine layering with another function that allows you to selectively suppress some logging levels.</p>
+      <program language="r"><input>
+ignore_log_levels &lt;- function(expr, levels) {
+  withCallingHandlers(
+    log = function(cnd) {
+      if (cnd$level %in% levels) {
+        cnd_muffle(cnd)
+      }
+    },
+    expr
+  )
+}
+
+record_log(ignore_log_levels(log("Hello"), "info"))
+      </input></program>
+      <aside>
+        <p>If you create a condition object by hand, and signal it with <c>signalCondition()</c>, <c>cnd_muffle()</c> will not work. Instead you need to call it with a muffle restart defined, like this:</p>
+        <program language="r"><input>
+withRestarts(signalCondition(cond), muffle = function() NULL)
+        </input></program>
+        <p>Restarts are currently beyond the scope of the book, but I suspect will be included in the third edition.</p>
+      </aside>
+    </subsection>
+    <exercises>
+      <exercise><p>Create <c>suppressConditions()</c> that works like <c>suppressMessages()</c> and <c>suppressWarnings()</c> but suppresses everything. Think carefully about how you should handle errors.</p></exercise>
+      <exercise>
+        <p>Compare the following two implementations of <c>message2error()</c>. What is the main advantage of <c>withCallingHandlers()</c> in this scenario? (Hint: look carefully at the traceback.)</p>
+        <program language="r"><input>
+message2error &lt;- function(code) {
+  withCallingHandlers(code, message = function(e) stop(e))
+}
+message2error &lt;- function(code) {
+  tryCatch(code, message = function(e) stop(e))
+}
+        </input></program>
+      </exercise>
+      <exercise><p>How would you modify the <c>catch_cnds()</c> definition if you wanted to recreate the original intermingling of warnings and messages?</p></exercise>
+      <exercise>
+        <p>Why is catching interrupts dangerous? Run this code to find out.</p>
+        <program language="r"><input>
+bottles_of_beer &lt;- function(i = 99) {
+  message(
+    "There are ", i, " bottles of beer on the wall, ", 
+    i, " bottles of beer."
+  )
+  while(i &gt; 0) {
+    tryCatch(
+      Sys.sleep(1),
+      interrupt = function(err) {
+        i &lt;&lt;- i - 1
+        if (i &gt; 0) {
+          message(
+            "Take one down, pass it around, ", i, 
+            " bottle", if (i &gt; 1) "s", " of beer on the wall."
+          )
+        }
+      }
+    )
+  }
+  message(
+    "No more bottles of beer on the wall, ", 
+    "no more bottles of beer."
+  )
+}
+        </input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-conditions-answers">
+    <title>Quiz Answers</title>
+    <p><ol>
+      <li><p><c>error</c>, <c>warning</c>, and <c>message</c>.</p></li>
+      <li><p>You could use <c>try()</c> or <c>tryCatch()</c>.</p></li>
+      <li><p><c>tryCatch()</c> creates exiting handlers which will terminate the execution of wrapped code; <c>withCallingHandlers()</c> creates calling handlers which don't affect the execution of wrapped code.</p></li>
+      <li><p>Because you can then capture specific types of error with <c>tryCatch()</c>, rather than relying on the comparison of error strings, which is risky, especially when messages are translated.</p></li>
+    </ol></p>
+  </section>
+
+</chapter>
