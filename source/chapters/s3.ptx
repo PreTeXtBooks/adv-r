@@ -1,41 +1,940 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-s3" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>S3</title>
+<chapter xml:id="ch-s3" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>S3</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      S3 is R's first and simplest OO system. S3 is informal and ad hoc, but there is a certain elegance in its minimalism: you can't take away any part of it and still have a useful OO system. For these reasons, you should use it, unless you have a compelling reason to do otherwise. S3 is the only OO system used in the base and stats packages, and it's the most commonly used system in CRAN packages.
+    </p>
+    <p>
+      S3 is very flexible, which means it allows you to do things that are quite ill-advised. If you're coming from a strict environment like Java this will seem pretty frightening, but it gives R programmers a tremendous amount of freedom. It may be very difficult to prevent people from doing something you don't want them to do, but your users will never be held back because there is something you haven't implemented yet. Since S3 has few built-in constraints, the key to its successful use is applying the constraints yourself. This chapter will therefore teach you the conventions you should (almost) always follow.
+    </p>
+    <p>
+      The goal of this chapter is to show you how the S3 system works, not how to use it effectively to create new classes and generics. I'd recommend coupling the theoretical knowledge from this chapter with the practical knowledge encoded in the <url href="https://vctrs.r-lib.org" visual="https://vctrs.r-lib.org">vctrs package</url>.
+    </p>
+
+    <paragraphs xml:id="para-s3-outline">
+      <title>Outline</title>
+      <p><ul>
+        <li><p>Section <xref ref="sec-s3-basics"/> gives a rapid overview of all the main components of S3: classes, generics, and methods. You'll also learn about <c>sloop::s3_dispatch()</c>, which we'll use throughout the chapter to explore how S3 works.</p></li>
+        <li><p>Section <xref ref="sec-s3-classes"/> goes into the details of creating a new S3 class, including the three functions that should accompany most classes: a constructor, a helper, and a validator.</p></li>
+        <li><p>Section <xref ref="sec-s3-methods"/> describes how S3 generics and methods work, including the basics of method dispatch.</p></li>
+        <li><p>Section <xref ref="sec-object-styles"/> discusses the four main styles of S3 objects: vector, record, data frame, and scalar.</p></li>
+        <li><p>Section <xref ref="sec-s3-inheritance"/> demonstrates how inheritance works in S3, and shows you what you need to make a class "subclassable".</p></li>
+        <li><p>Section <xref ref="sec-s3-dispatch"/> concludes the chapter with a discussion of the finer details of method dispatch including base types, internal generics, group generics, and double dispatch.</p></li>
+      </ul></p>
+    </paragraphs>
+
+    <paragraphs xml:id="para-s3-prerequisites">
+      <title>Prerequisites</title>
       <p>
-        S3 is R's first and simplest OO system. S3 is informal and ad hoc, but
-        there is a certain elegance in its minimalism: you can't take away any
-        part of it and still have a useful OO system. For these reasons, you
-        should use it, unless you have a compelling reason to do otherwise.
-        S3 is the only OO system used in the base and stats packages, and it's
-        the most commonly used system in CRAN packages.
+        S3 classes are implemented using attributes, so make sure you're familiar with the details described in <xref ref="sec-attributes"/>. We'll use existing base S3 vectors for examples and exploration, so make sure that you're familiar with the factor, Date, difftime, POSIXct, and POSIXlt classes described in <xref ref="sec-s3-atomic-vectors"/>.
       </p>
-    </introduction>
-
-    <section xml:id="sec-s3-basics">
-      <title>Basics</title>
-
       <p>
-        An S3 object is a base type with at least a <c>class</c> attribute.
-        As an example, let's look at the difference between a factor and an
-        integer:
+        We'll use the <url href="https://sloop.r-lib.org" visual="https://sloop.r-lib.org">sloop</url> package for its interactive helpers.
       </p>
+      <program language="r"><input>
+library(sloop)
+      </input></program>
+    </paragraphs>
+  </introduction>
 
-      <program language="r">
-        <input>
+  <section xml:id="sec-s3-basics">
+    <title>Basics</title>
+
+    <p>
+      An S3 object is a base type with at least a <c>class</c> attribute (other attributes may be used to store other data). For example, take the factor. Its base type is the integer vector, it has a <c>class</c> attribute of "factor", and a <c>levels</c> attribute that stores the possible levels:
+    </p>
+    <program language="r"><input>
 f &lt;- factor(c("a", "b", "c"))
 
 typeof(f)
-#&gt; [1] "integer"
 attributes(f)
-#&gt; $levels
-#&gt; [1] "a" "b" "c"
-#&gt; 
-#&gt; $class
-#&gt; [1] "factor"
-        </input>
-      </program>
-    </section>
+    </input></program>
+    <p>
+      You can get the underlying base type by <c>unclass()</c>ing it, which strips the class attribute, causing it to lose its special behaviour:
+    </p>
+    <program language="r"><input>
+unclass(f)
+    </input></program>
+    <p>
+      An S3 object behaves differently from its underlying base type whenever it's passed to a <alert>generic</alert> (short for generic function). The easiest way to tell if a function is a generic is to use <c>sloop::ftype()</c> and look for "generic" in the output:
+    </p>
+    <program language="r"><input>
+ftype(print)
+ftype(str)
+ftype(unclass)
+    </input></program>
+    <p>
+      A generic function defines an interface, which uses a different implementation depending on the class of an argument (almost always the first argument). Many base R functions are generic, including the important <c>print()</c>:
+    </p>
+    <program language="r"><input>
+print(f)
 
-  </chapter>
+# stripping class reverts to integer behaviour
+print(unclass(f))
+    </input></program>
+    <p>
+      Beware that <c>str()</c> is generic, and some S3 classes use that generic to hide the internal details. For example, the <c>POSIXlt</c> class used to represent date-time data is actually built on top of a list, a fact which is hidden by its <c>str()</c> method:
+    </p>
+    <program language="r"><input>
+time &lt;- strptime(c("2017-01-01", "2020-05-04 03:21"), "%Y-%m-%d")
+str(time)
+
+str(unclass(time))
+    </input></program>
+    <p>
+      The generic is a middleman: its job is to define the interface (i.e. the arguments) then find the right implementation for the job. The implementation for a specific class is called a <alert>method</alert>, and the generic finds that method by performing <alert>method dispatch</alert>.
+    </p>
+    <p>
+      You can use <c>sloop::s3_dispatch()</c> to see the process of method dispatch:
+    </p>
+    <program language="r"><input>
+s3_dispatch(print(f))
+    </input></program>
+    <p>
+      We'll come back to the details of dispatch in <xref ref="sec-s3-dispatch"/>, for now note that S3 methods are functions with a special naming scheme, <c>generic.class()</c>. For example, the <c>factor</c> method for the <c>print()</c> generic is called <c>print.factor()</c>. You should never call the method directly, but instead rely on the generic to find it for you.
+    </p>
+    <p>
+      Generally, you can identify a method by the presence of <c>.</c> in the function name, but there are a number of important functions in base R that were written before S3, and hence use <c>.</c> to join words. If you're unsure, check with <c>sloop::ftype()</c>:
+    </p>
+    <program language="r"><input>
+ftype(t.test)
+ftype(t.data.frame)
+    </input></program>
+    <p>
+      Unlike most functions, you can't see the source code for most S3 methods<fn>The exceptions are methods found in the base package, like <c>t.data.frame</c>, and methods that you've created.</fn> just by typing their names. That's because S3 methods are not usually exported: they live only inside the package, and are not available from the global environment. Instead, you can use <c>sloop::s3_get_method()</c>, which will work regardless of where the method lives:
+    </p>
+    <program language="r"><input>
+weighted.mean.Date
+
+s3_get_method(weighted.mean.Date)
+    </input></program>
+
+    <exercises>
+      <exercise>
+        <p>Describe the difference between <c>t.test()</c> and <c>t.data.frame()</c>. When is each function called?</p>
+      </exercise>
+      <exercise>
+        <p>Make a list of commonly used base R functions that contain <c>.</c> in their name but are not S3 methods.</p>
+      </exercise>
+      <exercise>
+        <p>What does the <c>as.data.frame.data.frame()</c> method do? Why is it confusing? How could you avoid this confusion in your own code?</p>
+      </exercise>
+      <exercise>
+        <p>Describe the difference in behaviour in these two calls.</p>
+        <program language="r"><input>
+set.seed(1014)
+some_days &lt;- as.Date("2017-01-31") + sample(10, 5)
+
+mean(some_days)
+mean(unclass(some_days))
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What class of object does the following code return? What base type is it built on? What attributes does it use?</p>
+        <program language="r"><input>
+x &lt;- ecdf(rpois(100, 10))
+x
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What class of object does the following code return? What base type is it built on? What attributes does it use?</p>
+        <program language="r"><input>
+x &lt;- table(rpois(100, 5))
+x
+        </input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s3-classes">
+    <title>Classes</title>
+
+    <p>
+      If you have done object-oriented programming in other languages, you may be surprised to learn that S3 has no formal definition of a class: to make an object an instance of a class, you simply set the <alert>class attribute</alert>. You can do that during creation with <c>structure()</c>, or after the fact with <c>class&lt;-()</c>:
+    </p>
+    <program language="r"><input>
+# Create and assign class in one step
+x &lt;- structure(list(), class = "my_class")
+
+# Create, then set class
+x &lt;- list()
+class(x) &lt;- "my_class"
+    </input></program>
+    <p>
+      You can determine the class of an S3 object with <c>class(x)</c>, and see if an object is an instance of a class using <c>inherits(x, "classname")</c>.
+    </p>
+    <program language="r"><input>
+class(x)
+inherits(x, "my_class")
+inherits(x, "your_class")
+    </input></program>
+    <p>
+      The class name can be any string, but I recommend using only letters and <c>_</c>. Avoid <c>.</c> because (as mentioned earlier) it can be confused with the <c>.</c> separator between a generic name and a class name. When using a class in a package, I recommend including the package name in the class name. That ensures you won't accidentally clash with a class defined by another package.
+    </p>
+    <p>
+      S3 has no checks for correctness which means you can change the class of existing objects:
+    </p>
+    <program language="r"><input>
+# Create a linear model
+mod &lt;- lm(log(mpg) ~ log(disp), data = mtcars)
+class(mod)
+print(mod)
+
+# Turn it into a date (?!)
+class(mod) &lt;- "Date"
+
+# Unsurprisingly this doesn't work very well
+print(mod)
+    </input></program>
+    <p>
+      If you've used other OO languages, this might make you feel queasy, but in practice this flexibility causes few problems. R doesn't stop you from shooting yourself in the foot, but as long as you don't aim the gun at your toes and pull the trigger, you won't have a problem.
+    </p>
+    <p>
+      To avoid foot-bullet intersections when creating your own class, I recommend that you usually provide three functions:
+    </p>
+    <p><ul>
+      <li><p>A low-level <alert>constructor</alert>, <c>new_myclass()</c>, that efficiently creates new objects with the correct structure.</p></li>
+      <li><p>A <alert>validator</alert>, <c>validate_myclass()</c>, that performs more computationally expensive checks to ensure that the object has correct values.</p></li>
+      <li><p>A user-friendly <alert>helper</alert>, <c>myclass()</c>, that provides a convenient way for others to create objects of your class.</p></li>
+    </ul></p>
+    <p>
+      You don't need a validator for very simple classes, and you can skip the helper if the class is for internal use only, but you should always provide a constructor.
+    </p>
+
+    <subsection xml:id="subsec-s3-constructor">
+      <title>Constructors</title>
+
+      <p>
+        S3 doesn't provide a formal definition of a class, so it has no built-in way to ensure that all objects of a given class have the same structure (i.e. the same base type and the same attributes with the same types). Instead, you must enforce a consistent structure by using a <alert>constructor</alert>.
+      </p>
+      <p>
+        The constructor should follow three principles:
+      </p>
+      <p><ul>
+        <li><p>Be called <c>new_myclass()</c>.</p></li>
+        <li><p>Have one argument for the base object, and one for each attribute.</p></li>
+        <li><p>Check the type of the base object and the types of each attribute.</p></li>
+      </ul></p>
+      <p>
+        I'll illustrate these ideas by creating constructors for base classes<fn>Recent versions of R have <c>.Date()</c>, <c>.difftime()</c>, <c>.POSIXct()</c>, and <c>.POSIXlt()</c> constructors but they are internal, not well documented, and do not follow the principles that I recommend.</fn> that you're already familiar with. To start, lets make a constructor for the simplest S3 class: <c>Date</c>. A <c>Date</c> is just a double with a single attribute: its <c>class</c> is "Date". This makes for a very simple constructor:
+      </p>
+      <program language="r"><input>
+new_Date &lt;- function(x = double()) {
+  stopifnot(is.double(x))
+  structure(x, class = "Date")
+}
+
+new_Date(c(-1, 0, 1))
+      </input></program>
+      <p>
+        The purpose of constructors is to help you, the developer. That means you can keep them simple, and you don't need to optimise error messages for public consumption. If you expect users to also create objects, you should create a friendly helper function, called <c>class_name()</c>, which I'll describe shortly.
+      </p>
+      <p>
+        A slightly more complicated constructor is that for <c>difftime</c>, which is used to represent time differences. It is again built on a double, but has a <c>units</c> attribute that must take one of a small set of values:
+      </p>
+      <program language="r"><input>
+new_difftime &lt;- function(x = double(), units = "secs") {
+  stopifnot(is.double(x))
+  units &lt;- match.arg(units, c("secs", "mins", "hours", "days", "weeks"))
+
+  structure(x,
+    class = "difftime",
+    units = units
+  )
+}
+
+new_difftime(c(1, 10, 3600), "secs")
+new_difftime(52, "weeks")
+      </input></program>
+      <p>
+        The constructor is a developer function: it will be called in many places, by an experienced user. That means it's OK to trade a little safety in return for performance, and you should avoid potentially time-consuming checks in the constructor.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s3-validators">
+      <title>Validators</title>
+
+      <p>
+        More complicated classes require more complicated checks for validity. Take factors, for example. A constructor only checks that types are correct, making it possible to create malformed factors:
+      </p>
+      <program language="r"><input>
+new_factor &lt;- function(x = integer(), levels = character()) {
+  stopifnot(is.integer(x))
+  stopifnot(is.character(levels))
+
+  structure(
+    x,
+    levels = levels,
+    class = "factor"
+  )
+}
+
+new_factor(1:5, "a")
+new_factor(0:1, "a")
+      </input></program>
+      <p>
+        Rather than encumbering the constructor with complicated checks, it's better to put them in a separate function. Doing so allows you to cheaply create new objects when you know that the values are correct, and easily re-use the checks in other places.
+      </p>
+      <program language="r"><input>
+validate_factor &lt;- function(x) {
+  values &lt;- unclass(x)
+  levels &lt;- attr(x, "levels")
+
+  if (!all(!is.na(values) &amp; values &gt; 0)) {
+    stop(
+      "All `x` values must be non-missing and greater than zero",
+      call. = FALSE
+    )
+  }
+
+  if (length(levels) &lt; max(values)) {
+    stop(
+      "There must be at least as many `levels` as possible values in `x`",
+      call. = FALSE
+    )
+  }
+
+  x
+}
+
+validate_factor(new_factor(1:5, "a"))
+validate_factor(new_factor(0:1, "a"))
+      </input></program>
+      <p>
+        This validator function is called primarily for its side-effects (throwing an error if the object is invalid) so you'd expect it to invisibly return its primary input (as described in <xref ref="sec-invisible"/>). However, it's useful for validation methods to return visibly, as we'll see next.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s3-helper">
+      <title>Helpers</title>
+
+      <p>
+        If you want users to construct objects from your class, you should also provide a helper method that makes their life as easy as possible. A helper should always:
+      </p>
+      <p><ul>
+        <li><p>Have the same name as the class, e.g. <c>myclass()</c>.</p></li>
+        <li><p>Finish by calling the constructor, and the validator, if it exists.</p></li>
+        <li><p>Create carefully crafted error messages tailored towards an end-user.</p></li>
+        <li><p>Have a thoughtfully crafted user interface with carefully chosen default values and useful conversions.</p></li>
+      </ul></p>
+      <p>
+        The last bullet is the trickiest, and it's hard to give general advice. However, there are three common patterns:
+      </p>
+      <p><ul>
+        <li>
+          <p>Sometimes all the helper needs to do is coerce its inputs to the desired type. For example, <c>new_difftime()</c> is very strict, and violates the usual convention that you can use an integer vector wherever you can use a double vector:</p>
+          <program language="r"><input>
+new_difftime(1:10)
+          </input></program>
+          <p>It's not the job of the constructor to be flexible, so here we create a helper that just coerces the input to a double.</p>
+          <program language="r"><input>
+difftime &lt;- function(x = double(), units = "secs") {
+  x &lt;- as.double(x)
+  new_difftime(x, units = units)
+}
+
+difftime(1:10)
+          </input></program>
+        </li>
+        <li>
+          <p>Often, the most natural representation of a complex object is a string. For example, it's very convenient to specify factors with a character vector. The code below shows a simple version of <c>factor()</c>: it takes a character vector, and guesses that the levels should be the unique values. This is not always correct (since some levels might not be seen in the data), but it's a useful default.</p>
+          <program language="r"><input>
+factor &lt;- function(x = character(), levels = unique(x)) {
+  ind &lt;- match(x, levels)
+  validate_factor(new_factor(ind, levels))
+}
+
+factor(c("a", "a", "b"))
+          </input></program>
+        </li>
+        <li>
+          <p>Some complex objects are most naturally specified by multiple simple components. For example, I think it's natural to construct a date-time by supplying the individual components (year, month, day etc). That leads me to this <c>POSIXct()</c> helper that resembles the existing <c>ISODatetime()</c> function<fn>This helper is not efficient: behind the scenes <c>ISODatetime()</c> works by pasting the components into a string and then using <c>strptime()</c>. A more efficient equivalent is available in <c>lubridate::make_datetime()</c>.</fn>:</p>
+          <program language="r"><input>
+POSIXct &lt;- function(year = integer(),
+                    month = integer(),
+                    day = integer(),
+                    hour = 0L,
+                    minute = 0L,
+                    sec = 0,
+                    tzone = "") {
+  ISOdatetime(year, month, day, hour, minute, sec, tz = tzone)
+}
+
+POSIXct(2020, 1, 1, tzone = "America/New_York")
+          </input></program>
+        </li>
+      </ul></p>
+      <p>
+        For more complicated classes, you should feel free to go beyond these patterns to make life as easy as possible for your users.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Write a constructor for <c>data.frame</c> objects. What base type is a data frame built on? What attributes does it use? What are the restrictions placed on the individual elements? What about the names?</p>
+      </exercise>
+      <exercise>
+        <p>Enhance my <c>factor()</c> helper to have better behaviour when one or more <c>values</c> is not found in <c>levels</c>. What does <c>base::factor()</c> do in this situation?</p>
+      </exercise>
+      <exercise>
+        <p>Carefully read the source code of <c>factor()</c>. What does it do that my constructor does not?</p>
+      </exercise>
+      <exercise>
+        <p>Factors have an optional "contrasts" attribute. Read the help for <c>C()</c>, and briefly describe the purpose of the attribute. What type should it have? Rewrite the <c>new_factor()</c> constructor to include this attribute.</p>
+      </exercise>
+      <exercise>
+        <p>Read the documentation for <c>utils::as.roman()</c>. How would you write a constructor for this class? Does it need a validator? What might a helper do?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s3-methods">
+    <title>Generics and methods</title>
+
+    <p>
+      The job of an S3 generic is to perform method dispatch, i.e. find the specific implementation for a class. Method dispatch is performed by <c>UseMethod()</c>, which every generic calls<fn>The exception is internal generics, which are implemented in C, and are the topic of <xref ref="subsec-internal-generics"/>.</fn>. <c>UseMethod()</c> takes two arguments: the name of the generic function (required), and the argument to use for method dispatch (optional). If you omit the second argument, it will dispatch based on the first argument, which is almost always what is desired.
+    </p>
+    <p>
+      Most generics are very simple, and consist of only a call to <c>UseMethod()</c>. Take <c>mean()</c> for example:
+    </p>
+    <program language="r"><input>
+mean
+    </input></program>
+    <p>
+      Creating your own generic is similarly simple:
+    </p>
+    <program language="r"><input>
+my_new_generic &lt;- function(x) {
+  UseMethod("my_new_generic")
+}
+    </input></program>
+    <p>
+      (If you wonder why we have to repeat <c>my_new_generic</c> twice, think back to <xref ref="sec-first-class-functions"/>.)
+    </p>
+    <p>
+      You don't pass any of the arguments of the generic to <c>UseMethod()</c>; it uses deep magic to pass to the method automatically. The precise process is complicated and frequently surprising, so you should avoid doing any computation in a generic. To learn the full details, carefully read the Technical Details section in <c>?UseMethod</c>.
+    </p>
+
+    <subsection xml:id="subsec-method-dispatch">
+      <title>Method dispatch</title>
+
+      <p>
+        How does <c>UseMethod()</c> work? It basically creates a vector of method names, <c>paste0("generic", ".", c(class(x), "default"))</c>, and then looks for each potential method in turn. We can see this in action with <c>sloop::s3_dispatch()</c>. You give it a call to an S3 generic, and it lists all the possible methods. For example, what method is called when you print a <c>Date</c> object?
+      </p>
+      <program language="r"><input>
+x &lt;- Sys.Date()
+s3_dispatch(print(x))
+      </input></program>
+      <p>
+        The output here is simple:
+      </p>
+      <p><ul>
+        <li><p><c>=&gt;</c> indicates the method that is called, here <c>print.Date()</c></p></li>
+        <li><p><c>*</c> indicates a method that is defined, but not called, here <c>print.default()</c>.</p></li>
+      </ul></p>
+      <p>
+        The "default" class is a special <alert>pseudo-class</alert>. This is not a real class, but is included to make it possible to define a standard fallback that is found whenever a class-specific method is not available.
+      </p>
+      <p>
+        The essence of method dispatch is quite simple, but as the chapter proceeds you'll see it get progressively more complicated to encompass inheritance, base types, internal generics, and group generics. The code below shows a couple of more complicated cases which we'll come back to in <xref ref="sec-s3-inheritance"/> and <xref ref="sec-s3-dispatch"/>.
+      </p>
+      <program language="r"><input>
+x &lt;- matrix(1:10, nrow = 2)
+s3_dispatch(mean(x))
+
+s3_dispatch(sum(Sys.time()))
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-finding-methods">
+      <title>Finding methods</title>
+
+      <p>
+        <c>sloop::s3_dispatch()</c> lets you find the specific method used for a single call. What if you want to find all methods defined for a generic or associated with a class? That's the job of <c>sloop::s3_methods_generic()</c> and <c>sloop::s3_methods_class()</c>:
+      </p>
+      <program language="r"><input>
+s3_methods_generic("mean")
+
+s3_methods_class("ordered")
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-s3-arguments">
+      <title>Creating methods</title>
+
+      <p>
+        There are two wrinkles to be aware of when you create a new method:
+      </p>
+      <p><ul>
+        <li><p>First, you should only ever write a method if you own the generic or the class. R will allow you to define a method even if you don't, but it is exceedingly bad manners. Instead, work with the author of either the generic or the class to add the method in their code.</p></li>
+        <li>
+          <p>A method must have the same arguments as its generic. This is enforced in packages by <c>R CMD check</c>, but it's good practice even if you're not creating a package.</p>
+          <p>There is one exception to this rule: if the generic has <c>...</c>, the method can contain a superset of the arguments. This allows methods to take arbitrary additional arguments. The downside of using <c>...</c>, however, is that any misspelled arguments will be silently swallowed<fn>See <url href="https://github.com/hadley/ellipsis" visual="https://github.com/hadley/ellipsis">https://github.com/hadley/ellipsis</url> for an experimental way of warning when methods fail to use all the arguments in <c>...</c>, providing a potential resolution of this issue.</fn>, as mentioned in <xref ref="sec-fun-dot-dot-dot"/>.</p>
+        </li>
+      </ul></p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Read the source code for <c>t()</c> and <c>t.test()</c> and confirm that <c>t.test()</c> is an S3 generic and not an S3 method. What happens if you create an object with class <c>test</c> and call <c>t()</c> with it? Why?</p>
+        <program language="r"><input>
+x &lt;- structure(1:10, class = "test")
+t(x)
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What generics does the <c>table</c> class have methods for?</p>
+      </exercise>
+      <exercise>
+        <p>What generics does the <c>ecdf</c> class have methods for?</p>
+      </exercise>
+      <exercise>
+        <p>Which base generic has the greatest number of defined methods?</p>
+      </exercise>
+      <exercise>
+        <p>Carefully read the documentation for <c>UseMethod()</c> and explain why the following code returns the results that it does. What two usual rules of function evaluation does <c>UseMethod()</c> violate?</p>
+        <program language="r"><input>
+g &lt;- function(x) {
+  x &lt;- 10
+  y &lt;- 10
+  UseMethod("g")
+}
+g.default &lt;- function(x) c(x = x, y = y)
+
+x &lt;- 1
+y &lt;- 1
+g(x)
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What are the arguments to <c>[</c>? Why is this a hard question to answer?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-object-styles">
+    <title>Object styles</title>
+
+    <p>
+      So far I've focussed on vector style classes like <c>Date</c> and <c>factor</c>. These have the key property that <c>length(x)</c> represents the number of observations in the vector. There are three variants that do not have this property:
+    </p>
+    <p><ul>
+      <li>
+        <p>Record style objects use a list of equal-length vectors to represent individual components of the object. The best example of this is <c>POSIXlt</c>, which underneath the hood is a list of 11 date-time components like year, month, and day. Record style classes override <c>length()</c> and subsetting methods to conceal this implementation detail.</p>
+        <program language="r"><input>
+x &lt;- as.POSIXlt(ISOdatetime(2020, 1, 1, 0, 0, 1:3))
+x
+
+length(x)
+length(unclass(x))
+
+x[[1]] # the first date time
+unclass(x)[[1]] # the first component, the number of seconds
+        </input></program>
+      </li>
+      <li>
+        <p>Data frames are similar to record style objects in that both use lists of equal length vectors. However, data frames are conceptually two dimensional, and the individual components are readily exposed to the user. The number of observations is the number of rows, not the length:</p>
+        <program language="r"><input>
+x &lt;- data.frame(x = 1:100, y = 1:100)
+length(x)
+nrow(x)
+        </input></program>
+      </li>
+      <li>
+        <p>Scalar objects typically use a list to represent a single thing. For example, an <c>lm</c> object is a list of length 12 but it represents one model.</p>
+        <program language="r"><input>
+mod &lt;- lm(mpg ~ wt, data = mtcars)
+length(mod)
+        </input></program>
+        <p>Scalar objects can also be built on top of functions, calls, and environments<fn>You can also build an object on top of a pairlist, but I have yet to find a good reason to do so.</fn>. This is less generally useful, but you can see applications in <c>stats::ecdf()</c>, R6 (<xref ref="ch-r6"/>), and <c>rlang::quo()</c> (<xref ref="ch-quasiquotation"/>).</p>
+      </li>
+    </ul></p>
+    <p>
+      Unfortunately, describing the appropriate use of each of these object styles is beyond the scope of this book. However, you can learn more from the documentation of the vctrs package (<url href="https://vctrs.r-lib.org" visual="https://vctrs.r-lib.org">https://vctrs.r-lib.org</url>); the package also provides constructors and helpers that make implementation of the different styles easier.
+    </p>
+
+    <exercises>
+      <exercise>
+        <p>Categorise the objects returned by <c>lm()</c>, <c>factor()</c>, <c>table()</c>, <c>as.Date()</c>, <c>as.POSIXct()</c> <c>ecdf()</c>, <c>ordered()</c>, <c>I()</c> into the styles described above.</p>
+      </exercise>
+      <exercise>
+        <p>What would a constructor function for <c>lm</c> objects, <c>new_lm()</c>, look like? Use <c>?lm</c> and experimentation to figure out the required fields and their types.</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s3-inheritance">
+    <title>Inheritance</title>
+
+    <p>
+      S3 classes can share behaviour through a mechanism called <alert>inheritance</alert>. Inheritance is powered by three ideas:
+    </p>
+    <p><ul>
+      <li>
+        <p>The class can be a character <em>vector</em>. For example, the <c>ordered</c> and <c>POSIXct</c> classes have two components in their class:</p>
+        <program language="r"><input>
+class(ordered("x"))
+class(Sys.time())
+        </input></program>
+      </li>
+      <li>
+        <p>If a method is not found for the class in the first element of the vector, R looks for a method for the second class (and so on):</p>
+        <program language="r"><input>
+s3_dispatch(print(ordered("x")))
+s3_dispatch(print(Sys.time()))
+        </input></program>
+      </li>
+      <li>
+        <p>A method can delegate work by calling <c>NextMethod()</c>. We'll come back to that very shortly; for now, note that <c>s3_dispatch()</c> reports delegation with <c>-&gt;</c>.</p>
+        <program language="r"><input>
+s3_dispatch(ordered("x")[1])
+s3_dispatch(Sys.time()[1])
+        </input></program>
+      </li>
+    </ul></p>
+    <p>
+      Before we continue we need a bit of vocabulary to describe the relationship between the classes that appear together in a class vector. We'll say that <c>ordered</c> is a <alert>subclass</alert> of <c>factor</c> because it always appears before it in the class vector, and, conversely, we'll say <c>factor</c> is a <alert>superclass</alert> of <c>ordered</c>.
+    </p>
+    <p>
+      S3 imposes no restrictions on the relationship between sub- and superclasses but your life will be easier if you impose some. I recommend that you adhere to two simple principles when creating a subclass:
+    </p>
+    <p><ul>
+      <li><p>The base type of the subclass should be that same as the superclass.</p></li>
+      <li><p>The attributes of the subclass should be a superset of the attributes of the superclass.</p></li>
+    </ul></p>
+    <p>
+      <c>POSIXt</c> does not adhere to these principles because <c>POSIXct</c> has type double, and <c>POSIXlt</c> has type list. This means that <c>POSIXt</c> is not a superclass, and illustrates that it's quite possible to use the S3 inheritance system to implement other styles of code sharing (here <c>POSIXt</c> plays a role more like an interface), but you'll need to figure out safe conventions yourself.
+    </p>
+
+    <subsection xml:id="subsec-nextmethod">
+      <title>NextMethod()</title>
+
+      <p>
+        <c>NextMethod()</c> is the hardest part of inheritance to understand, so we'll start with a concrete example for the most common use case: <c>[</c>. We'll start by creating a simple toy class: a <c>secret</c> class that hides its output when printed:
+      </p>
+      <program language="r"><input>
+new_secret &lt;- function(x = double()) {
+  stopifnot(is.double(x))
+  structure(x, class = "secret")
+}
+
+print.secret &lt;- function(x, ...) {
+  print(strrep("x", nchar(x)))
+  invisible(x)
+}
+
+x &lt;- new_secret(c(15, 1, 456))
+x
+      </input></program>
+      <p>
+        This works, but the default <c>[</c> method doesn't preserve the class:
+      </p>
+      <program language="r"><input>
+s3_dispatch(x[1])
+x[1]
+      </input></program>
+      <p>
+        To fix this, we need to provide a <c>[.secret</c> method. How could we implement this method? The naive approach won't work because we'll get stuck in an infinite loop:
+      </p>
+      <program language="r"><input>
+`[.secret` &lt;- function(x, i) {
+  new_secret(x[i])
+}
+      </input></program>
+      <p>
+        Instead, we need some way to call the underlying <c>[</c> code, i.e. the implementation that would get called if we didn't have a <c>[.secret</c> method. One approach would be to <c>unclass()</c> the object:
+      </p>
+      <program language="r"><input>
+`[.secret` &lt;- function(x, i) {
+  x &lt;- unclass(x)
+  new_secret(x[i])
+}
+x[1]
+      </input></program>
+      <p>
+        This works, but is inefficient because it creates a copy of <c>x</c>. A better approach is to use <c>NextMethod()</c>, which concisely solves the problem of delegating to the method that would have been called if <c>[.secret</c> didn't exist:
+      </p>
+      <program language="r"><input>
+`[.secret` &lt;- function(x, i) {
+  new_secret(NextMethod())
+}
+x[1]
+      </input></program>
+      <p>
+        We can see what's going on with <c>sloop::s3_dispatch()</c>:
+      </p>
+      <program language="r"><input>
+s3_dispatch(x[1])
+      </input></program>
+      <p>
+        The <c>=&gt;</c> indicates that <c>[.secret</c> is called, but that <c>NextMethod()</c> delegates work to the underlying internal <c>[</c> method, as shown by the <c>-&gt;</c>.
+      </p>
+      <p>
+        As with <c>UseMethod()</c>, the precise semantics of <c>NextMethod()</c> are complex. In particular, it tracks the list of potential next methods with a special variable, which means that modifying the object that's being dispatched upon will have no impact on which method gets called next.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s3-subclassing">
+      <title>Allowing subclassing</title>
+
+      <p>
+        When you create a class, you need to decide if you want to allow subclasses, because it requires some changes to the constructor and careful thought in your methods.
+      </p>
+      <p>
+        To allow subclasses, the parent constructor needs to have <c>...</c> and <c>class</c> arguments:
+      </p>
+      <program language="r"><input>
+new_secret &lt;- function(x, ..., class = character()) {
+  stopifnot(is.double(x))
+
+  structure(
+    x,
+    ...,
+    class = c(class, "secret")
+  )
+}
+      </input></program>
+      <p>
+        Then the subclass constructor can just call to the parent class constructor with additional arguments as needed. For example, imagine we want to create a supersecret class which also hides the number of characters:
+      </p>
+      <program language="r"><input>
+new_supersecret &lt;- function(x) {
+  new_secret(x, class = "supersecret")
+}
+
+print.supersecret &lt;- function(x, ...) {
+  print(rep("xxxxx", length(x)))
+  invisible(x)
+}
+
+x2 &lt;- new_supersecret(c(15, 1, 456))
+x2
+      </input></program>
+      <p>
+        To allow inheritance, you also need to think carefully about your methods, as you can no longer use the constructor. If you do, the method will always return the same class, regardless of the input. This forces whoever makes a subclass to do a lot of extra work.
+      </p>
+      <p>
+        Concretely, this means we need to revise the <c>[.secret</c> method. Currently it always returns a <c>secret()</c>, even when given a supersecret:
+      </p>
+      <program language="r"><input>
+`[.secret` &lt;- function(x, ...) {
+  new_secret(NextMethod())
+}
+
+x2[1:3]
+      </input></program>
+      <p>
+        We want to make sure that <c>[.secret</c> returns the same class as <c>x</c> even if it's a subclass. As far as I can tell, there is no way to solve this problem using base R alone. Instead, you'll need to use the vctrs package, which provides a solution in the form of the <c>vctrs::vec_restore()</c> generic. This generic takes two inputs: an object which has lost subclass information, and a template object to use for restoration.
+      </p>
+      <p>
+        Typically <c>vec_restore()</c> methods are quite simple: you just call the constructor with appropriate arguments:
+      </p>
+      <program language="r"><input>
+vec_restore.secret &lt;- function(x, to, ...) new_secret(x)
+vec_restore.supersecret &lt;- function(x, to, ...) new_supersecret(x)
+      </input></program>
+      <p>
+        (If your class has attributes, you'll need to pass them from <c>to</c> into the constructor.)
+      </p>
+      <p>
+        Now we can use <c>vec_restore()</c> in the <c>[.secret</c> method:
+      </p>
+      <program language="r"><input>
+`[.secret` &lt;- function(x, ...) {
+  vctrs::vec_restore(NextMethod(), x)
+}
+x2[1:3]
+      </input></program>
+      <p>
+        (I only fully understood this issue quite recently, so at time of writing it is not used in the tidyverse. Hopefully by the time you're reading this, it will have rolled out, making it much easier to (e.g.) subclass tibbles.)
+      </p>
+      <p>
+        If you build your class using the tools provided by the vctrs package, <c>[</c> will gain this behaviour automatically. You will only need to provide your own <c>[</c> method if you use attributes that depend on the data or want non-standard subsetting behaviour. See <c>?vctrs::new_vctr</c> for details.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>How does <c>[.Date</c> support subclasses? How does it fail to support subclasses?</p>
+      </exercise>
+      <exercise>
+        <p>R has two classes for representing date time data, <c>POSIXct</c> and <c>POSIXlt</c>, which both inherit from <c>POSIXt</c>. Which generics have different behaviours for the two classes? Which generics share the same behaviour?</p>
+      </exercise>
+      <exercise>
+        <p>What do you expect this code to return? What does it actually return? Why?</p>
+        <program language="r"><input>
+generic2 &lt;- function(x) UseMethod("generic2")
+generic2.a1 &lt;- function(x) "a1"
+generic2.a2 &lt;- function(x) "a2"
+generic2.b &lt;- function(x) {
+  class(x) &lt;- "a1"
+  NextMethod()
+}
+
+generic2(structure(list(), class = c("b", "a2")))
+        </input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s3-dispatch">
+    <title>Dispatch details</title>
+
+    <p>
+      This chapter concludes with a few additional details about method dispatch. It is safe to skip these details if you're new to S3.
+    </p>
+
+    <subsection xml:id="subsec-implicit-class">
+      <title>S3 and base types</title>
+
+      <p>
+        What happens when you call an S3 generic with a base object, i.e. an object with no class? You might think it would dispatch on what <c>class()</c> returns:
+      </p>
+      <program language="r"><input>
+class(matrix(1:5))
+      </input></program>
+      <p>
+        But unfortunately dispatch actually occurs on the <alert>implicit class</alert>, which has three components:
+      </p>
+      <p><ul>
+        <li><p>The string "array" or "matrix" if the object has dimensions</p></li>
+        <li><p>The result of <c>typeof()</c> with a few minor tweaks</p></li>
+        <li><p>The string "numeric" if object is "integer" or "double"</p></li>
+      </ul></p>
+      <p>
+        There is no base function that will compute the implicit class, but you can use <c>sloop::s3_class()</c>
+      </p>
+      <program language="r"><input>
+s3_class(matrix(1:5))
+      </input></program>
+      <p>
+        This is used by <c>s3_dispatch()</c>:
+      </p>
+      <program language="r"><input>
+s3_dispatch(print(matrix(1:5)))
+      </input></program>
+      <p>
+        This means that the <c>class()</c> of an object does not uniquely determine its dispatch:
+      </p>
+      <program language="r"><input>
+x1 &lt;- 1:5
+class(x1)
+s3_dispatch(mean(x1))
+
+x2 &lt;- structure(x1, class = "integer")
+class(x2)
+s3_dispatch(mean(x2))
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-internal-generics">
+      <title>Internal generics</title>
+
+      <p>
+        Some base functions, like <c>[</c>, <c>sum()</c>, and <c>cbind()</c>, are called <alert>internal generics</alert> because they don't call <c>UseMethod()</c> but instead call the C functions <c>DispatchGroup()</c> or <c>DispatchOrEval()</c>. <c>s3_dispatch()</c> shows internal generics by including the name of the generic followed by <c>(internal)</c>:
+      </p>
+      <program language="r"><input>
+s3_dispatch(Sys.time()[1])
+      </input></program>
+      <p>
+        For performance reasons, internal generics do not dispatch to methods unless the class attribute has been set, which means that internal generics do not use the implicit class. Again, if you're ever confused about method dispatch, you can rely on <c>s3_dispatch()</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-group-generics">
+      <title>Group generics</title>
+
+      <p>
+        Group generics are the most complicated part of S3 method dispatch because they involve both <c>NextMethod()</c> and internal generics. Like internal generics, they only exist in base R, and you cannot define your own group generic.
+      </p>
+      <p>
+        There are four group generics:
+      </p>
+      <p><ul>
+        <li><p><alert>Math</alert>: <c>abs()</c>, <c>sign()</c>, <c>sqrt()</c>, <c>floor()</c>, <c>cos()</c>, <c>sin()</c>, <c>log()</c>, and more (see <c>?Math</c> for the complete list).</p></li>
+        <li><p><alert>Ops</alert>: <c>+</c>, <c>-</c>, <c>*</c>, <c>/</c>, <c>^</c>, <c>%%</c>, <c>%/%</c>, <c>&amp;</c>, <c>|</c>, <c>!</c>, <c>==</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>, <c>&gt;=</c>, and <c>&gt;</c>.</p></li>
+        <li><p><alert>Summary</alert>: <c>all()</c>, <c>any()</c>, <c>sum()</c>, <c>prod()</c>, <c>min()</c>, <c>max()</c>, and <c>range()</c>.</p></li>
+        <li><p><alert>Complex</alert>: <c>Arg()</c>, <c>Conj()</c>, <c>Im()</c>, <c>Mod()</c>, <c>Re()</c>.</p></li>
+      </ul></p>
+      <p>
+        Defining a single group generic for your class overrides the default behaviour for all of the members of the group. Methods for group generics are looked for only if the methods for the specific generic do not exist:
+      </p>
+      <program language="r"><input>
+s3_dispatch(sum(Sys.time()))
+      </input></program>
+      <p>
+        Most group generics involve a call to <c>NextMethod()</c>. For example, take <c>difftime()</c> objects. If you look at the method dispatch for <c>abs()</c>, you'll see there's a <c>Math</c> group generic defined.
+      </p>
+      <program language="r"><input>
+y &lt;- as.difftime(10, units = "mins")
+s3_dispatch(abs(y))
+      </input></program>
+      <p>
+        <c>Math.difftime</c> basically looks like this:
+      </p>
+      <program language="r"><input>
+Math.difftime &lt;- function(x, ...) {
+  new_difftime(NextMethod(), units = attr(x, "units"))
+}
+      </input></program>
+      <p>
+        It dispatches to the next method, here the internal default, to perform the actual computation, then restore the class and attributes. (To better support subclasses of <c>difftime</c> this would need to call <c>vec_restore()</c>, as described in <xref ref="subsec-s3-subclassing"/>.)
+      </p>
+      <p>
+        Inside a group generic function a special variable <c>.Generic</c> provides the actual generic function called. This can be useful when producing error messages, and can sometimes be useful if you need to manually re-call the generic with different arguments.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-double-dispatch">
+      <title>Double dispatch</title>
+
+      <p>
+        Generics in the Ops group, which includes the two-argument arithmetic and Boolean operators like <c>-</c> and <c>&amp;</c>, implement a special type of method dispatch. They dispatch on the type of <em>both</em> of the arguments, which is called <alert>double dispatch</alert>. This is necessary to preserve the commutative property of many operators, i.e. <c>a + b</c> should equal <c>b + a</c>. Take the following simple example:
+      </p>
+      <program language="r"><input>
+date &lt;- as.Date("2017-01-01")
+integer &lt;- 1L
+
+date + integer
+integer + date
+      </input></program>
+      <p>
+        If <c>+</c> dispatched only on the first argument, it would return different values for the two cases. To overcome this problem, generics in the Ops group use a slightly different strategy from usual. Rather than doing a single method dispatch, they do two, one for each input. There are three possible outcomes of this lookup:
+      </p>
+      <p><ul>
+        <li><p>The methods are the same, so it doesn't matter which method is used.</p></li>
+        <li><p>The methods are different, and R falls back to the internal method with a warning.</p></li>
+        <li><p>One method is internal, in which case R calls the other method.</p></li>
+      </ul></p>
+      <p>
+        This approach is error prone so if you want to implement robust double dispatch for algebraic operators, I recommend using the vctrs package. See <c>?vctrs::vec_arith</c> for details.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Explain the differences in dispatch below:</p>
+        <program language="r"><input>
+length.integer &lt;- function(x) 10
+
+x1 &lt;- 1:5
+class(x1)
+s3_dispatch(length(x1))
+
+x2 &lt;- structure(x1, class = "integer")
+class(x2)
+s3_dispatch(length(x2))
+        </input></program>
+      </exercise>
+      <exercise>
+        <p>What classes have a method for the <c>Math</c> group generic in base R? Read the source code. How do the methods work?</p>
+      </exercise>
+      <exercise>
+        <p><c>Math.difftime()</c> is more complicated than I described. Why?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+</chapter>
