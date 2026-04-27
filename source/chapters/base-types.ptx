@@ -1,44 +1,283 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-base-types" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Base Types</title>
+<chapter xml:id="ch-base-types" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Base Types</title>
 
-    <introduction>
-      <p>
-        To talk about objects and OOP in R we first need to clear up a
-        fundamental confusion about two uses of the word <q>object</q>. So far
-        in this book, I've used the word in the general sense captured by John
-        Chambers' pithy quote: <q>everything that exists in R is an object</q>.
-        However, while everything <em>is</em> an object, not everything is
-        object-oriented. This confusion arises because the base objects come
-        from S, and were developed before anyone thought that S might need an
-        OOP system. The tools and nomenclature evolved organically over many
-        years without a single guiding principle.
-      </p>
-    </introduction>
+  <introduction>
+    <p>
+      To talk about objects and OOP in R we first need to clear up a fundamental
+      confusion about two uses of the word "object". So far in this book, we've
+      used the word in the general sense captured by John Chambers' pithy quote:
+      "Everything that exists in R is an object". However, while everything
+      <em>is</em> an object, not everything is object-oriented. This confusion
+      arises because the base objects come from S, and were developed before
+      anyone thought that S might need an OOP system. The tools and nomenclature
+      evolved organically over many years without a single guiding principle.
+    </p>
 
-    <section xml:id="sec-base-vs-oo">
-      <title>Base versus OO objects</title>
+    <p>
+      Most of the time, the distinction between objects and object-oriented
+      objects is not important. But here we need to get into the nitty gritty
+      details so we'll use the terms <alert>base objects</alert> and
+      <alert>OO objects</alert> to distinguish them.
+    </p>
 
-      <p>
-        To tell the difference between a base and OO object, use
-        <c>is.object()</c> or <c>sloop::otype()</c>:
-      </p>
+    <figure>
+      <image source="../images/oo-venn.png"/>
+    </figure>
 
-      <program language="r">
-        <input>
+    <paragraphs xml:id="para-base-types-outline">
+      <title>Outline</title>
+      <p><ul>
+        <li><p><xref ref="sec-base-vs-oo"/> shows you how to identify base and OO objects.</p></li>
+        <li><p><xref ref="sec-base-types-2"/> gives a complete set of the base types used to build all objects.</p></li>
+      </ul></p>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-base-vs-oo">
+    <title>Base versus OO objects</title>
+
+    <p>
+      To tell the difference between a base and OO object, use
+      <c>is.object()</c> or <c>sloop::otype()</c>:
+    </p>
+
+    <program language="r">
+      <input>
 # A base object:
 is.object(1:10)
-#&gt; [1] FALSE
 sloop::otype(1:10)
-#&gt; [1] "base"
 
 # An OO object
 is.object(mtcars)
-#&gt; [1] TRUE
 sloop::otype(mtcars)
-#&gt; [1] "S3"
-        </input>
-      </program>
-    </section>
+      </input>
+    </program>
 
-  </chapter>
+    <p>
+      Technically, the difference between base and OO objects is that OO objects
+      have a "class" attribute:
+    </p>
+
+    <program language="r">
+      <input>
+attr(1:10, "class")
+
+attr(mtcars, "class")
+      </input>
+    </program>
+
+    <p>
+      You may already be familiar with the <c>class()</c> function. This
+      function is safe to apply to S3 and S4 objects, but it returns misleading
+      results when applied to base objects. It's safer to use
+      <c>sloop::s3_class()</c>, which returns the implicit class that the S3 and
+      S4 systems will use to pick methods. You'll learn more about
+      <c>s3_class()</c> in <xref ref="sec-implicit-class"/>.
+    </p>
+
+    <program language="r">
+      <input>
+x &lt;- matrix(1:4, nrow = 2)
+class(x)
+sloop::s3_class(x)
+      </input>
+    </program>
+
+  </section>
+
+  <section xml:id="sec-base-types-2">
+    <title>Base types</title>
+
+    <p>
+      While only OO objects have a class attribute, every object has a
+      <alert>base type</alert>:
+    </p>
+
+    <program language="r">
+      <input>
+typeof(1:10)
+
+typeof(mtcars)
+      </input>
+    </program>
+
+    <p>
+      Base types do not form an OOP system because functions that behave
+      differently for different base types are primarily written in C code that
+      uses switch statements. This means that only R-core can create new types,
+      and creating a new type is a lot of work because every switch statement
+      needs to be modified to handle a new case. As a consequence, new base
+      types are rarely added. The most recent change, in 2011, added two exotic
+      types that you never see in R itself, but are needed for diagnosing memory
+      problems. Prior to that, the last type added was a special base type for
+      S4 objects added in 2005.
+    </p>
+
+    <p>
+      In total, there are 25 different base types. They are listed below, loosely
+      grouped according to where they're discussed in this book. These types are
+      most important in C code, so you'll often see them called by their C type
+      names. I've included those in parentheses.
+    </p>
+
+    <ul>
+      <li>
+        <p>
+          Vectors, Chapter <xref ref="ch-vectors"/>, include types <c>NULL</c>
+          (<c>NILSXP</c>), <c>logical</c> (<c>LGLSXP</c>), <c>integer</c>
+          (<c>INTSXP</c>), <c>double</c> (<c>REALSXP</c>), <c>complex</c>
+          (<c>CPLXSXP</c>), <c>character</c> (<c>STRSXP</c>), <c>list</c>
+          (<c>VECSXP</c>), and <c>raw</c> (<c>RAWSXP</c>).
+        </p>
+        <program language="r">
+          <input>
+typeof(NULL)
+typeof(1L)
+typeof(1i)
+          </input>
+        </program>
+      </li>
+
+      <li>
+        <p>
+          Functions, Chapter <xref ref="ch-functions"/>, include types
+          <c>closure</c> (regular R functions, <c>CLOSXP</c>), <c>special</c>
+          (internal functions, <c>SPECIALSXP</c>), and <c>builtin</c> (primitive
+          functions, <c>BUILTINSXP</c>).
+        </p>
+        <program language="r">
+          <input>
+typeof(mean)
+typeof(`[`)
+typeof(sum)
+          </input>
+        </program>
+        <p>
+          Internal and primitive functions are described in
+          <xref ref="sec-primitive-functions"/>.
+        </p>
+      </li>
+
+      <li>
+        <p>
+          Environments, Chapter <xref ref="ch-environments"/>, have type
+          <c>environment</c> (<c>ENVSXP</c>).
+        </p>
+        <program language="r">
+          <input>
+typeof(globalenv())
+          </input>
+        </program>
+      </li>
+
+      <li>
+        <p>
+          The <c>S4</c> type (<c>S4SXP</c>), Chapter <xref ref="ch-s4"/>, is
+          used for S4 classes that don't inherit from an existing base type.
+        </p>
+        <program language="r">
+          <input>
+mle_obj &lt;- stats4::mle(function(x = 1) (x - 2) ^ 2)
+typeof(mle_obj)
+          </input>
+        </program>
+      </li>
+
+      <li>
+        <p>
+          Language components, Chapter <xref ref="ch-expressions"/>, include
+          <c>symbol</c> (aka name, <c>SYMSXP</c>), <c>language</c> (usually
+          called calls, <c>LANGSXP</c>), and <c>pairlist</c> (used for function
+          arguments, <c>LISTSXP</c>) types.
+        </p>
+        <program language="r">
+          <input>
+typeof(quote(a))
+typeof(quote(a + 1))
+typeof(formals(mean))
+          </input>
+        </program>
+        <p>
+          <c>expression</c> (<c>EXPRSXP</c>) is a special purpose type that's
+          only returned by <c>parse()</c> and <c>expression()</c>. Expressions
+          are generally not needed in user code.
+        </p>
+      </li>
+
+      <li>
+        <p>
+          The remaining types are esoteric and rarely seen in R. They are
+          important primarily for C code: <c>externalptr</c> (<c>EXTPTRSXP</c>),
+          <c>weakref</c> (<c>WEAKREFSXP</c>), <c>bytecode</c> (<c>BCODESXP</c>),
+          <c>promise</c> (<c>PROMSXP</c>), <c>...</c> (<c>DOTSXP</c>), and
+          <c>any</c> (<c>ANYSXP</c>).
+        </p>
+      </li>
+    </ul>
+
+    <p>
+      You may have heard of <c>mode()</c> and <c>storage.mode()</c>. Do not use
+      these functions: they exist only to provide type names that are compatible
+      with S.
+    </p>
+
+    <subsection xml:id="subsec-numeric-type">
+      <title>Numeric type</title>
+
+      <p>
+        Be careful when talking about the numeric type, because R uses "numeric"
+        to mean three slightly different things:
+      </p>
+
+      <ol>
+        <li>
+          <p>
+            In some places numeric is used as an alias for the double type. For
+            example <c>as.numeric()</c> is identical to <c>as.double()</c>, and
+            <c>numeric()</c> is identical to <c>double()</c>.
+          </p>
+          <p>
+            (R also occasionally uses real instead of double; <c>NA_real_</c> is
+            the one place that you're likely to encounter this in practice.)
+          </p>
+        </li>
+
+        <li>
+          <p>
+            In the S3 and S4 systems, numeric is used as a shorthand for either
+            integer or double type, and is used when picking methods:
+          </p>
+          <program language="r">
+            <input>
+sloop::s3_class(1)
+sloop::s3_class(1L)
+            </input>
+          </program>
+        </li>
+
+        <li>
+          <p>
+            <c>is.numeric()</c> tests for objects that <em>behave</em> like
+            numbers. For example, factors have type "integer" but don't behave
+            like numbers (i.e. it doesn't make sense to take the mean of factor).
+          </p>
+          <program language="r">
+            <input>
+typeof(factor("x"))
+is.numeric(factor("x"))
+            </input>
+          </program>
+        </li>
+      </ol>
+
+      <p>
+        In this book, I consistently use numeric to mean an object of type
+        integer or double.
+      </p>
+
+    </subsection>
+
+  </section>
+
+</chapter>
