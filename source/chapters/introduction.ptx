@@ -593,7 +593,7 @@
     <section xml:id="sec-colophon">
       <title>Colophon</title>
       <p>Note that this is relating to the original version of this book found at 
-      <url href="https://adv-r.hadley.nz/">https://adv-r.hadley.nz/</url>
+      <url href="https://adv-r.hadley.nz/">https://adv-r.hadley.nz/</url>.</p>
       <p>
         This book was written in
         <url href="http://bookdown.org/" visual="bookdown.org">bookdown</url>
