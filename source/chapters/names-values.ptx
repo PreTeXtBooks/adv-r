@@ -798,6 +798,8 @@ e &lt;- rlang::env()
 e$self &lt;- e
 
 ref(e)
+#&gt; o [1:0x55714681eba8] &lt;env: 0x55714681eba8&gt;
+#&gt; └─self = [1:0x55714681eba8]
       </input></program>
       <figure>
         <image source="../images/name-value/e-self.png"/>

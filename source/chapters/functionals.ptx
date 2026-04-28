@@ -65,7 +65,7 @@ map(1:3, triple)
 
       <p>Or, graphically:</p>
 
-      <figure><image source="functionals/map.png"/></figure>
+      <figure><image source="../images/functionals/map.png"/></figure>
 
       <aside>
         <p>You might wonder why this function is called <c>map()</c>. What does it have to do with depicting physical features of land or sea? In fact, the meaning comes from mathematics where <em>map</em> refers to "an operation that associates each element of a given set with one or more elements of a second set". This makes sense here because <c>map()</c> defines a mapping from one vector to another. (<em>"Map"</em> also has the nice property of being short, which is useful for such a fundamental building block.)</p>
@@ -116,7 +116,7 @@ map_dbl(mtcars, mean)
 
         <p>purrr uses the convention that suffixes, like <c>_dbl()</c>, refer to the output. All <c>map_*()</c> functions can take any type of vector as input. These examples rely on two facts: <c>mtcars</c> is a data frame, and data frames are lists containing vectors of the same length. This is more obvious if we draw a data frame with the same orientation as vector:</p>
 
-        <figure><image source="functionals/map-list.png"/></figure>
+        <figure><image source="../images/functionals/map-list.png"/></figure>
 
         <p>All map functions always return an output vector the same length as the input, which implies that each call to <c>.f</c> must return a single value. If it does not, you'll get an error:</p>
 
@@ -245,11 +245,11 @@ map_dbl(x, mean, na.rm = TRUE)
 
         <p>This is easiest to understand with a picture: any arguments that come after <c>f</c> in the call to <c>map()</c> are inserted <em>after</em> the data in individual calls to <c>f()</c>:</p>
 
-        <figure><image source="functionals/map-arg.png"/></figure>
+        <figure><image source="../images/functionals/map-arg.png"/></figure>
 
         <p>It's important to note that these arguments are not decomposed; or said another way, <c>map()</c> is only vectorised over its first argument. If an argument after <c>f</c> is a vector, it will be passed along as is:</p>
 
-        <figure><image source="functionals/map-arg-recycle.png"/></figure>
+        <figure><image source="../images/functionals/map-arg-recycle.png"/></figure>
 
         <p>(You'll learn about map variants that <em>are</em> vectorised over multiple arguments in <xref ref="sec-map2"/> and <xref ref="sec-pmap"/>.)</p>
 
@@ -303,7 +303,7 @@ simple_map(mtcars, bootstrap_summary, f = mean)
 
         <p>So far the first argument to <c>map()</c> has always become the first argument to the function. But what happens if the first argument should be constant, and you want to vary a different argument? How do you get the result in this picture?</p>
 
-        <figure><image source="functionals/map-arg-flipped.png"/></figure>
+        <figure><image source="../images/functionals/map-arg-flipped.png"/></figure>
 
         <p>It turns out that there's no way to do it directly, but there are two tricks you can use instead. To illustrate them, imagine I have a vector that contains a few unusual values, and I want to explore the effect of different amounts of trimming when computing the mean. In this case, the first argument to <c>mean()</c> will be constant, and I want to vary the second argument, <c>trim</c>.</p>
 
@@ -616,7 +616,7 @@ map_dbl(xs, weighted.mean, w = ws)
           </code>
         </program>
 
-        <figure><image source="functionals/map-arg-recycle.png"/></figure>
+        <figure><image source="../images/functionals/map-arg-recycle.png"/></figure>
 
         <p>We need a new tool: a <c>map2()</c>, which is vectorised over two arguments. This means both <c>.x</c> and <c>.y</c> are varied in each call to <c>.f</c>:</p>
 
@@ -626,7 +626,7 @@ map2_dbl(xs, ws, weighted.mean)
           </code>
         </program>
 
-        <figure><image source="functionals/map2.png"/></figure>
+        <figure><image source="../images/functionals/map2.png"/></figure>
 
         <p>The arguments to <c>map2()</c> are slightly different to the arguments to <c>map()</c> as two vectors come before the function, rather than one. Additional arguments still go afterwards:</p>
 
@@ -636,7 +636,7 @@ map2_dbl(xs, ws, weighted.mean, na.rm = TRUE)
           </code>
         </program>
 
-        <figure><image source="functionals/map2-arg.png"/></figure>
+        <figure><image source="../images/functionals/map2-arg.png"/></figure>
 
         <p>The basic implementation of <c>map2()</c> is simple, and quite similar to that of <c>map()</c>. Instead of iterating over one vector, we iterate over two in parallel:</p>
 
@@ -654,7 +654,7 @@ simple_map2 &lt;- function(x, y, f, ...) {
 
         <p>One of the big differences between <c>map2()</c> and the simple function above is that <c>map2()</c> recycles its inputs to make sure that they're the same length:</p>
 
-        <figure><image source="functionals/map2-recycle.png"/></figure>
+        <figure><image source="../images/functionals/map2-recycle.png"/></figure>
 
         <p>In other words, <c>map2(x, y, f)</c> will automatically behave like <c>map(x, f, y)</c> when needed. This is helpful when writing functions; in scripts you'd generally just use the simpler form directly.</p>
 
@@ -693,11 +693,11 @@ walk(names, welcome)
 
         <p>My visual depiction of walk attempts to capture the important difference from <c>map()</c>: the outputs are ephemeral, and the input is returned invisibly.</p>
 
-        <figure><image source="functionals/walk.png"/></figure>
+        <figure><image source="../images/functionals/walk.png"/></figure>
 
         <p>One of the most useful <c>walk()</c> variants is <c>walk2()</c> because a very common side-effect is saving something to disk, and when saving something to disk you always have a pair of values: the object and the path that you want to save it to.</p>
 
-        <figure><image source="functionals/walk2.png"/></figure>
+        <figure><image source="../images/functionals/walk2.png"/></figure>
 
         <p>For example, imagine you have a list of data frames (which I've created here using <c>split()</c>), and you'd like to save each one to a separate CSV file. That's easy with <c>walk2()</c>:</p>
 
@@ -762,7 +762,7 @@ imap_chr(x, ~ paste0("The highest value of ", .y, " is ", max(.x)))
 
         <p>Since we have <c>map()</c> and <c>map2()</c>, you might expect <c>map3()</c>, <c>map4()</c>, <c>map5()</c>, ... But where would you stop? Instead of generalising <c>map2()</c> to an arbitrary number of arguments, purrr takes a slightly different tack with <c>pmap()</c>: you supply it a single list, which contains any number of arguments. In most cases, that will be a list of equal-length vectors, i.e. something very similar to a data frame. In diagrams, I'll emphasise that relationship by drawing the input similar to a data frame.</p>
 
-        <figure><image source="functionals/pmap.png"/></figure>
+        <figure><image source="../images/functionals/pmap.png"/></figure>
 
         <p>There's a simple equivalence between <c>map2()</c> and <c>pmap()</c>: <c>map2(x, y, f)</c> is the same as <c>pmap(list(x, y), f)</c>. The <c>pmap()</c> equivalent to the <c>map2_dbl(xs, ws, weighted.mean)</c> used above is:</p>
 
@@ -780,7 +780,7 @@ pmap_dbl(list(xs, ws), weighted.mean, na.rm = TRUE)
           </code>
         </program>
 
-        <figure><image source="functionals/pmap-arg.png"/></figure>
+        <figure><image source="../images/functionals/pmap-arg.png"/></figure>
 
         <p>A big difference between <c>pmap()</c> and the other map functions is that <c>pmap()</c> gives you much finer control over argument matching because you can name the components of the list. Returning to our example from <xref ref="sec-change-argument"/>, where we wanted to vary the <c>trim</c> argument to <c>x</c>, we could instead use <c>pmap()</c>:</p>
 
@@ -810,7 +810,7 @@ pmap(params, runif)
           </code>
         </program>
 
-        <figure><image source="functionals/pmap-3.png"/></figure>
+        <figure><image source="../images/functionals/pmap-3.png"/></figure>
 
         <p>Here, the column names are critical: I've carefully chosen to match them to the arguments to <c>runif()</c>, so the <c>pmap(params, runif)</c> is equivalent to <c>runif(n = 1L, min = 0, max = 1)</c>, <c>runif(n = 2, min = 10, max = 100)</c>, <c>runif(n = 3L, min = 100, max = 1000)</c>. (If you have a data frame in hand, and the names don't match, use <c>dplyr::rename()</c> or similar.)</p>
 
@@ -882,7 +882,7 @@ mtcars[nm] &lt;- map(nm, ~ trans[[.x]](mtcars[[.x]]))
 
         <p><c>reduce()</c> takes a vector of length <m>n</m> and produces a vector of length 1 by calling a function with a pair of values at a time: <c>reduce(1:4, f)</c> is equivalent to <c>f(f(f(1, 2), 3), 4)</c>.</p>
 
-        <figure><image source="functionals/reduce.png"/></figure>
+        <figure><image source="../images/functionals/reduce.png"/></figure>
 
         <p><c>reduce()</c> is a useful way to generalise a function that works with two inputs (a <term>binary</term> function) to work with any number of inputs. Imagine you have a list of numeric vectors, and you want to find the values that occur in every element. First we generate some sample data:</p>
 
@@ -923,7 +923,7 @@ reduce(l, union)
 
         <p>Like the map family, you can also pass additional arguments. <c>intersect()</c> and <c>union()</c> don't take extra arguments so I can't demonstrate them here, but the principle is straightforward and I drew you a picture.</p>
 
-        <figure><image source="functionals/reduce-arg.png"/></figure>
+        <figure><image source="../images/functionals/reduce-arg.png"/></figure>
 
         <p>As usual, the essence of <c>reduce()</c> can be reduced to a simple wrapper around a for loop:</p>
 
@@ -997,7 +997,7 @@ reduce(integer(), `+`)
 
         <p>What should <c>.init</c> be here? To figure that out, we need to see what happens when <c>.init</c> is supplied:</p>
 
-        <figure><image source="functionals/reduce-init.png"/></figure>
+        <figure><image source="../images/functionals/reduce-init.png"/></figure>
 
         <p>So if we call <c>reduce(1, `+`, init)</c> the result will be <c>1 + init</c>. Now we know that the result should be just <c>1</c>, so that suggests that <c>.init</c> should be 0:</p>
 
@@ -1036,8 +1036,8 @@ max(integer())  # max(x, -Inf) = x
 
         <p>The length of the second argument varies based on whether or not <c>.init</c> is supplied: if you have four elements of <c>x</c>, <c>f</c> will only be called three times. If you supply init, <c>f</c> will be called four times.</p>
 
-        <figure><image source="functionals/reduce2.png"/></figure>
-        <figure><image source="functionals/reduce2-init.png"/></figure>
+        <figure><image source="../images/functionals/reduce2.png"/></figure>
+        <figure><image source="../images/functionals/reduce2-init.png"/></figure>
       </subsection>
 
       <subsection xml:id="subsec-map-reduce">

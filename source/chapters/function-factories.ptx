@@ -242,7 +242,7 @@ fn_env(cube)$exp
         <p>We can also show these relationships in a diagram:</p>
 
         <figure>
-          <image source="function-factories/power-full.png"/>
+          <image source="../images/function-factories/power-full.png"/>
         </figure>
 
         <p>
@@ -264,7 +264,7 @@ fn_env(cube)$exp
         </p>
 
         <figure>
-          <image source="function-factories/power-simple.png"/>
+          <image source="../images/function-factories/power-simple.png"/>
         </figure>
 
         <p>
@@ -288,7 +288,7 @@ square(10)
         </program>
 
         <figure>
-          <image source="function-factories/power-exec.png"/>
+          <image source="../images/function-factories/power-exec.png"/>
         </figure>
       </subsection>
 
@@ -412,7 +412,7 @@ counter_two &lt;- new_counter()
         </program>
 
         <figure>
-          <image source="function-factories/counter-1.png"/>
+          <image source="../images/function-factories/counter-1.png"/>
         </figure>
 
         <p>
@@ -431,7 +431,7 @@ counter_two()
         </program>
 
         <figure>
-          <image source="function-factories/counter-2.png"/>
+          <image source="../images/function-factories/counter-2.png"/>
         </figure>
 
         <p>
