@@ -1,32 +1,841 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-translation" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Translating R Code</title>
+<chapter xml:id="ch-translation" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Translating R code</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      The combination of first-class environments, lexical scoping, and metaprogramming gives us a powerful toolkit for translating R code into other languages. One fully-fledged example of this idea is dbplyr, which powers the database backends for dplyr, allowing you to express data manipulation in R and automatically translate it into SQL. You can see the key idea in <c>translate_sql()</c> which takes R code and returns the equivalent SQL:
+    </p>
+    <program language="r"><input>
+library(dbplyr)
+con &lt;- simulate_postgres()
+
+translate_sql(x^2, con = con)
+translate_sql(x &lt; 5 &amp; !is.na(x), con = con)
+translate_sql(!first %in% c("John", "Roger", "Robert"), con = con)
+translate_sql(select == 7, con = con)
+</input></program>
+    <p>
+      Translating R to SQL is complex because of the many idiosyncrasies of SQL dialects, so here I'll develop two simple, but useful, domain specific languages (DSL): one to generate HTML, and the other to generate mathematical equations in LaTeX.
+    </p>
+    <p>
+      If you're interested in learning more about domain specific languages in general, I highly recommend <em>Domain Specific Languages</em> <xref provisional="dsls"/>. It discusses many options for creating a DSL and provides many examples of different languages.
+    </p>
+
+    <paragraphs xml:id="para-translation-outline">
+      <title>Outline</title>
+      <ul>
+        <li><p>Section <xref ref="sec-html"/> creates a DSL for generating HTML, using quasiquotation and purrr to generate a function for each HTML tag, then tidy evaluation to easily access them.</p></li>
+        <li><p>Section <xref ref="sec-latex"/> transforms mathematically R code into its LaTeX equivalent using a combination of tidy evaluation and expression walking.</p></li>
+      </ul>
+    </paragraphs>
+
+    <paragraphs xml:id="para-translation-prerequisites">
+      <title>Prerequisites</title>
       <p>
-        The combination of first-class environments, lexical scoping, and
-        metaprogramming gives us a powerful toolkit for translating R code into
-        other languages. One fully-fledged example of this idea is
-        <c>dbplyr</c>, which powers the database backends for dplyr, allowing
-        you to express data manipulation in R and automatically translate it to
-        SQL.
+        This chapter pulls together many techniques discussed elsewhere in the book. In particular, you'll need to understand environments, expressions, tidy evaluation, and a little functional programming and S3. We'll use <url href="https://rlang.r-lib.org">rlang</url> for metaprogramming tools, and <url href="https://purrr.tidyverse.org">purrr</url> for functional programming.
       </p>
+      <program language="r"><input>
+library(rlang)
+library(purrr)
+</input></program>
+    </paragraphs>
+  </introduction>
 
+  <section xml:id="sec-html">
+    <title>HTML</title>
+    <idx><h>HTML</h></idx>
+
+    <p>
+      HTML (HyperText Markup Language) underlies the majority of the web. It's a special case of SGML (Standard Generalised Markup Language), and it's similar but not identical to XML (eXtensible Markup Language). HTML looks like this:
+    </p>
+    <program language="html"><input>
+&lt;body&gt;
+  &lt;h1 id='first'&gt;A heading&lt;/h1&gt;
+  &lt;p&gt;Some text &amp;amp; &lt;b&gt;some bold text.&lt;/b&gt;&lt;/p&gt;
+  &lt;img src='myimg.png' width='100' height='100' /&gt;
+&lt;/body&gt;
+</input></program>
+    <p>
+      Even if you've never looked at HTML before, you can still see that the key component of its coding structure is tags, which look like <c>&lt;tag&gt;&lt;/tag&gt;</c> or <c>&lt;tag /&gt;</c>. Tags can be nested within other tags and intermingled with text. There are over 100 HTML tags, but in this chapter we'll focus on just a handful:
+    </p>
+    <ul>
+      <li><p><c>&lt;body&gt;</c> is the top-level tag that contains all content.</p></li>
+      <li><p><c>&lt;h1&gt;</c> defines a top level heading.</p></li>
+      <li><p><c>&lt;p&gt;</c> defines a paragraph.</p></li>
+      <li><p><c>&lt;b&gt;</c> emboldens text.</p></li>
+      <li><p><c>&lt;img&gt;</c> embeds an image.</p></li>
+    </ul>
+    <p>
+      Tags can have named <alert>attributes</alert> which look like <c>&lt;tag name1='value1' name2='value2'&gt;&lt;/tag&gt;</c>. Two of the most important attributes are <c>id</c> and <c>class</c>, which are used in conjunction with CSS (Cascading Style Sheets) to control the visual appearance of the page.
+    </p>
+    <p>
+      <alert>Void tags</alert>, like <c>&lt;img&gt;</c>, don't have any children, and are written <c>&lt;img /&gt;</c>, not <c>&lt;img&gt;&lt;/img&gt;</c>. Since they have no content, attributes are more important, and <c>img</c> has three that are used with almost every image: <c>src</c> (where the image lives), <c>width</c>, and <c>height</c>.
+    </p>
+    <p>
+      Because <c>&lt;</c> and <c>&gt;</c> have special meanings in HTML, you can't write them directly. Instead you have to use the HTML <alert>escapes</alert>: <c>&amp;gt;</c> and <c>&amp;lt;</c>. And since those escapes use <c>&amp;</c>, if you want a literal ampersand you have to escape it as <c>&amp;amp;</c>.
+    </p>
+
+    <subsection>
+      <title>Goal</title>
       <p>
-        In this chapter, we'll develop two simple, but useful, domain-specific
-        languages (DSL). The first translates R expressions into HTML, and the
-        second translates R expressions into mathematical equations in LaTeX.
+        Our goal is to make it easy to generate HTML from R. To give a concrete example, we want to generate the following HTML:
       </p>
-    </introduction>
-
-    <section xml:id="sec-html-dsl">
-      <title>HTML</title>
-
+      <program language="html"><input>
+&lt;body&gt;
+  &lt;h1 id='first'&gt;A heading&lt;/h1&gt;
+  &lt;p&gt;Some text &amp;amp; &lt;b&gt;some bold text.&lt;/b&gt;&lt;/p&gt;
+  &lt;img src='myimg.png' width='100' height='100' /&gt;
+&lt;/body&gt;
+</input></program>
       <p>
-        HTML (HyperText Markup Language) is the language that underlies the
-        web. It's a special case of SGML (Standard Generalised Markup Language),
-        and it's similar to XML (eXtensible Markup Language).
+        Using the following code that matches the structure of the HTML as closely as possible:
       </p>
-    </section>
+      <program language="r"><input>
+with_html(
+  body(
+    h1("A heading", id = "first"),
+    p("Some text &amp;", b("some bold text.")),
+    img(src = "myimg.png", width = 100, height = 100)
+  )
+)
+</input></program>
+      <p>This DSL has the following three properties:</p>
+      <ul>
+        <li><p>The nesting of function calls matches the nesting of tags.</p></li>
+        <li><p>Unnamed arguments become the content of the tag, and named arguments become their attributes.</p></li>
+        <li><p><c>&amp;</c> and other special characters are automatically escaped.</p></li>
+      </ul>
+    </subsection>
 
-  </chapter>
+    <subsection>
+      <title>Escaping</title>
+      <idx><h>escaping</h></idx>
+      <p>
+        Escaping is so fundamental to translation that it'll be our first topic. There are two related challenges:
+      </p>
+      <ul>
+        <li><p>In user input, we need to automatically escape <c>&amp;</c>, <c>&lt;</c> and <c>&gt;</c>.</p></li>
+        <li><p>At the same time we need to make sure that the <c>&amp;</c>, <c>&lt;</c> and <c>&gt;</c> we generate are not double-escaped (i.e. that we don't accidentally generate <c>&amp;amp;amp;</c>, <c>&amp;amp;lt;</c> and <c>&amp;amp;gt;</c>).</p></li>
+      </ul>
+      <p>
+        The easiest way to do this is to create an S3 class (<xref ref="sec-s3-classes"/>) that distinguishes between regular text (that needs escaping) and HTML (that doesn't).
+      </p>
+      <program language="r"><input>
+html &lt;- function(x) structure(x, class = "advr_html")
+
+print.advr_html &lt;- function(x, ...) {
+  out &lt;- paste0("&lt;HTML&gt; ", x)
+  cat(paste(strwrap(out), collapse = "\n"), "\n", sep = "")
+}
+</input></program>
+      <p>We then write an escape generic. It has two important methods:</p>
+      <ul>
+        <li><p><c>escape.character()</c> takes a regular character vector and returns an HTML vector with special characters (<c>&amp;</c>, <c>&lt;</c>, <c>&gt;</c>) escaped.</p></li>
+        <li><p><c>escape.advr_html()</c> leaves already escaped HTML alone.</p></li>
+      </ul>
+      <program language="r"><input>
+escape &lt;- function(x) UseMethod("escape")
+
+escape.character &lt;- function(x) {
+  x &lt;- gsub("&amp;", "&amp;amp;", x)
+  x &lt;- gsub("&lt;", "&amp;lt;", x)
+  x &lt;- gsub("&gt;", "&amp;gt;", x)
+
+  html(x)
+}
+
+escape.advr_html &lt;- function(x) x
+</input></program>
+      <p>Now we check that it works</p>
+      <program language="r"><input>
+escape("This is some text.")
+escape("x &gt; 1 &amp; y &lt; 2")
+
+# Double escaping is not a problem
+escape(escape("This is some text. 1 &gt; 2"))
+
+# And text we know is HTML doesn't get escaped.
+escape(html("&lt;hr /&gt;"))
+</input></program>
+      <p>
+        Conveniently, this also allows a user to opt out of our escaping if they know the content is already escaped.
+      </p>
+    </subsection>
+
+    <subsection>
+      <title>Basic tag functions</title>
+      <p>
+        Next, we'll write a one-tag function by hand, then figure out how to generalise it so we can generate a function for every tag with code.
+      </p>
+      <p>
+        Let's start with <c>&lt;p&gt;</c>. HTML tags can have both attributes (e.g., id or class) and children (like <c>&lt;b&gt;</c> or <c>&lt;i&gt;</c>). We need some way of separating these in the function call. Given that attributes are named and children are not, it seems natural to use named and unnamed arguments for them respectively. For example, a call to <c>p()</c> might look like:
+      </p>
+      <program language="r"><input>
+p("Some text. ", b(i("some bold italic text")), class = "mypara")
+</input></program>
+      <p>
+        We could list all the possible attributes of the <c>&lt;p&gt;</c> tag in the function definition, but that's hard because there are many attributes, and because it's possible to use <url href="http://html5doctor.com/html5-custom-data-attributes/">custom attributes</url>. Instead, we'll use <c>...</c> and separate the components based on whether or not they are named. With this in mind, we create a helper function that wraps around <c>rlang::list2()</c> (<xref ref="sec-tidy-dots"/>) and returns named and unnamed components separately:
+      </p>
+      <program language="r"><input>
+dots_partition &lt;- function(...) {
+  dots &lt;- list2(...)
+
+  if (is.null(names(dots))) {
+    is_named &lt;- rep(FALSE, length(dots))
+  } else {
+    is_named &lt;- names(dots) != ""
+  }
+
+  list(
+    named = dots[is_named],
+    unnamed = dots[!is_named]
+  )
+}
+
+str(dots_partition(a = 1, 2, b = 3, 4))
+</input></program>
+      <p>
+        We can now create our <c>p()</c> function. Notice that there's one new function here: <c>html_attributes()</c>. It takes a named list and returns the HTML attribute specification as a string. It's a little complicated (in part, because it deals with some idiosyncrasies of HTML that I haven't mentioned here), but it's not that important and doesn't introduce any new programming ideas, so I won't discuss it in detail. You can find the <url href="https://github.com/hadley/adv-r/blob/master/dsl-html-attributes.r">source online</url> if you want to work through it yourself.
+      </p>
+      <program language="r"><input>
+source("dsl-html-attributes.r")
+p &lt;- function(...) {
+  dots &lt;- dots_partition(...)
+  attribs &lt;- html_attributes(dots$named)
+  children &lt;- map_chr(dots$unnamed, escape)
+
+  html(paste0(
+    "&lt;p",
+    attribs,
+    "&gt;",
+    paste(children, collapse = ""),
+    "&lt;/p&gt;"
+  ))
+}
+
+p("Some text")
+p("Some text", id = "myid")
+p("Some text", class = "important", `data-value` = 10)
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Tag functions</title>
+      <p>
+        It's straightforward to adapt <c>p()</c> to other tags: we just need to replace <c>"p"</c> with the name of the tag. One elegant way to do that is to create a function with <c>rlang::new_function()</c> (<xref ref="subsec-new-function"/>), using unquoting and <c>paste0()</c> to generate the starting and ending tags.
+      </p>
+      <program language="r"><input>
+tag &lt;- function(tag) {
+  new_function(
+    exprs(... = ),
+    expr({
+      dots &lt;- dots_partition(...)
+      attribs &lt;- html_attributes(dots$named)
+      children &lt;- map_chr(dots$unnamed, escape)
+
+      html(paste0(
+        !!paste0("&lt;", tag),
+        attribs,
+        "&gt;",
+        paste(children, collapse = ""),
+        !!paste0("&lt;/", tag, "&gt;")
+      ))
+    }),
+    caller_env()
+  )
+}
+tag("b")
+</input></program>
+      <p>
+        We need the weird <c>exprs(... = )</c> syntax to generate the empty <c>...</c> argument in the tag function. See <xref ref="subsec-empty-symbol"/> for more details.
+      </p>
+      <p>Now we can run our earlier example:</p>
+      <program language="r"><input>
+p &lt;- tag("p")
+b &lt;- tag("b")
+i &lt;- tag("i")
+p("Some text. ", b(i("some bold italic text")), class = "mypara")
+</input></program>
+      <p>
+        Before we generate functions for every possible HTML tag, we need to create a variant that handles void tags. <c>void_tag()</c> is quite similar to <c>tag()</c>, but it throws an error if there are any child tags, as captured by the unnamed dots. The tag itself also looks a little different.
+      </p>
+      <program language="r"><input>
+void_tag &lt;- function(tag) {
+  new_function(
+    exprs(... = ),
+    expr({
+      dots &lt;- dots_partition(...)
+      if (length(dots$unnamed) &gt; 0) {
+        abort(!!paste0("&lt;", tag, "&gt; must not have unnamed arguments"))
+      }
+      attribs &lt;- html_attributes(dots$named)
+
+      html(paste0(!!paste0("&lt;", tag), attribs, " /&gt;"))
+    }),
+    caller_env()
+  )
+}
+
+img &lt;- void_tag("img")
+img
+img(src = "myimage.png", width = 100, height = 100)
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-html-env">
+      <title>Processing all tags</title>
+      <p>
+        Next we need to generate these functions for every tag. We'll start with a list of all HTML tags:
+      </p>
+      <program language="r"><input>
+tags &lt;- c(
+  "a",
+  "abbr",
+  "address",
+  "article",
+  "aside",
+  "audio",
+  "b",
+  "bdi",
+  "bdo",
+  "blockquote",
+  "body",
+  "button",
+  "canvas",
+  "caption",
+  "cite",
+  "code",
+  "colgroup",
+  "data",
+  "datalist",
+  "dd",
+  "del",
+  "details",
+  "dfn",
+  "div",
+  "dl",
+  "dt",
+  "em",
+  "eventsource",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "head",
+  "header",
+  "hgroup",
+  "html",
+  "i",
+  "iframe",
+  "ins",
+  "kbd",
+  "label",
+  "legend",
+  "li",
+  "mark",
+  "map",
+  "menu",
+  "meter",
+  "nav",
+  "noscript",
+  "object",
+  "ol",
+  "optgroup",
+  "option",
+  "output",
+  "p",
+  "pre",
+  "progress",
+  "q",
+  "ruby",
+  "rp",
+  "rt",
+  "s",
+  "samp",
+  "script",
+  "section",
+  "select",
+  "small",
+  "span",
+  "strong",
+  "style",
+  "sub",
+  "summary",
+  "sup",
+  "table",
+  "tbody",
+  "td",
+  "textarea",
+  "tfoot",
+  "th",
+  "thead",
+  "time",
+  "title",
+  "tr",
+  "u",
+  "ul",
+  "var",
+  "video"
+)
+
+void_tags &lt;- c(
+  "area",
+  "base",
+  "br",
+  "col",
+  "command",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "keygen",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr"
+)
+</input></program>
+      <p>
+        If you look at this list carefully, you'll see there are quite a few tags that have the same name as base R functions (<c>body</c>, <c>col</c>, <c>q</c>, <c>source</c>, <c>sub</c>, <c>summary</c>, <c>table</c>). This means we don't want to make all the functions available by default, either in the global environment or in a package. Instead, we'll put them in a list (like in <xref ref="sec-functional-factories"/>) and then provide a helper to make it easy to use them when desired. First, we make a named list containing all the tag functions:
+      </p>
+      <program language="r"><input>
+html_tags &lt;- c(
+  tags %&gt;% set_names() %&gt;% map(tag),
+  void_tags %&gt;% set_names() %&gt;% map(void_tag)
+)
+</input></program>
+      <p>This gives us an explicit (but verbose) way to create HTML:</p>
+      <program language="r"><input>
+html_tags$p(
+  "Some text. ",
+  html_tags$b(html_tags$i("some bold italic text")),
+  class = "mypara"
+)
+</input></program>
+      <p>
+        We can then finish off our HTML DSL with a function that allows us to evaluate code in the context of that list. Here we slightly abuse the data mask, passing it a list of functions rather than a data frame. This is quick hack to mingle the execution environment of <c>code</c> with the functions in <c>html_tags</c>.
+      </p>
+      <idx><h>eval_tidy()</h></idx>
+      <program language="r"><input>
+with_html &lt;- function(code) {
+  code &lt;- enquo(code)
+  eval_tidy(code, html_tags)
+}
+</input></program>
+      <p>
+        This gives us a succinct API which allows us to write HTML when we need it but doesn't clutter up the namespace when we don't.
+      </p>
+      <program language="r"><input>
+with_html(
+  body(
+    h1("A heading", id = "first"),
+    p("Some text &amp;", b("some bold text.")),
+    img(src = "myimg.png", width = 100, height = 100)
+  )
+)
+</input></program>
+      <p>
+        If you want to access the R function overridden by an HTML tag with the same name inside <c>with_html()</c>, you can use the full <c>package::function</c> specification.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          The escaping rules for <c>&lt;script&gt;</c> tags are different because they contain JavaScript, not HTML. Instead of escaping angle brackets or ampersands, you need to escape <c>&lt;/script&gt;</c> so that the tag isn't closed too early. For example, <c>script("'&lt;/script&gt;'")</c>, shouldn't generate this:
+        </p>
+        <program language="html"><input>
+&lt;script&gt;'&lt;/script&gt;'&lt;/script&gt;
+</input></program>
+        <p>But</p>
+        <program language="html"><input>
+&lt;script&gt;'&lt;\/script&gt;'&lt;/script&gt;
+</input></program>
+        <p>Adapt the <c>escape()</c> to follow these rules when a new argument <c>script</c> is set to <c>TRUE</c>.</p>
+      </exercise>
+      <exercise>
+        <p>
+          The use of <c>...</c> for all functions has some big downsides. There's no input validation and there will be little information in the documentation or autocomplete about how they are used in the function. Create a new function that, when given a named list of tags and their attribute names (like below), creates tag functions with named arguments.
+        </p>
+        <program language="r"><input>
+list(
+  a = c("href"),
+  img = c("src", "width", "height")
+)
+</input></program>
+        <p>All tags should get <c>class</c> and <c>id</c> attributes.</p>
+      </exercise>
+      <exercise>
+        <p>
+          Reason about the following code that calls <c>with_html()</c> referencing objects from the environment. Will it work or fail? Why? Run the code to verify your predictions.
+        </p>
+        <program language="r"><input>
+greeting &lt;- "Hello!"
+with_html(p(greeting))
+
+p &lt;- function() "p"
+address &lt;- "123 anywhere street"
+with_html(p(address))
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Currently the HTML doesn't look terribly pretty, and it's hard to see the structure. How could you adapt <c>tag()</c> to do indenting and formatting? (You may need to do some research into block and inline tags.)
+        </p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-latex">
+    <title>LaTeX</title>
+    <idx><h>LaTeX</h></idx>
+
+    <p>
+      The next DSL will convert R expressions into their LaTeX math equivalents. (This is a bit like <c>?plotmath</c>, but for text instead of plots.) LaTeX is the lingua franca of mathematicians and statisticians: it's common to use LaTeX notation whenever you want to express an equation in text, like in email. Since many reports are produced using both R and LaTeX, it might be useful to be able to automatically convert mathematical expressions from one language to the other.
+    </p>
+    <p>
+      Because we need to convert both functions and names, this mathematical DSL will be more complicated than the HTML DSL. We'll also need to create a default conversion, so that symbols that we don't know about get a standard conversion. This means that we can no longer use just evaluation: we also need to walk the abstract syntax tree (AST).
+    </p>
+
+    <subsection>
+      <title>LaTeX mathematics</title>
+      <p>
+        Before we begin, let's quickly cover how formulas are expressed in LaTeX. The full standard is very complex, but fortunately is <url href="http://en.wikibooks.org/wiki/LaTeX/Mathematics">well documented</url>, and the most common commands have a fairly simple structure:
+      </p>
+      <ul>
+        <li><p>Most simple mathematical equations are written in the same way you'd type them in R: <c>x * y</c>, <c>z ^ 5</c>. Subscripts are written using <c>_</c> (e.g., <c>x_1</c>).</p></li>
+        <li><p>Special characters start with a <c>\</c>: <c>\pi</c> = <m>\pi</m>, <c>\pm</c> = <m>\pm</m>, and so on. There are a huge number of symbols available in LaTeX: searching online for <c>latex math symbols</c> returns many <url href="http://www.sunilpatel.co.uk/latex-type/latex-math-symbols/">lists</url>. There's even <url href="http://detexify.kirelabs.org/classify.html">a service</url> that will look up the symbol you sketch in the browser.</p></li>
+        <li><p>More complicated functions look like <c>\name{arg1}{arg2}</c>. For example, to write a fraction you'd use <c>\frac{a}{b}</c>. To write a square root, you'd use <c>\sqrt{a}</c>.</p></li>
+        <li><p>To group elements together use <c>{}</c>: i.e., <c>x ^ a + b</c> versus <c>x ^ {a + b}</c>.</p></li>
+        <li><p>In good math typesetting, a distinction is made between variables and functions. But without extra information, LaTeX doesn't know whether <c>f(a * b)</c> represents calling the function <c>f</c> with input <c>a * b</c>, or is shorthand for <c>f * (a * b)</c>. If <c>f</c> is a function, you can tell LaTeX to typeset it using an upright font with <c>\textrm{f}(a * b)</c>. (The <c>rm</c> stands for "Roman", the opposite of italics.)</p></li>
+      </ul>
+    </subsection>
+
+    <subsection>
+      <title>Goal</title>
+      <p>
+        Our goal is to use these rules to automatically convert an R expression to its appropriate LaTeX representation. We'll tackle this in four stages:
+      </p>
+      <ul>
+        <li><p>Convert known symbols: <c>pi</c> → <c>\pi</c></p></li>
+        <li><p>Leave other symbols unchanged: <c>x</c> → <c>x</c>, <c>y</c> → <c>y</c></p></li>
+        <li><p>Convert known functions to their special forms: <c>sqrt(frac(a, b))</c> → <c>\sqrt{\frac{a}{b}}</c></p></li>
+        <li><p>Wrap unknown functions with <c>\textrm</c>: <c>f(a)</c> → <c>\textrm{f}(a)</c></p></li>
+      </ul>
+      <p>
+        We'll code this translation in the opposite direction of what we did with the HTML DSL. We'll start with infrastructure, because that makes it easy to experiment with our DSL, and then work our way back down to generate the desired output.
+      </p>
+    </subsection>
+
+    <subsection>
+      <title><c>to_math</c>()</title>
+      <p>
+        To begin, we need a wrapper function that will convert R expressions into LaTeX math expressions. This will work like <c>to_html()</c> by capturing the unevaluated expression and evaluating it in a special environment. There are two main differences:
+      </p>
+      <ul>
+        <li><p>The evaluation environment is no longer constant, as it has to vary depending on the input. This is necessary to handle unknown symbols and functions.</p></li>
+        <li><p>We never evaluate in the argument environment because we're translating every function to a LaTeX expression. The user will need to use explicitly <c>!!</c> in order to evaluate normally.</p></li>
+      </ul>
+      <p>This gives us:</p>
+      <program language="r"><input>
+to_math &lt;- function(x) {
+  expr &lt;- enexpr(x)
+  out &lt;- eval_bare(expr, latex_env(expr))
+
+  latex(out)
+}
+
+latex &lt;- function(x) structure(x, class = "advr_latex")
+print.advr_latex &lt;- function(x) {
+  cat("&lt;LATEX&gt; ", x, "\n", sep = "")
+}
+</input></program>
+      <p>Next we'll build up <c>latex_env()</c>, starting simply and getting progressively more complex.</p>
+    </subsection>
+
+    <subsection>
+      <title>Known symbols</title>
+      <p>
+        Our first step is to create an environment that will convert the special LaTeX symbols used for Greek characters, e.g., <c>pi</c> to <c>\pi</c>. We'll use the trick from <xref ref="subsec-subset"/> to bind the symbol <c>pi</c> to the value <c>"\pi"</c>.
+      </p>
+      <program language="r"><input>
+greek &lt;- c(
+  "alpha",
+  "theta",
+  "tau",
+  "beta",
+  "vartheta",
+  "pi",
+  "upsilon",
+  "gamma",
+  "varpi",
+  "phi",
+  "delta",
+  "kappa",
+  "rho",
+  "varphi",
+  "epsilon",
+  "lambda",
+  "varrho",
+  "chi",
+  "varepsilon",
+  "mu",
+  "sigma",
+  "psi",
+  "zeta",
+  "nu",
+  "varsigma",
+  "omega",
+  "eta",
+  "xi",
+  "Gamma",
+  "Lambda",
+  "Sigma",
+  "Psi",
+  "Delta",
+  "Xi",
+  "Upsilon",
+  "Omega",
+  "Theta",
+  "Pi",
+  "Phi"
+)
+greek_list &lt;- set_names(paste0("\\", greek), greek)
+greek_env &lt;- as_environment(greek_list)
+</input></program>
+      <p>We can then check it:</p>
+      <program language="r"><input>
+latex_env &lt;- function(expr) {
+  greek_env
+}
+
+to_math(pi)
+to_math(beta)
+</input></program>
+      <p>Looks good so far!</p>
+    </subsection>
+
+    <subsection>
+      <title>Unknown symbols</title>
+      <p>
+        If a symbol isn't Greek, we want to leave it as is. This is tricky because we don't know in advance what symbols will be used, and we can't possibly generate them all. Instead, we'll use the approach described in <xref ref="sec-ast-funs"/>: walking the AST to find all symbols. This gives us <c>all_names_rec()</c> and helper <c>all_names()</c>:
+      </p>
+      <program language="r"><input>
+all_names_rec &lt;- function(x) {
+  switch_expr(
+    x,
+    constant = character(),
+    symbol = as.character(x),
+    call = flat_map_chr(as.list(x[-1]), all_names)
+  )
+}
+
+all_names &lt;- function(x) {
+  unique(all_names_rec(x))
+}
+
+all_names(expr(x + y + f(a, b, c, 10)))
+</input></program>
+      <p>
+        We now want to take that list of symbols and convert it to an environment so that each symbol is mapped to its corresponding string representation (e.g., so <c>eval(quote(x), env)</c> yields <c>"x"</c>). We again use the pattern of converting a named character vector to a list, then converting the list to an environment.
+      </p>
+      <program language="r"><input>
+latex_env &lt;- function(expr) {
+  names &lt;- all_names(expr)
+  symbol_env &lt;- as_environment(set_names(names))
+
+  symbol_env
+}
+
+to_math(x)
+to_math(longvariablename)
+to_math(pi)
+</input></program>
+      <p>
+        This works, but we need to combine it with the Greek symbols environment. Since we want to give preference to Greek over defaults (e.g., <c>to_math(pi)</c> should give <c>"\\pi"</c>, not <c>"pi"</c>), <c>symbol_env</c> needs to be the parent of <c>greek_env</c>. To do that, we need to make a copy of <c>greek_env</c> with a new parent. This gives us a function that can convert both known (Greek) and unknown symbols.
+      </p>
+      <program language="r"><input>
+latex_env &lt;- function(expr) {
+  # Unknown symbols
+  names &lt;- all_names(expr)
+  symbol_env &lt;- as_environment(set_names(names))
+
+  # Known symbols
+  env_clone(greek_env, parent = symbol_env)
+}
+
+to_math(x)
+to_math(longvariablename)
+to_math(pi)
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Known functions</title>
+      <p>
+        Next we'll add functions to our DSL. We'll start with a couple of helpers that make it easy to add new unary and binary operators. These functions are very simple: they only assemble strings.
+      </p>
+      <program language="r"><input>
+unary_op &lt;- function(left, right) {
+  new_function(
+    exprs(e1 = ),
+    expr(
+      paste0(!!left, e1, !!right)
+    ),
+    caller_env()
+  )
+}
+
+binary_op &lt;- function(sep) {
+  new_function(
+    exprs(e1 = , e2 = ),
+    expr(
+      paste0(e1, !!sep, e2)
+    ),
+    caller_env()
+  )
+}
+
+unary_op("\\sqrt{", "}")
+binary_op("+")
+</input></program>
+      <p>
+        Using these helpers, we can map a few illustrative examples of converting R to LaTeX. Note that with R's lexical scoping rules helping us, we can easily provide new meanings for standard functions like <c>+</c>, <c>-</c>, and <c>*</c>, and even <c>(</c> and <c>{</c>.
+      </p>
+      <program language="r"><input>
+# Binary operators
+f_env &lt;- child_env(
+  .parent = empty_env(),
+  `+` = binary_op(" + "),
+  `-` = binary_op(" - "),
+  `*` = binary_op(" * "),
+  `/` = binary_op(" / "),
+  `^` = binary_op("^"),
+  `[` = binary_op("_"),
+
+  # Grouping
+  `{` = unary_op("\\left{ ", " \\right}"),
+  `(` = unary_op("\\left( ", " \\right)"),
+  paste = paste,
+
+  # Other math functions
+  sqrt = unary_op("\\sqrt{", "}"),
+  sin = unary_op("\\sin(", ")"),
+  log = unary_op("\\log(", ")"),
+  abs = unary_op("\\left| ", "\\right| "),
+  frac = function(a, b) {
+    paste0("\\frac{", a, "}{", b, "}")
+  },
+
+  # Labelling
+  hat = unary_op("\\hat{", "}"),
+  tilde = unary_op("\\tilde{", "}")
+)
+</input></program>
+      <p>
+        We again modify <c>latex_env()</c> to include this environment. It should be the last environment R looks for names in so that expressions like <c>sin(sin)</c> will work.
+      </p>
+      <program language="r"><input>
+latex_env &lt;- function(expr) {
+  # Known functions
+  f_env
+
+  # Default symbols
+  names &lt;- all_names(expr)
+  symbol_env &lt;- as_environment(set_names(names), parent = f_env)
+
+  # Known symbols
+  greek_env &lt;- env_clone(greek_env, parent = symbol_env)
+
+  greek_env
+}
+
+to_math(sin(x + pi))
+to_math(log(x[i]^2))
+to_math(sin(sin))
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Unknown functions</title>
+      <p>
+        Finally, we'll add a default for functions that we don't yet know about. We can't know in advance what the unknown functions will be so we again walk the AST to find them:
+      </p>
+      <program language="r"><input>
+all_calls_rec &lt;- function(x) {
+  switch_expr(x, constant = , symbol = character(), call = {
+    fname &lt;- as.character(x[[1]])
+    children &lt;- flat_map_chr(as.list(x[-1]), all_calls)
+    c(fname, children)
+  })
+}
+all_calls &lt;- function(x) {
+  unique(all_calls_rec(x))
+}
+
+all_calls(expr(f(g + b, c, d(a))))
+</input></program>
+      <p>We need a closure that will generate the functions for each unknown call:</p>
+      <program language="r"><input>
+unknown_op &lt;- function(op) {
+  new_function(
+    exprs(... = ),
+    expr({
+      contents &lt;- paste(..., collapse = ", ")
+      paste0(!!paste0("\\mathrm{", op, "}("), contents, ")")
+    })
+  )
+}
+unknown_op("foo")
+</input></program>
+      <p>And again we update <c>latex_env()</c>:</p>
+      <program language="r"><input>
+latex_env &lt;- function(expr) {
+  calls &lt;- all_calls(expr)
+  call_list &lt;- map(set_names(calls), unknown_op)
+  call_env &lt;- as_environment(call_list)
+
+  # Known functions
+  f_env &lt;- env_clone(f_env, call_env)
+
+  # Default symbols
+  names &lt;- all_names(expr)
+  symbol_env &lt;- as_environment(set_names(names), parent = f_env)
+
+  # Known symbols
+  greek_env &lt;- env_clone(greek_env, parent = symbol_env)
+  greek_env
+}
+</input></program>
+      <p>This completes our original requirements:</p>
+      <program language="r"><input>
+to_math(sin(pi) + f(a))
+</input></program>
+      <p>
+        You could certainly take this idea further and translate types of mathematical expression, but you should not need any additional metaprogramming tools.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          Add escaping. The special symbols that should be escaped by adding a backslash in front of them are <c>\</c>, <c>$</c>, and <c>%</c>. Just as with HTML, you'll need to make sure you don't end up double-escaping. So you'll need to create a small S3 class and then use that in function operators. That will also allow you to embed arbitrary LaTeX if needed.
+        </p>
+      </exercise>
+      <exercise>
+        <p>Complete the DSL to support all the functions that <c>plotmath</c> supports.</p>
+      </exercise>
+    </exercises>
+  </section>
+
+</chapter>
