@@ -1,40 +1,1058 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-expressions" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Expressions</title>
+<chapter xml:id="ch-expressions" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Expressions</title>
 
-    <introduction>
-      <p>
-        To compute on the language, we first need to understand its structure.
-        This requires some new vocabulary, some new tools, and some new ways of
-        thinking about R code. The first of these is the distinction between an
-        operation and its result. Take the following code, which multiplies a
-        variable <c>x</c> by 10 and saves the result to a new variable called
-        <c>y</c>. It doesn't work if we run it, because we haven't defined a
-        variable called <c>x</c>.
-      </p>
+  <introduction>
+    <idx><h>expressions</h></idx>
+    <p>To compute on the language, we first need to understand its structure. That requires some new vocabulary, some new tools, and some new ways of thinking about R code. The first of these is the distinction between an operation and its result. Take the following code, which multiplies a variable <c>x</c> by 10 and saves the result to a new variable called <c>y</c>. It doesn't work because we haven't defined a variable called <c>x</c>:</p>
 
-      <program language="r">
-        <input>
+    <program language="r"><input>
 y &lt;- x * 10
-        </input>
-      </program>
+</input></program>
 
-      <p>
-        It would be nice if we could capture the intent of the code without
-        executing it. In other words, how do we separate our description of the
-        action from the action itself?
-      </p>
-    </introduction>
+    <p>It would be nice if we could capture the intent of the code without executing it. In other words, how can we separate our description of the action from the action itself?</p>
 
-    <section xml:id="sec-ast">
-      <title>Abstract syntax trees</title>
+    <p>One way is to use <c>rlang::expr()</c>:</p>
 
-      <p>
-        Expressions are also called <em>abstract syntax trees</em> (ASTs)
-        because the structure of code is hierarchical and can be naturally
-        represented as a tree. Understanding this tree structure is crucial for
-        inspecting and modifying expressions (i.e. metaprogramming).
-      </p>
-    </section>
+    <program language="r"><input>
+z &lt;- rlang::expr(y &lt;- x * 10)
+z
+</input></program>
 
-  </chapter>
+    <p><c>expr()</c> returns an expression, an object that captures the structure of the code without evaluating it (i.e. running it). If you have an expression, you can evaluate it with <c>base::eval()</c>:</p>
+
+    <program language="r"><input>
+x &lt;- 4
+eval(z)
+y
+</input></program>
+
+    <p>The focus of this chapter is the data structures that underlie expressions. Mastering this knowledge will allow you to inspect and modify captured code, and to generate code with code. We'll come back to <c>expr()</c> in <xref ref="ch-quasiquotation"/>, and to <c>eval()</c> in <xref ref="ch-evaluation"/>.</p>
+
+    <paragraphs xml:id="para-expressions-outline">
+      <title>Outline</title>
+      <ul>
+        <li><p>Section <xref ref="sec-ast"/> introduces the idea of the abstract syntax tree (AST), and reveals the tree like structure that underlies all R code.</p></li>
+        <li><p>Section <xref ref="sec-expression-details"/> dives into the details of the data structures that underpin the AST: constants, symbols, and calls, which are collectively known as expressions.</p></li>
+        <li><p>Section <xref ref="sec-grammar"/> covers parsing, the act of converting the linear sequence of character in code into the AST, and uses that idea to explore some details of R's grammar.</p></li>
+        <li><p>Section <xref ref="sec-ast-funs"/> shows you how you can use recursive functions to compute on the language, writing functions that compute with expressions.</p></li>
+        <li><p>Section <xref ref="sec-expression-special"/> circles back to three more specialised data structures: pairlists, missing arguments, and expression vectors.</p></li>
+      </ul>
+    </paragraphs>
+
+    <paragraphs xml:id="para-expressions-prerequisites">
+      <title>Prerequisites</title>
+      <p>Make sure you've read the metaprogramming overview in <xref ref="ch-meta-big-picture"/> to get a broad overview of the motivation and the basic vocabulary. You'll also need the <url href="https://rlang.r-lib.org">rlang</url> package to capture and compute on expressions, and the <url href="https://lobstr.r-lib.org">lobstr</url> package to visualise them.</p>
+      <program language="r"><input>
+library(rlang)
+library(lobstr)
+</input></program>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-ast">
+    <title>Abstract syntax trees</title>
+    <idx><h>ASTs</h></idx>
+    <idx><h>abstract syntax tree</h><h>see ASTs</h></idx>
+
+    <p>Expressions are also called <alert>abstract syntax trees</alert> (ASTs) because the structure of code is hierarchical and can be naturally represented as a tree. Understanding this tree structure is crucial for inspecting and modifying expressions (i.e. metaprogramming).</p>
+
+    <subsection>
+      <title>Drawing</title>
+      <idx><h>ASTs</h><h>ast()</h></idx>
+
+      <p>We'll start by introducing some conventions for drawing ASTs, beginning with a simple call that shows their main components: <c>f(x, "y", 1)</c>. I'll draw trees in two ways<fn>For more complex code, you can also use RStudio's tree viewer which doesn't obey quite the same graphical conventions, but allows you to interactively explore large ASTs. Try it out with <c>View(expr(f(x, "y", 1)))</c>.</fn>:</p>
+
+      <ul>
+        <li>
+          <p>By "hand" (i.e. with OmniGraffle):</p>
+          <figure xml:id="fig-expressions-simple">
+            <image source="../images/expressions/simple.png"/>
+          </figure>
+        </li>
+        <li>
+          <p>With <c>lobstr::ast()</c>:</p>
+          <program language="r"><input>
+lobstr::ast(f(x, "y", 1))
+</input></program>
+        </li>
+      </ul>
+
+      <p>Both approaches share conventions as much as possible:</p>
+
+      <ul>
+        <li><p>The leaves of the tree are either symbols, like <c>f</c> and <c>x</c>, or constants, like <c>1</c> or <c>"y"</c>. Symbols are drawn in purple and have rounded corners. Constants have black borders and square corners. Strings and symbols are easily confused, so strings are always surrounded in quotes.</p></li>
+        <li><p>The branches of the tree are call objects, which represent function calls, and are drawn as orange rectangles. The first child (<c>f</c>) is the function that gets called; the second and subsequent children (<c>x</c>, <c>"y"</c>, and <c>1</c>) are the arguments to that function.</p></li>
+      </ul>
+
+      <p>Colours will be shown when <em>you</em> call <c>ast()</c>, but do not appear in the book for complicated technical reasons.</p>
+
+      <p>The above example only contained one function call, making for a very shallow tree. Most expressions will contain considerably more calls, creating trees with multiple levels. For example, consider the AST for <c>f(g(1, 2), h(3, 4, i()))</c>:</p>
+
+      <figure xml:id="fig-expressions-complicated">
+        <image source="../images/expressions/complicated.png"/>
+      </figure>
+
+      <program language="r"><input>
+lobstr::ast(f(g(1, 2), h(3, 4, i())))
+</input></program>
+
+      <p>You can read the hand-drawn diagrams from left-to-right (ignoring vertical position), and the lobstr-drawn diagrams from top-to-bottom (ignoring horizontal position). The depth within the tree is determined by the nesting of function calls. This also determines evaluation order, as evaluation generally proceeds from deepest-to-shallowest, but this is not guaranteed because of lazy evaluation (<xref ref="sec-lazy-evaluation"/>). Also note the appearance of <c>i()</c>, a function call with no arguments; it's a branch with a single (symbol) leaf.</p>
+    </subsection>
+
+    <subsection>
+      <title>Non-code components</title>
+      <idx><h>ASTs</h><h>non-code</h></idx>
+
+      <p>You might have wondered what makes these <em>abstract</em> syntax trees. They are abstract because they only capture important structural details of the code, not whitespace or comments:</p>
+
+      <program language="r"><input>
+ast(
+  f(x,  y)  # important!
+)
+</input></program>
+
+      <p>There's only one place where whitespace affects the AST:</p>
+
+      <program language="r"><input>
+lobstr::ast(y &lt;- x)
+lobstr::ast(y &lt; -x)
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Infix calls</title>
+      <idx><h>ASTs</h><h>infix calls</h></idx>
+
+      <p>Every call in R can be written in tree form because any call can be written in prefix form (<xref ref="sec-prefix-transform"/>). Take <c>y &lt;- x * 10</c> again: what are the functions that are being called? It is not as easy to spot as <c>f(x, 1)</c> because this expression contains two infix calls: <c>&lt;-</c> and <c>*</c>. That means that these two lines of code are equivalent:</p>
+
+      <program language="r"><input>
+y &lt;- x * 10
+`&lt;-`(y, `*`(x, 10))
+</input></program>
+
+      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in <xref ref="sec-non-syntactic"/>.</fn>:</p>
+
+      <figure xml:id="fig-expressions-prefix">
+        <image source="../images/expressions/prefix.png"/>
+      </figure>
+
+      <program language="r"><input>
+lobstr::ast(y &lt;- x * 10)
+</input></program>
+
+      <p>There really is no difference between the ASTs, and if you generate an expression with prefix calls, R will still print it in infix form:</p>
+
+      <program language="r"><input>
+expr(`&lt;-`(y, `*`(x, 10)))
+</input></program>
+
+      <p>The order in which infix operators are applied is governed by a set of rules called operator precedence, and we'll use <c>lobstr::ast()</c> to explore them in <xref ref="subsec-operator-precedence"/>.</p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Reconstruct the code represented by the trees below:</p>
+        <program language="r"><input>
+ast(f(g(h())))
+
+ast(1 + 2 + 3)
+
+ast((x + y) * z)
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Draw the following trees by hand and then check your answers with <c>lobstr::ast()</c>.</p>
+        <program language="r"><input>
+f(g(h(i(1, 2, 3))))
+f(1, g(2, h(3, i())))
+f(g(1, 2), h(3, i(4, 5)))
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>What's happening with the ASTs below? (Hint: carefully read <c>?"^"</c>.)</p>
+        <program language="r"><input>
+lobstr::ast(`x` + `y`)
+lobstr::ast(x ** y)
+lobstr::ast(1 -&gt; x)
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>What is special about the AST below? (Hint: re-read <xref ref="sec-fun-components"/>.)</p>
+        <program language="r"><input>
+lobstr::ast(function(x = 1, y = 2) {})
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>What does the call tree of an <c>if</c> statement with multiple <c>else if</c> conditions look like? Why?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-expression-details">
+    <title>Expressions</title>
+    <idx><h>expressions</h></idx>
+    <idx><h>expr()</h></idx>
+
+    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is <em>possible</em> to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in <xref ref="subsec-non-standard-ast"/>.</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
+
+    <p>NB: In base R documentation "expression" is used to mean two things. As well as the definition above, expression is also used to refer to the type of object returned by <c>expression()</c> and <c>parse()</c>, which are basically lists of expressions as defined above. In this book I'll call these <alert>expression vectors</alert>, and I'll come back to them in <xref ref="subsec-expression-vectors"/>.</p>
+
+    <subsection>
+      <title>Constants</title>
+      <idx><h>constants</h></idx>
+      <idx><h>scalars</h></idx>
+
+      <p>Scalar constants are the simplest component of the AST. More precisely, a <alert>constant</alert> is either <c>NULL</c> or a length-1 atomic vector (or scalar, <xref ref="sec-scalars"/>) like <c>TRUE</c>, <c>1L</c>, <c>2.5</c> or <c>"x"</c>. You can test for a constant with <c>rlang::is_syntactic_literal()</c>.</p>
+
+      <p>Constants are self-quoting in the sense that the expression used to represent a constant is the same constant:</p>
+
+      <program language="r"><input>
+identical(expr(TRUE), TRUE)
+identical(expr(1), 1)
+identical(expr(2L), 2L)
+identical(expr("x"), "x")
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Symbols</title>
+      <idx><h>symbols</h></idx>
+      <idx><h>names</h><h>see symbols</h></idx>
+      <idx><h>sym()</h></idx>
+
+      <p>A <alert>symbol</alert> represents the name of an object like <c>x</c>, <c>mtcars</c>, or <c>mean</c>. In base R, the terms symbol and name are used interchangeably (i.e. <c>is.name()</c> is identical to <c>is.symbol()</c>), but in this book I used symbol consistently because "name" has many other meanings.</p>
+
+      <p>You can create a symbol in two ways: by capturing code that references an object with <c>expr()</c>, or turning a string into a symbol with <c>rlang::sym()</c>:</p>
+
+      <program language="r"><input>
+expr(x)
+sym("x")
+</input></program>
+
+      <idx><h>as_string()</h></idx>
+      <p>You can turn a symbol back into a string with <c>as.character()</c> or <c>rlang::as_string()</c>. <c>as_string()</c> has the advantage of clearly signalling that you'll get a character vector of length 1.</p>
+
+      <program language="r"><input>
+as_string(expr(x))
+</input></program>
+
+      <p>You can recognise a symbol because it's printed without quotes, <c>str()</c> tells you that it's a symbol, and <c>is.symbol()</c> is <c>TRUE</c>:</p>
+
+      <program language="r"><input>
+str(expr(x))
+is.symbol(expr(x))
+</input></program>
+
+      <p>The symbol type is not vectorised, i.e. a symbol is always length 1. If you want multiple symbols, you'll need to put them in a list, using (e.g.) <c>rlang::syms()</c>.</p>
+    </subsection>
+
+    <subsection>
+      <title>Calls</title>
+      <idx><h>call objects</h></idx>
+      <idx><h>language objects</h><h>see call objects</h></idx>
+
+      <p>A <alert>call object</alert> represents a captured function call. Call objects are a special type of list<fn>More precisely, they're pairlists, <xref ref="subsec-pairlists"/>, but this distinction rarely matters.</fn> where the first component specifies the function to call (usually a symbol), and the remaining elements are the arguments for that call. Call objects create branches in the AST, because calls can be nested inside other calls.</p>
+
+      <p>You can identify a call object when printed because it looks just like a function call. Confusingly <c>typeof()</c> and <c>str()</c> print "language"<fn>Avoid <c>is.language()</c> which returns <c>TRUE</c> for symbols, calls, and expression vectors.</fn> for call objects, but <c>is.call()</c> returns <c>TRUE</c>:</p>
+
+      <program language="r"><input>
+lobstr::ast(read.table("important.csv", row.names = FALSE))
+x &lt;- expr(read.table("important.csv", row.names = FALSE))
+
+typeof(x)
+is.call(x)
+</input></program>
+
+      <paragraphs>
+        <title>Subsetting</title>
+        <idx><h>call objects</h><h>subsetting</h></idx>
+
+        <p>Calls generally behave like lists, i.e. you can use standard subsetting tools. The first element of the call object is the function to call, which is usually a symbol:</p>
+
+        <program language="r"><input>
+x[[1]]
+is.symbol(x[[1]])
+</input></program>
+
+        <p>The remainder of the elements are the arguments:</p>
+
+        <program language="r"><input>
+as.list(x[-1])
+</input></program>
+
+        <p>You can extract individual arguments with <c>[[</c> or, if named, <c>$</c>:</p>
+
+        <program language="r"><input>
+x[[2]]
+x$row.names
+</input></program>
+
+        <p>You can determine the number of arguments in a call object by subtracting 1 from its length:</p>
+
+        <program language="r"><input>
+length(x) - 1
+</input></program>
+
+        <p>Extracting specific arguments from calls is challenging because of R's flexible rules for argument matching: it could potentially be in any location, with the full name, with an abbreviated name, or with no name. To work around this problem, you can use <c>rlang::call_standardise()</c> which standardises all arguments to use the full name: <idx><h>standardise_call()</h></idx></p>
+
+        <program language="r"><input>
+rlang::call_standardise(x)
+</input></program>
+
+        <p>(NB: If the function uses <c>...</c> it's not possible to standardise all arguments.)</p>
+
+        <p>Calls can be modified in the same way as lists:</p>
+
+        <program language="r"><input>
+x$header &lt;- TRUE
+x
+</input></program>
+      </paragraphs>
+
+      <paragraphs>
+        <title>Function position</title>
+        <idx><h>call objects</h><h>function component</h></idx>
+
+        <p>The first element of the call object is the <alert>function position</alert>. This contains the function that will be called when the object is evaluated, and is usually a symbol<fn>Peculiarly, it can also be a number, as in the expression <c>3()</c>. But this call will always fail to evaluate because a number is not a function.</fn>:</p>
+
+        <program language="r"><input>
+lobstr::ast(foo())
+</input></program>
+
+        <p>While R allows you to surround the name of the function with quotes, the parser converts it to a symbol:</p>
+
+        <program language="r"><input>
+lobstr::ast("foo"())
+</input></program>
+
+        <p>However, sometimes the function doesn't exist in the current environment and you need to do some computation to retrieve it: for example, if the function is in another package, is a method of an R6 object, or is created by a function factory. In this case, the function position will be occupied by another call:</p>
+
+        <program language="r"><input>
+lobstr::ast(pkg::foo(1))
+lobstr::ast(obj$foo(1))
+lobstr::ast(foo(1)(2))
+</input></program>
+
+        <figure xml:id="fig-expressions-call-call">
+          <image source="../images/expressions/call-call.png"/>
+        </figure>
+      </paragraphs>
+
+      <paragraphs xml:id="subsec-call2">
+        <title>Constructing</title>
+        <idx><h>call objects</h><h>constructing</h></idx>
+        <idx><h>call2()</h></idx>
+
+        <p>You can construct a call object from its components using <c>rlang::call2()</c>. The first argument is the name of the function to call (either as a string, a symbol, or another call). The remaining arguments will be passed along to the call:</p>
+
+        <program language="r"><input>
+call2("mean", x = expr(x), na.rm = TRUE)
+call2(expr(base::mean), x = expr(x), na.rm = TRUE)
+</input></program>
+
+        <p>Infix calls created in this way still print as usual.</p>
+
+        <program language="r"><input>
+call2("&lt;-", expr(x), 10)
+</input></program>
+
+        <p>Using <c>call2()</c> to create complex expressions is a bit clunky. You'll learn another technique in <xref ref="ch-quasiquotation"/>.</p>
+      </paragraphs>
+    </subsection>
+
+    <subsection>
+      <title>Summary</title>
+
+      <p>The following table summarises the appearance of the different expression subtypes in <c>str()</c> and <c>typeof()</c>:</p>
+
+      <tabular>
+        <row header="yes">
+          <cell></cell>
+          <cell><c>str()</c></cell>
+          <cell><c>typeof()</c></cell>
+        </row>
+        <row>
+          <cell>Scalar constant</cell>
+          <cell><c>logi</c>/<c>int</c>/<c>num</c>/<c>chr</c></cell>
+          <cell><c>logical</c>/<c>integer</c>/<c>double</c>/<c>character</c></cell>
+        </row>
+        <row>
+          <cell>Symbol</cell>
+          <cell><c>symbol</c></cell>
+          <cell><c>symbol</c></cell>
+        </row>
+        <row>
+          <cell>Call object</cell>
+          <cell><c>language</c></cell>
+          <cell><c>language</c></cell>
+        </row>
+        <row>
+          <cell>Pairlist</cell>
+          <cell>Dotted pair list</cell>
+          <cell><c>pairlist</c></cell>
+        </row>
+        <row>
+          <cell>Expression vector</cell>
+          <cell><c>expression()</c></cell>
+          <cell><c>expression</c></cell>
+        </row>
+      </tabular>
+
+      <p>Both base R and rlang provide functions for testing for each type of input, although the types covered are slightly different. You can easily tell them apart because all the base functions start with <c>is.</c> and the rlang functions start with <c>is_</c>.</p>
+
+      <tabular>
+        <row header="yes">
+          <cell></cell>
+          <cell>base</cell>
+          <cell>rlang</cell>
+        </row>
+        <row>
+          <cell>Scalar constant</cell>
+          <cell>—</cell>
+          <cell><c>is_syntactic_literal()</c></cell>
+        </row>
+        <row>
+          <cell>Symbol</cell>
+          <cell><c>is.symbol()</c></cell>
+          <cell><c>is_symbol()</c></cell>
+        </row>
+        <row>
+          <cell>Call object</cell>
+          <cell><c>is.call()</c></cell>
+          <cell><c>is_call()</c></cell>
+        </row>
+        <row>
+          <cell>Pairlist</cell>
+          <cell><c>is.pairlist()</c></cell>
+          <cell><c>is_pairlist()</c></cell>
+        </row>
+        <row>
+          <cell>Expression vector</cell>
+          <cell><c>is.expression()</c></cell>
+          <cell>—</cell>
+        </row>
+      </tabular>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Which two of the six types of atomic vector can't appear in an expression? Why? Similarly, why can't you create an expression that contains an atomic vector of length greater than one?</p>
+      </exercise>
+
+      <exercise>
+        <p>What happens when you subset a call object to remove the first element? e.g. <c>expr(read.csv("foo.csv", header = TRUE))[-1]</c>. Why?</p>
+      </exercise>
+
+      <exercise>
+        <p>Describe the differences between the following call objects.</p>
+        <program language="r"><input>
+x &lt;- 1:10
+
+call2(median, x, na.rm = TRUE)
+call2(expr(median), x, na.rm = TRUE)
+call2(median, expr(x), na.rm = TRUE)
+call2(expr(median), expr(x), na.rm = TRUE)
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p><c>rlang::call_standardise()</c> doesn't work so well for the following calls. Why? What makes <c>mean()</c> special?</p>
+        <program language="r"><input>
+call_standardise(quote(mean(1:10, na.rm = TRUE)))
+call_standardise(quote(mean(n = T, 1:10)))
+call_standardise(quote(mean(x = 1:10, , TRUE)))
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Why does this code not make sense?</p>
+        <program language="r"><input>
+x &lt;- expr(foo(x = 1))
+names(x) &lt;- c("x", "y")
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Construct the expression <c>if(x &gt; 1) "a" else "b"</c> using multiple calls to <c>call2()</c>. How does the code structure reflect the structure of the AST?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-grammar">
+    <title>Parsing and grammar</title>
+    <idx><h>grammar</h></idx>
+
+    <p>We've talked a lot about expressions and the AST, but not about how expressions are created from code that you type (like <c>"x + y"</c>). The process by which a computer language takes a string and constructs an expression is called <alert>parsing</alert>, and is governed by a set of rules known as a <alert>grammar</alert>. In this section, we'll use <c>lobstr::ast()</c> to explore some of the details of R's grammar, and then show how you can transform back and forth between expressions and strings.</p>
+
+    <subsection xml:id="subsec-operator-precedence">
+      <title>Operator precedence</title>
+      <idx><h>operator precedence</h></idx>
+
+      <p>Infix functions introduce two sources of ambiguity<fn>This ambiguity does not exist in languages with only prefix or postfix calls. It's interesting to compare a simple arithmetic operation in Lisp (prefix) and Forth (postfix). In Lisp you'd write <c>(* (+ 1 2) 3))</c>; this avoids ambiguity by requiring parentheses everywhere. In Forth, you'd write <c>1 2 + 3 *</c>; this doesn't require any parentheses, but does require more thought when reading.</fn>. The first source of ambiguity arises from infix functions: what does <c>1 + 2 * 3</c> yield? Do you get 9 (i.e. <c>(1 + 2) * 3</c>), or 7 (i.e. <c>1 + (2 * 3)</c>)? In other words, which of the two possible parse trees below does R use?</p>
+
+      <figure xml:id="fig-expressions-ambig-order">
+        <image source="../images/expressions/ambig-order.png"/>
+      </figure>
+
+      <p>Programming languages use conventions called <alert>operator precedence</alert> to resolve this ambiguity. We can use <c>ast()</c> to see what R does:</p>
+
+      <program language="r"><input>
+lobstr::ast(1 + 2 * 3)
+</input></program>
+
+      <p>Predicting the precedence of arithmetic operations is usually easy because it's drilled into you in school and is consistent across the vast majority of programming languages.</p>
+
+      <p>Predicting the precedence of other operators is harder. There's one particularly surprising case in R: <c>!</c> has a much lower precedence (i.e. it binds less tightly) than you might expect. This allows you to write useful operations like:</p>
+
+      <program language="r"><input>
+lobstr::ast(!x %in% y)
+</input></program>
+
+      <p>R has over 30 infix operators divided into 18 precedence groups. While the details are described in <c>?Syntax</c>, very few people have memorised the complete ordering. If there's any confusion, use parentheses!</p>
+
+      <program language="r"><input>
+lobstr::ast((1 + 2) * 3)
+</input></program>
+
+      <p>Note the appearance of the parentheses in the AST as a call to the <c>(</c> function.</p>
+    </subsection>
+
+    <subsection>
+      <title>Associativity</title>
+
+      <p>The second source of ambiguity is introduced by repeated usage of the same infix function. For example, is <c>1 + 2 + 3</c> equivalent to <c>(1 + 2) + 3</c> or to <c>1 + (2 + 3)</c>? This normally doesn't matter because <c>x + (y + z) == (x + y) + z</c>, i.e. addition is associative, but is needed because some S3 classes define <c>+</c> in a non-associative way. For example, ggplot2 overloads <c>+</c> to build up a complex plot from simple pieces; this is non-associative because earlier layers are drawn underneath later layers (i.e. <c>geom_point()</c> + <c>geom_smooth()</c> does not yield the same plot as <c>geom_smooth()</c> + <c>geom_point()</c>).</p>
+
+      <p>In R, most operators are <alert>left-associative</alert>, i.e. the operations on the left are evaluated first:</p>
+
+      <program language="r"><input>
+lobstr::ast(1 + 2 + 3)
+</input></program>
+
+      <p>There are two exceptions: exponentiation and assignment.</p>
+
+      <program language="r"><input>
+lobstr::ast(2^2^3)
+lobstr::ast(x &lt;- y &lt;- z)
+</input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-parsing">
+      <title>Parsing and deparsing</title>
+      <idx><h>parsing</h></idx>
+      <idx><h>parsing</h><h>parse_expr()</h></idx>
+
+      <p>Most of the time you type code into the console, and R takes care of turning the characters you've typed into an AST. But occasionally you have code stored in a string, and you want to parse it yourself. You can do so using <c>rlang::parse_expr()</c>:</p>
+
+      <program language="r"><input>
+x1 &lt;- "y &lt;- x + 10"
+x1
+is.call(x1)
+
+x2 &lt;- rlang::parse_expr(x1)
+x2
+is.call(x2)
+</input></program>
+
+      <p><c>parse_expr()</c> always returns a single expression. If you have multiple expression separated by <c>;</c> or <c>\n</c>, you'll need to use <c>rlang::parse_exprs()</c>. It returns a list of expressions:</p>
+
+      <program language="r"><input>
+x3 &lt;- "a &lt;- 1; a + 1"
+rlang::parse_exprs(x3)
+</input></program>
+
+      <p>If you find yourself working with strings containing code very frequently, you should reconsider your process. Read <xref ref="ch-quasiquotation"/> and consider whether you can generate expressions using quasiquotation more safely.</p>
+
+      <note>
+        <idx><h>parsing</h><h>parse()</h></idx>
+        <p>The base equivalent to <c>parse_exprs()</c> is <c>parse()</c>. It is a little harder to use because it's specialised for parsing R code stored in files. You need to supply your string to the <c>text</c> argument and it returns an expression vector (<xref ref="subsec-expression-vectors"/>). I recommend turning the output into a list:</p>
+        <program language="r"><input>
+as.list(parse(text = x1))
+</input></program>
+      </note>
+
+      <idx><h>deparsing</h></idx>
+      <idx><h>expr_text()</h></idx>
+
+      <p>The inverse of parsing is <alert>deparsing</alert>: given an expression, you want the string that would generate it. This happens automatically when you print an expression, and you can get the string with <c>rlang::expr_text()</c>:</p>
+
+      <program language="r"><input>
+z &lt;- expr(y &lt;- x + 10)
+expr_text(z)
+</input></program>
+
+      <p>Parsing and deparsing are not perfectly symmetric because parsing generates an <em>abstract</em> syntax tree. This means we lose backticks around ordinary names, comments, and whitespace:</p>
+
+      <program language="r"><input>
+cat(expr_text(expr({
+  # This is a comment
+  x &lt;-             `x` + 1
+})))
+</input></program>
+
+      <note>
+        <idx><h>deparse()</h></idx>
+        <p>Be careful when using the base R equivalent, <c>deparse()</c>: it returns a character vector with one element for each line. Whenever you use it, remember that the length of the output might be greater than one, and plan accordingly.</p>
+      </note>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>R uses parentheses in two slightly different ways as illustrated by these two calls:</p>
+        <program language="r"><input>
+f((1))
+`(`(1 + 1)
+</input></program>
+        <p>Compare and contrast the two uses by referencing the AST.</p>
+      </exercise>
+
+      <exercise>
+        <p><c>=</c> can also be used in two ways. Construct a simple example that shows both uses.</p>
+      </exercise>
+
+      <exercise>
+        <p>Does <c>-2^2</c> yield 4 or -4? Why?</p>
+      </exercise>
+
+      <exercise>
+        <p>What does <c>!1 + !1</c> return? Why?</p>
+      </exercise>
+
+      <exercise>
+        <p>Why does <c>x1 &lt;- x2 &lt;- x3 &lt;- 0</c> work? Describe the two reasons.</p>
+      </exercise>
+
+      <exercise>
+        <p>Compare the ASTs of <c>x + y %+% z</c> and <c>x ^ y %+% z</c>. What have you learned about the precedence of custom infix functions?</p>
+      </exercise>
+
+      <exercise>
+        <p>What happens if you call <c>parse_expr()</c> with a string that generates multiple expressions? e.g. <c>parse_expr("x + 1; y + 1")</c></p>
+      </exercise>
+
+      <exercise>
+        <p>What happens if you attempt to parse an invalid expression? e.g. <c>"a +"</c> or <c>"f())"</c>.</p>
+      </exercise>
+
+      <exercise>
+        <p><c>deparse()</c> produces vectors when the input is long. For example, the following call produces a vector of length two:</p>
+        <program language="r"><input>
+expr &lt;- expr(g(a + b + c + d + e + f + g + h + i + j + k + l +
+  m + n + o + p + q + r + s + t + u + v + w + x + y + z))
+
+deparse(expr)
+</input></program>
+        <p>What does <c>expr_text()</c> do instead?</p>
+      </exercise>
+
+      <exercise>
+        <p><c>pairwise.t.test()</c> assumes that <c>deparse()</c> always returns a length one character vector. Can you construct an input that violates this expectation? What happens?</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-ast-funs">
+    <title>Walking AST with recursive functions</title>
+    <idx><h>recursion</h><h>over ASTs</h></idx>
+    <idx><h>ASTs</h><h>computing with</h></idx>
+
+    <p>To conclude the chapter I'm going to use everything you've learned about ASTs to solve more complicated problems. The inspiration comes from the base codetools package, which provides two interesting functions:</p>
+
+    <ul>
+      <li><p><c>findGlobals()</c> locates all global variables used by a function. This can be useful if you want to check that your function doesn't inadvertently rely on variables defined in their parent environment.</p></li>
+      <li><p><c>checkUsage()</c> checks for a range of common problems including unused local variables, unused parameters, and the use of partial argument matching.</p></li>
+    </ul>
+
+    <p>Getting all of the details of these functions correct is fiddly, so we won't fully develop the ideas. Instead we'll focus on the big underlying idea: recursion on the AST. Recursive functions are a natural fit to tree-like data structures because a recursive function is made up of two parts that correspond to the two parts of the tree:</p>
+
+    <ul>
+      <li><p>The <alert>recursive case</alert> handles the nodes in the tree. Typically, you'll do something to each child of a node, usually calling the recursive function again, and then combine the results back together again. For expressions, you'll need to handle calls and pairlists (function arguments).</p></li>
+      <li><p>The <alert>base case</alert> handles the leaves of the tree. The base cases ensure that the function eventually terminates, by solving the simplest cases directly. For expressions, you need to handle symbols and constants in the base case.</p></li>
+    </ul>
+
+    <p>To make this pattern easier to see, we'll need two helper functions. First we define <c>expr_type()</c> which will return "constant" for constant, "symbol" for symbols, "call", for calls, "pairlist" for pairlists, and the "type" of anything else:</p>
+
+    <program language="r"><input>
+expr_type &lt;- function(x) {
+  if (rlang::is_syntactic_literal(x)) {
+    "constant"
+  } else if (is.symbol(x)) {
+    "symbol"
+  } else if (is.call(x)) {
+    "call"
+  } else if (is.pairlist(x)) {
+    "pairlist"
+  } else {
+    typeof(x)
+  }
+}
+
+expr_type(expr("a"))
+expr_type(expr(x))
+expr_type(expr(f(1, 2)))
+</input></program>
+
+    <p>We'll couple this with a wrapper around the switch function:</p>
+
+    <program language="r"><input>
+switch_expr &lt;- function(x, ...) {
+  switch(expr_type(x),
+    ...,
+    stop("Don't know how to handle type ", typeof(x), call. = FALSE)
+  )
+}
+</input></program>
+
+    <p>With these two functions in hand, we can write a basic template for any function that walks the AST using <c>switch()</c> (<xref ref="sec-switch"/>):</p>
+
+    <program language="r"><input>
+recurse_call &lt;- function(x) {
+  switch_expr(x,
+    # Base cases
+    symbol = ,
+    constant = ,
+
+    # Recursive cases
+    call = ,
+    pairlist =
+  )
+}
+</input></program>
+
+    <p>Typically, solving the base case is easy, so we'll do that first, then check the results. The recursive cases are trickier, and will often require some functional programming.</p>
+
+    <subsection>
+      <title>Finding F and T</title>
+
+      <p>We'll start with a function that determines whether another function uses the logical abbreviations <c>T</c> and <c>F</c> because using them is often considered to be poor coding practice. Our goal is to return <c>TRUE</c> if the input contains a logical abbreviation, and <c>FALSE</c> otherwise.</p>
+
+      <p>Let's first find the type of <c>T</c> versus <c>TRUE</c>:</p>
+
+      <program language="r"><input>
+expr_type(expr(TRUE))
+
+expr_type(expr(T))
+</input></program>
+
+      <p><c>TRUE</c> is parsed as a logical vector of length one, while <c>T</c> is parsed as a name. This tells us how to write our base cases for the recursive function: a constant is never a logical abbreviation, and a symbol is an abbreviation if it's "F" or "T":</p>
+
+      <program language="r"><input>
+logical_abbr_rec &lt;- function(x) {
+  switch_expr(x,
+    constant = FALSE,
+    symbol = as_string(x) %in% c("F", "T")
+  )
+}
+
+logical_abbr_rec(expr(TRUE))
+logical_abbr_rec(expr(T))
+</input></program>
+
+      <p>I've written <c>logical_abbr_rec()</c> function assuming that the input will be an expression as this will make the recursive operation simpler. However, when writing a recursive function it's common to write a wrapper that provides defaults or makes the function a little easier to use. Here we'll typically make a wrapper that quotes its input (we'll learn more about that in the next chapter), so we don't need to use <c>expr()</c> every time.</p>
+
+      <program language="r"><input>
+logical_abbr &lt;- function(x) {
+  logical_abbr_rec(enexpr(x))
+}
+
+logical_abbr(T)
+logical_abbr(FALSE)
+</input></program>
+
+      <p>Next we need to implement the recursive cases. Here we want to do the same thing for calls and for pairlists: recursively apply the function to each subcomponent, and return <c>TRUE</c> if any subcomponent contains a logical abbreviation. This is made easy by <c>purrr::some()</c>, which iterates over a list and returns <c>TRUE</c> if the predicate function is true for any element.</p>
+
+      <program language="r"><input>
+logical_abbr_rec &lt;- function(x) {
+  switch_expr(x,
+    # Base cases
+    constant = FALSE,
+    symbol = as_string(x) %in% c("F", "T"),
+
+    # Recursive cases
+    call = ,
+    pairlist = purrr::some(x, logical_abbr_rec)
+  )
+}
+
+logical_abbr(mean(x, na.rm = T))
+logical_abbr(function(x, na.rm = T) FALSE)
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Finding all variables created by assignment</title>
+      <idx><h>find_assign()</h></idx>
+
+      <p><c>logical_abbr()</c> is relatively simple: it only returns a single <c>TRUE</c> or <c>FALSE</c>. The next task, listing all variables created by assignment, is a little more complicated. We'll start simply, and then make the function progressively more rigorous.</p>
+
+      <p>We start by looking at the AST for assignment:</p>
+
+      <program language="r"><input>
+ast(x &lt;- 10)
+</input></program>
+
+      <p>Assignment is a call object where the first element is the symbol <c>&lt;-</c>, the second is the name of variable, and the third is the value to be assigned.</p>
+
+      <p>Next, we need to decide what data structure we're going to use for the results. Here I think it will be easiest if we return a character vector. If we return symbols, we'll need to use a <c>list()</c> and that makes things a little more complicated.</p>
+
+      <p>With that in hand we can start by implementing the base cases and providing a helpful wrapper around the recursive function. Here the base cases are straightforward because we know that neither a symbol nor a constant represents assignment.</p>
+
+      <program language="r"><input>
+find_assign_rec &lt;- function(x) {
+  switch_expr(x,
+    constant = ,
+    symbol = character()
+  )
+}
+find_assign &lt;- function(x) find_assign_rec(enexpr(x))
+
+find_assign("x")
+find_assign(x)
+</input></program>
+
+      <p>Next we implement the recursive cases. This is made easier by a function that should exist in purrr, but currently doesn't. <c>flat_map_chr()</c> expects <c>.f</c> to return a character vector of arbitrary length, and flattens all results into a single character vector.</p>
+
+      <program language="r"><input>
+flat_map_chr &lt;- function(.x, .f, ...) {
+  purrr::flatten_chr(purrr::map(.x, .f, ...))
+}
+
+flat_map_chr(letters[1:3], ~ rep(., sample(3, 1)))
+</input></program>
+
+      <p>The recursive case for pairlists is straightforward: we iterate over every element of the pairlist (i.e. each function argument) and combine the results. The case for calls is a little bit more complex: if this is a call to <c>&lt;-</c> then we should return the second element of the call:</p>
+
+      <program language="r"><input>
+find_assign_rec &lt;- function(x) {
+  switch_expr(x,
+    # Base cases
+    constant = ,
+    symbol = character(),
+
+    # Recursive cases
+    pairlist = flat_map_chr(as.list(x), find_assign_rec),
+    call = {
+      if (is_call(x, "&lt;-")) {
+        as_string(x[[2]])
+      } else {
+        flat_map_chr(as.list(x), find_assign_rec)
+      }
+    }
+  )
+}
+
+find_assign(a &lt;- 1)
+find_assign({
+  a &lt;- 1
+  {
+    b &lt;- 2
+  }
+})
+</input></program>
+
+      <p>Now we need to make our function more robust by coming up with examples intended to break it. What happens when we assign to the same variable multiple times?</p>
+
+      <program language="r"><input>
+find_assign({
+  a &lt;- 1
+  a &lt;- 2
+})
+</input></program>
+
+      <p>It's easiest to fix this at the level of the wrapper function:</p>
+
+      <program language="r"><input>
+find_assign &lt;- function(x) unique(find_assign_rec(enexpr(x)))
+
+find_assign({
+  a &lt;- 1
+  a &lt;- 2
+})
+</input></program>
+
+      <p>What happens if we have nested calls to <c>&lt;-</c>? Currently we only return the first. That's because when <c>&lt;-</c> occurs we immediately terminate recursion.</p>
+
+      <program language="r"><input>
+find_assign({
+  a &lt;- b &lt;- c &lt;- 1
+})
+</input></program>
+
+      <p>Instead we need to take a more rigorous approach. I think it's best to keep the recursive function focused on the tree structure, so I'm going to extract out <c>find_assign_call()</c> into a separate function.</p>
+
+      <program language="r"><input>
+find_assign_call &lt;- function(x) {
+  if (is_call(x, "&lt;-") &amp;&amp; is_symbol(x[[2]])) {
+    lhs &lt;- as_string(x[[2]])
+    children &lt;- as.list(x)[-1]
+  } else {
+    lhs &lt;- character()
+    children &lt;- as.list(x)
+  }
+
+  c(lhs, flat_map_chr(children, find_assign_rec))
+}
+
+find_assign_rec &lt;- function(x) {
+  switch_expr(x,
+    # Base cases
+    constant = ,
+    symbol = character(),
+
+    # Recursive cases
+    pairlist = flat_map_chr(x, find_assign_rec),
+    call = find_assign_call(x)
+  )
+}
+
+find_assign(a &lt;- b &lt;- c &lt;- 1)
+find_assign(system.time(x &lt;- print(y &lt;- 5)))
+</input></program>
+
+      <p>The complete version of this function is quite complicated, it's important to remember we wrote it by working our way up by writing simple component parts.</p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p><c>logical_abbr()</c> returns <c>TRUE</c> for <c>T(1, 2, 3)</c>. How could you modify <c>logical_abbr_rec()</c> so that it ignores function calls that use <c>T</c> or <c>F</c>?</p>
+      </exercise>
+
+      <exercise>
+        <p><c>logical_abbr()</c> works with expressions. It currently fails when you give it a function. Why? How could you modify <c>logical_abbr()</c> to make it work? What components of a function will you need to recurse over?</p>
+        <program language="r"><input>
+logical_abbr(function(x = TRUE) {
+  g(x + T)
+})
+</input></program>
+      </exercise>
+
+      <exercise>
+        <p>Modify <c>find_assign</c> to also detect assignment using replacement functions, i.e. <c>names(x) &lt;- y</c>.</p>
+      </exercise>
+
+      <exercise>
+        <p>Write a function that extracts all calls to a specified function.</p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-expression-special">
+    <title>Specialised data structures</title>
+
+    <p>There are two data structures and one special symbol that we need to cover for the sake of completeness. They are not usually important in practice.</p>
+
+    <subsection xml:id="subsec-pairlists">
+      <title>Pairlists</title>
+      <idx><h>pairlists</h></idx>
+
+      <p>Pairlists are a remnant of R's past and have been replaced by lists almost everywhere. The only place you are likely to see pairlists in R<fn>If you're working in C, you'll encounter pairlists more often. For example, call objects are also implemented using pairlists.</fn> is when working with calls to the <c>function</c> function, as the formal arguments to a function are stored in a pairlist:</p>
+
+      <program language="r"><input>
+f &lt;- expr(function(x, y = 10) x + y)
+
+args &lt;- f[[2]]
+args
+typeof(args)
+</input></program>
+
+      <p>Fortunately, whenever you encounter a pairlist, you can treat it just like a regular list:</p>
+
+      <program language="r"><input>
+pl &lt;- pairlist(x = 1, y = 2)
+length(pl)
+pl$x
+</input></program>
+
+      <p>Behind the scenes pairlists are implemented using a different data structure, a linked list instead of an array. That makes subsetting a pairlist much slower than subsetting a list, but this has little practical impact.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-empty-symbol">
+      <title>Missing arguments</title>
+      <idx><h>symbols</h><h>empty</h></idx>
+      <idx><h>missing arguments</h></idx>
+
+      <p>The special symbol that needs a little extra discussion is the empty symbol, which is used to represent missing arguments (not missing values!). You only need to care about the missing symbol if you're programmatically creating functions with missing arguments; we'll come back to that in <xref ref="subsec-unquote-missing"/>.</p>
+
+      <p>You can make an empty symbol with <c>missing_arg()</c> (or <c>expr()</c>):</p>
+
+      <program language="r"><input>
+missing_arg()
+typeof(missing_arg())
+</input></program>
+
+      <p>An empty symbol doesn't print anything, so you can check if you have one with <c>rlang::is_missing()</c>:</p>
+
+      <program language="r"><input>
+is_missing(missing_arg())
+</input></program>
+
+      <p>You'll find them in the wild in function formals:</p>
+
+      <program language="r"><input>
+f &lt;- expr(function(x, y = 10) x + y)
+args &lt;- f[[2]]
+is_missing(args[[1]])
+</input></program>
+
+      <p>This is particularly important for <c>...</c> which is always associated with an empty symbol:</p>
+
+      <program language="r"><input>
+f &lt;- expr(function(...) list(...))
+args &lt;- f[[2]]
+is_missing(args[[1]])
+</input></program>
+
+      <p>The empty symbol has a peculiar property: if you bind it to a variable, then access that variable, you will get an error:</p>
+
+      <program language="r"><input>
+m &lt;- missing_arg()
+m
+</input></program>
+
+      <p>But you won't if you store it inside another data structure!</p>
+
+      <program language="r"><input>
+ms &lt;- list(missing_arg(), missing_arg())
+ms[[1]]
+</input></program>
+
+      <p>If you need to preserve the missingness of a variable, <c>rlang::maybe_missing()</c> is often helpful. It allows you to refer to a potentially missing variable without triggering the error. See the documentation for use cases and more details.</p>
+    </subsection>
+
+    <subsection xml:id="subsec-expression-vectors">
+      <title>Expression vectors</title>
+      <idx><h>expression vectors</h></idx>
+      <idx><h>expression vectors</h><h>expression()</h></idx>
+
+      <p>Finally, we need to briefly discuss the expression vector. Expression vectors are only produced by two base functions: <c>expression()</c> and <c>parse()</c>:</p>
+
+      <program language="r"><input>
+exp1 &lt;- parse(text = c("
+x &lt;- 4
+x
+"))
+exp2 &lt;- expression(x &lt;- 4, x)
+
+typeof(exp1)
+typeof(exp2)
+
+exp1
+exp2
+</input></program>
+
+      <p>Like calls and pairlists, expression vectors behave like lists:</p>
+
+      <program language="r"><input>
+length(exp1)
+exp1[[1]]
+</input></program>
+
+      <p>Conceptually, an expression vector is just a list of expressions. The only difference is that calling <c>eval()</c> on an expression evaluates each individual expression. I don't believe this advantage merits introducing a new data structure, so instead of expression vectors I just use lists of expressions.</p>
+    </subsection>
+  </section>
+
+</chapter>
