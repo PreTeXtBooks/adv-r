@@ -178,7 +178,7 @@ f("a")
       </p>
       <figure xml:id="fig-rstudio-error">
         <caption>RStudio showing an error from <c>f("a")</c></caption>
-        <image source="screenshots/debugging/rstudio-error.png"/>
+        <image source="../images/screenshots/debugging/rstudio-error.png"/>
       </figure>
       <p>
         Two options appear to the right of the error message: "Show Traceback"
@@ -186,7 +186,7 @@ f("a")
       </p>
       <figure xml:id="fig-rstudio-traceback">
         <caption>RStudio showing the traceback after clicking "Show Traceback"</caption>
-        <image source="screenshots/debugging/rstudio-traceback.png"/>
+        <image source="../images/screenshots/debugging/rstudio-traceback.png"/>
       </figure>
       <p>
         If you're not using RStudio, you can use <c>traceback()</c> to get the
@@ -316,7 +316,7 @@ Browse[1]>
         </p>
         <figure xml:id="fig-debug-toolbar">
           <caption>RStudio debugging toolbar</caption>
-          <image source="screenshots/debug-toolbar.png"/>
+          <image source="../images/screenshots/debug-toolbar.png"/>
         </figure>
         <p><ul>
           <li><p>
@@ -325,12 +325,12 @@ Browse[1]>
             display its value.
           </p></li>
           <li><p>
-            Step into, <image source="screenshots/step-into.png" width="3%"/> or <c>s</c>:
+            Step into, <image source="../images/screenshots/step-into.png" width="3%"/> or <c>s</c>:
             works like next, but if the next step is a function, it will step
             into that function so you can explore it interactively.
           </p></li>
           <li><p>
-            Finish, <image source="screenshots/finish-loop.png" width="3%"/> or <c>f</c>:
+            Finish, <image source="../images/screenshots/finish-loop.png" width="3%"/> or <c>f</c>:
             finishes execution of the current loop or function.
           </p></li>
           <li><p>

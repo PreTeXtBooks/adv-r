@@ -159,7 +159,7 @@ profvis(f())
 
       <figure xml:id="fig-flamegraph">
         <caption>profvis output showing source on top and flame graph below.</caption>
-        <image source="screenshots/performance/flamegraph.png"/>
+        <image source="../images/screenshots/performance/flamegraph.png"/>
       </figure>
 
       <p>The top pane shows the source code, overlaid with bar graphs for memory
@@ -181,7 +181,7 @@ profvis(f())
         <caption>Hovering over a call in the flamegraph highlights the
         corresponding line of code, and displays additional information about
         performance.</caption>
-        <image source="screenshots/performance/info.png"/>
+        <image source="../images/screenshots/performance/info.png"/>
       </figure>
 
       <p>Alternatively, you can use the <alert>data tab</alert>,
@@ -194,7 +194,7 @@ profvis(f())
       <figure xml:id="fig-perf-tree">
         <caption>The data gives an interactive tree that allows you to
         selectively zoom into key components.</caption>
-        <image source="screenshots/performance/tree.png"/>
+        <image source="../images/screenshots/performance/tree.png"/>
       </figure>
     </subsection>
 
@@ -223,7 +223,7 @@ for (i in 1:1e4) {
         <caption>Profiling a loop that modifies an existing variable reveals that
         most time is spent in the garbage collector
         (<c>&lt;GC&gt;</c>).</caption>
-        <image source="screenshots/performance/memory.png"/>
+        <image source="../images/screenshots/performance/memory.png"/>
       </figure>
 
       <p>When you see the garbage collector taking up a lot of time in your own
