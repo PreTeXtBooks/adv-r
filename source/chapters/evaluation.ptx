@@ -1,30 +1,1483 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-evaluation" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Evaluation</title>
+<chapter xml:id="ch-evaluation" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Evaluation</title>
 
-    <introduction>
+  <introduction>
+    <idx><h>evaluation</h></idx>
+    <p>
+      The user-facing inverse of quotation is unquotation: it gives the <em>user</em> the ability
+      to selectively evaluate parts of an otherwise quoted argument. The developer-facing complement
+      of quotation is evaluation: this gives the <em>developer</em> the ability to evaluate quoted
+      expressions in custom environments to achieve specific goals.
+    </p>
+    <p>
+      This chapter begins with a discussion of evaluation in its purest form. You'll learn how
+      <c>eval()</c> evaluates an expression in an environment, and then how it can be used to
+      implement a number of important base R functions. Once you have the basics under your belt,
+      you'll learn extensions to evaluation that are needed for robustness. There are two big new
+      ideas:
+    </p>
+    <ul>
+      <li><p>
+        The quosure: a data structure that captures an expression along with its associated
+        environment, as found in function arguments.
+      </p></li>
+      <li><p>
+        The data mask, which makes it easier to evaluate an expression in the context of a data
+        frame. This introduces potential evaluation ambiguity which we'll then resolve with data
+        pronouns.
+      </p></li>
+    </ul>
+    <p>
+      Together, quasiquotation, quosures, and data masks form what we call <alert>tidy
+      evaluation</alert>, or tidy eval for short. Tidy eval provides a principled approach to
+      non-standard evaluation that makes it possible to use such functions both interactively and
+      embedded with other functions. Tidy evaluation is the most important practical implication
+      of all this theory so we'll spend a little time exploring the implications. The chapter
+      finishes off with a discussion of the closest related approaches in base R, and how you can
+      program around their drawbacks.
+    </p>
+
+    <paragraphs xml:id="para-evaluation-outline">
+      <title>Outline</title>
+      <ul>
+        <li><p>
+          Section <xref ref="sec-eval"/> discusses the basics of evaluation using <c>eval()</c>,
+          and shows how you can use it to implement key functions like <c>local()</c>
+          and <c>source()</c>.
+        </p></li>
+        <li><p>
+          Section <xref ref="sec-quosures"/> introduces a new data structure, the quosure, which
+          combines an expression with an environment. You'll learn how to capture quosures from
+          promises, and evaluate them using <c>rlang::eval_tidy()</c>.
+        </p></li>
+        <li><p>
+          Section <xref ref="sec-data-masks"/> extends evaluation with the data mask, which makes
+          it trivial to intermingle symbols bound in an environment with variables found in a data
+          frame.
+        </p></li>
+        <li><p>
+          Section <xref ref="sec-tidy-evaluation"/> shows how to use tidy evaluation in practice,
+          focussing on the common pattern of quoting and unquoting, and how to handle ambiguity
+          with pronouns.
+        </p></li>
+        <li><p>
+          Section <xref ref="sec-base-evaluation"/> circles back to evaluation in base R, discusses
+          some of the downsides, and shows how to use quasiquotation and evaluation to wrap
+          functions that use NSE.
+        </p></li>
+      </ul>
+    </paragraphs>
+
+    <paragraphs xml:id="para-evaluation-prerequisites">
+      <title>Prerequisites</title>
       <p>
-        In the previous chapter, you learned how to capture expressions. The
-        complement of capturing is evaluating. Here, you'll learn about
-        <c>eval()</c>, which evaluates an expression in an environment.
+        You'll need to be familiar with the content of <xref ref="ch-expressions"/> and
+        <xref ref="ch-quasiquotation"/>, as well as the environment data structure
+        (Section <xref ref="sec-env-basics"/>) and the caller environment
+        (Section <xref ref="sec-call-stack"/>).
+      </p>
+      <p>
+        We'll continue to use <url href="https://rlang.r-lib.org">rlang</url> and
+        <url href="https://purrr.tidyverse.org">purrr</url>.
+      </p>
+      <program language="r"><input>
+library(rlang)
+library(purrr)
+</input></program>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-eval">
+    <title>Evaluation basics</title>
+    <idx><h>evaluation</h><h>basics</h></idx>
+    <idx><h>eval_bare()</h></idx>
+
+    <p>
+      Here we'll explore the details of <c>eval()</c> which we briefly mentioned in the last
+      chapter. It has two key arguments: <c>expr</c> and <c>env</c>. The first argument,
+      <c>expr</c>, is the object to evaluate, typically a symbol or expression.<fn>All other
+      objects yield themselves when evaluated; i.e. <c>eval(x)</c> yields <c>x</c>, except when
+      <c>x</c> is a symbol or expression.</fn> None of the evaluation functions quote their inputs,
+      so you'll usually use them with <c>expr()</c> or similar:
+    </p>
+
+    <program language="r"><input>
+x &lt;- 10
+eval(expr(x))
+
+y &lt;- 2
+eval(expr(x + y))
+</input></program>
+
+    <p>
+      The second argument, <c>env</c>, gives the environment in which the expression should be
+      evaluated, i.e. where to look for the values of <c>x</c>, <c>y</c>, and <c>+</c>. By
+      default, this is the current environment, i.e. the calling environment of <c>eval()</c>,
+      but you can override it if you want:
+    </p>
+
+    <program language="r"><input>
+eval(expr(x + y), env(x = 1000))
+</input></program>
+
+    <p>
+      The first argument is evaluated, not quoted, which can lead to confusing results once if you
+      use a custom environment and forget to manually quote:
+    </p>
+
+    <program language="r"><input>
+eval(print(x + 1), env(x = 1000))
+
+eval(expr(print(x + 1)), env(x = 1000))
+</input></program>
+
+    <p>
+      Now that you've seen the basics, let's explore some applications. We'll focus primarily on
+      base R functions that you might have used before, reimplementing the underlying principles
+      using rlang.
+    </p>
+
+    <subsection>
+      <title>Application: <c>local()</c></title>
+      <idx><h>local()</h></idx>
+
+      <p>
+        Sometimes you want to perform a chunk of calculation that creates some intermediate
+        variables. The intermediate variables have no long-term use and could be quite large, so
+        you'd rather not keep them around. One approach is to clean up after yourself using
+        <c>rm()</c>; another is to wrap the code in a function and just call it once. A more
+        elegant approach is to use <c>local()</c>:
       </p>
 
+      <program language="r"><input>
+# Clean up variables created earlier
+rm(x, y)
+
+foo &lt;- local({
+  x &lt;- 10
+  y &lt;- 200
+  x + y
+})
+
+foo
+x
+y
+</input></program>
+
       <p>
-        This gives you tremendous power to manipulate R code, but it also
-        comes with a responsibility: it's easy to misuse, and it's easy to
-        create code that doesn't work in all cases. This chapter will give you
-        the foundations you need to use it safely.
+        The essence of <c>local()</c> is quite simple and re-implemented below. We capture the
+        input expression, and create a new environment in which to evaluate it. This is a new
+        environment (so assignment doesn't affect the existing environment) with the caller
+        environment as parent (so that <c>expr</c> can still access variables in that
+        environment). This effectively emulates running <c>expr</c> as if it was inside a function
+        (i.e. it's lexically scoped, Section <xref ref="sec-lexical-scoping"/>).
       </p>
-    </introduction>
 
-    <section xml:id="sec-eval-basics">
-      <title>Evaluation basics</title>
+      <program language="r"><input>
+local2 &lt;- function(expr) {
+  env &lt;- env(caller_env())
+  eval(enexpr(expr), env)
+}
+
+foo &lt;- local2({
+  x &lt;- 10
+  y &lt;- 200
+  x + y
+})
+
+foo
+x
+y
+</input></program>
 
       <p>
-        Here we'll explore the basics of evaluation. The first important idea
-        is that <c>eval()</c> takes two arguments. The first is the expression
-        to evaluate, and the second is the environment in which to evaluate it.
+        Understanding how <c>base::local()</c> works is harder, as it uses <c>eval()</c> and
+        <c>substitute()</c> together in rather complicated ways. Figuring out exactly what's going
+        on is good practice if you really want to understand the subtleties of <c>substitute()</c>
+        and the base <c>eval()</c> functions, so they are included in the exercises below.
       </p>
-    </section>
+    </subsection>
 
-  </chapter>
+    <subsection>
+      <title>Application: <c>source()</c></title>
+      <idx><h>source()</h></idx>
+
+      <p>
+        We can create a simple version of <c>source()</c> by combining <c>eval()</c> with
+        <c>parse_expr()</c> from Section <xref ref="subsec-parsing"/>. We read in the file from disk,
+        use <c>parse_expr()</c> to parse the string into a list of expressions, and then use
+        <c>eval()</c> to evaluate each element in turn. This version evaluates the code in the
+        caller environment, and invisibly returns the result of the last expression in the file
+        just like <c>base::source()</c>.
+      </p>
+
+      <program language="r"><input>
+source2 &lt;- function(path, env = caller_env()) {
+  file &lt;- paste(readLines(path, warn = FALSE), collapse = "\n")
+  exprs &lt;- parse_exprs(file)
+
+  res &lt;- NULL
+  for (i in seq_along(exprs)) {
+    res &lt;- eval(exprs[[i]], env)
+  }
+
+  invisible(res)
+}
+</input></program>
+
+      <p>
+        The real <c>source()</c> is considerably more complicated because it can <c>echo</c> input
+        and output, and has many other settings that control its behaviour.
+      </p>
+
+      <remark>
+        <title>Expression vectors</title>
+        <idx><h>expression vectors</h></idx>
+        <p>
+          <c>base::eval()</c> has special behaviour for expression <em>vectors</em>, evaluating
+          each component in turn. This makes for a very compact implementation of <c>source2()</c>
+          because <c>base::parse()</c> also returns an expression object:
+        </p>
+        <program language="r"><input>
+source3 &lt;- function(file, env = parent.frame()) {
+  lines &lt;- parse(file)
+  res &lt;- eval(lines, envir = env)
+  invisible(res)
+}
+</input></program>
+        <p>
+          While <c>source3()</c> is considerably more concise than <c>source2()</c>, this is the
+          only advantage to expression vectors. Overall I don't believe this benefit outweighs the
+          cost of introducing a new data structure, and hence this book avoids the use of
+          expression vectors.
+        </p>
+      </remark>
+    </subsection>
+
+    <subsection>
+      <title>Gotcha: <c>function()</c></title>
+      <idx><h>evaluation</h><h>functions</h></idx>
+      <idx><h>srcref</h></idx>
+
+      <p>
+        There's one small gotcha that you should be aware of if you're using <c>eval()</c> and
+        <c>expr()</c> to generate functions:
+      </p>
+
+      <program language="r"><input>
+x &lt;- 10
+y &lt;- 20
+f &lt;- eval(expr(function(x, y) !!x + !!y))
+f
+</input></program>
+
+      <p>This function doesn't look like it will work, but it does:</p>
+
+      <program language="r"><input>
+f()
+</input></program>
+
+      <p>
+        This is because, if available, functions print their <c>srcref</c> attribute
+        (Section <xref ref="subsec-fun-components"/>), and because <c>srcref</c> is a base R feature
+        it's unaware of quasiquotation.
+      </p>
+      <p>
+        To work around this problem, either use <c>new_function()</c>
+        (Section <xref ref="sec-new-function"/>) or remove the <c>srcref</c> attribute:
+      </p>
+
+      <program language="r"><input>
+attr(f, "srcref") &lt;- NULL
+f
+</input></program>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          Carefully read the documentation for <c>source()</c>. What environment does it use by
+          default? What if you supply <c>local = TRUE</c>? How do you provide a custom environment?
+        </p>
+      </exercise>
+      <exercise>
+        <p>Predict the results of the following lines of code:</p>
+        <program language="r"><input>
+eval(expr(eval(expr(eval(expr(2 + 2))))))
+eval(eval(expr(eval(expr(eval(expr(2 + 2)))))))
+expr(eval(expr(eval(expr(eval(expr(2 + 2)))))))
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Fill in the function bodies below to re-implement <c>get()</c> using <c>sym()</c>
+          and <c>eval()</c>, and <c>assign()</c> using <c>sym()</c>, <c>expr()</c>, and
+          <c>eval()</c>. Don't worry about the multiple ways of choosing an environment that
+          <c>get()</c> and <c>assign()</c> support; assume that the user supplies it explicitly.
+        </p>
+        <program language="r"><input>
+# name is a string
+get2 &lt;- function(name, env) {}
+assign2 &lt;- function(name, value, env) {}
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Modify <c>source2()</c> so it returns the result of <em>every</em> expression, not just
+          the last one. Can you eliminate the for loop?
+        </p>
+      </exercise>
+      <exercise>
+        <p>
+          We can make <c>base::local()</c> slightly easier to understand by spreading out over
+          multiple lines:
+        </p>
+        <program language="r"><input>
+local3 &lt;- function(expr, envir = new.env()) {
+  call &lt;- substitute(eval(quote(expr), envir))
+  eval(call, envir = parent.frame())
+}
+</input></program>
+        <p>
+          Explain how <c>local()</c> works in words. (Hint: you might want to <c>print(call)</c>
+          to help understand what <c>substitute()</c> is doing, and read the documentation to
+          remind yourself what environment <c>new.env()</c> will inherit from.)
+        </p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-quosures">
+    <title>Quosures</title>
+    <idx><h>quosures</h></idx>
+
+    <p>
+      Almost every use of <c>eval()</c> involves both an expression and environment. This coupling
+      is so important that we need a data structure that can hold both pieces. Base R does not have
+      such a structure<fn>Technically a formula combines an expression and environment, but formulas
+      are tightly coupled to modelling so a new data structure makes sense.</fn> so rlang fills the
+      gap with the <alert>quosure</alert>, an object that contains an expression and an environment.
+      The name is a portmanteau of quoting and closure, because a quosure both quotes the expression
+      and encloses the environment. Quosures reify the internal promise object
+      (Section <xref ref="subsec-promises"/>) into something that you can program with.
+    </p>
+    <p>
+      In this section, you'll learn how to create and manipulate quosures, and a little about how
+      they are implemented.
+    </p>
+
+    <subsection>
+      <title>Creating</title>
+      <idx><h>quosures</h><h>creating</h></idx>
+
+      <p>There are three ways to create quosures:</p>
+      <ul>
+        <li>
+          <p>
+            Use <c>enquo()</c> and <c>enquos()</c> to capture user-supplied expressions. The vast
+            majority of quosures should be created this way.
+          </p>
+          <idx><h>enquo()</h></idx>
+          <program language="r"><input>
+foo &lt;- function(x) enquo(x)
+foo(a + b)
+</input></program>
+        </li>
+        <li>
+          <p>
+            <c>quo()</c> and <c>quos()</c> exist to match to <c>expr()</c> and <c>exprs()</c>, but
+            they are included only for the sake of completeness and are needed very rarely. If you
+            find yourself using them, think carefully if <c>expr()</c> and careful unquoting can
+            eliminate the need to capture the environment.
+          </p>
+          <program language="r"><input>
+quo(x + y + z)
+</input></program>
+        </li>
+        <li>
+          <p>
+            <c>new_quosure()</c> create a quosure from its components: an expression and an
+            environment. This is rarely needed in practice, but is useful for learning, so is used
+            a lot in this chapter.
+          </p>
+          <program language="r"><input>
+new_quosure(expr(x + y), env(x = 1, y = 10))
+</input></program>
+        </li>
+      </ul>
+    </subsection>
+
+    <subsection>
+      <title>Evaluating</title>
+      <idx><h>evaluation</h><h>tidy</h></idx>
+      <idx><h>quosures</h><h>evaluating</h></idx>
+      <idx><h>eval_tidy()</h></idx>
+
+      <p>
+        Quosures are paired with a new evaluation function <c>eval_tidy()</c> that takes a single
+        quosure instead of an expression-environment pair. It is straightforward to use:
+      </p>
+
+      <program language="r"><input>
+q1 &lt;- new_quosure(expr(x + y), env(x = 1, y = 10))
+eval_tidy(q1)
+</input></program>
+
+      <p>
+        For this simple case, <c>eval_tidy(q1)</c> is basically a shortcut for
+        <c>eval(get_expr(q1), get_env(q1))</c>. However, it has two important features that you'll
+        learn about later in the chapter: it supports nested quosures
+        (Section <xref ref="sec-nested-quosures"/>) and pronouns
+        (Section <xref ref="sec-pronouns"/>).
+      </p>
+    </subsection>
+
+    <subsection xml:id="sec-quosure-dots">
+      <title>Dots</title>
+      <idx><h>...</h></idx>
+
+      <p>
+        Quosures are typically just a convenience: they make code cleaner because you only have one
+        object to pass around, instead of two. They are, however, essential when it comes to working
+        with <c>...</c> because it's possible for each argument passed to <c>...</c> to be
+        associated with a different environment. In the following example note that both quosures
+        have the same expression, <c>x</c>, but a different environment:
+      </p>
+
+      <program language="r"><input>
+f &lt;- function(...) {
+  x &lt;- 1
+  g(..., f = x)
+}
+g &lt;- function(...) {
+  enquos(...)
+}
+
+x &lt;- 0
+qs &lt;- f(global = x)
+qs
+</input></program>
+
+      <p>That means that when you evaluate them, you get the correct results:</p>
+
+      <program language="r"><input>
+map_dbl(qs, eval_tidy)
+</input></program>
+
+      <p>
+        Correctly evaluating the elements of <c>...</c> was one of the original motivations for
+        the development of quosures.
+      </p>
+    </subsection>
+
+    <subsection xml:id="sec-quosure-impl">
+      <title>Under the hood</title>
+      <idx><h>quosures</h><h>internals</h></idx>
+      <idx><h>formulas</h></idx>
+
+      <p>
+        Quosures were inspired by R's formulas, because formulas capture an expression and an
+        environment:
+      </p>
+
+      <program language="r"><input>
+f &lt;- ~runif(3)
+str(f)
+</input></program>
+
+      <p>
+        An early version of tidy evaluation used formulas instead of quosures, as an attractive
+        feature of <c>~</c> is that it provides quoting with a single keystroke. Unfortunately,
+        however, there is no clean way to make <c>~</c> a quasiquoting function.
+      </p>
+      <p>Quosures are a subclass of formulas:</p>
+
+      <program language="r"><input>
+q4 &lt;- new_quosure(expr(x + y + z))
+class(q4)
+</input></program>
+
+      <p>which means that under the hood, quosures, like formulas, are call objects:</p>
+
+      <program language="r"><input>
+is_call(q4)
+
+q4[[1]]
+q4[[2]]
+</input></program>
+
+      <p>with an attribute that stores the environment:</p>
+
+      <program language="r"><input>
+attr(q4, ".Environment")
+</input></program>
+
+      <p>
+        If you need to extract the expression or environment, don't rely on these implementation
+        details. Instead use <c>get_expr()</c> and <c>get_env()</c>:
+      </p>
+
+      <program language="r"><input>
+get_expr(q4)
+get_env(q4)
+</input></program>
+    </subsection>
+
+    <subsection xml:id="sec-nested-quosures">
+      <title>Nested quosures</title>
+      <idx><h>quosures</h><h>nested</h></idx>
+
+      <p>
+        It's possible to use quasiquotation to embed a quosure in an expression. This is an
+        advanced tool, and most of the time you don't need to think about it because it just works,
+        but I talk about it here so you can spot nested quosures in the wild and not be confused.
+        Take this example, which inlines two quosures into an expression:
+      </p>
+
+      <program language="r"><input>
+q2 &lt;- new_quosure(expr(x), env(x = 1))
+q3 &lt;- new_quosure(expr(x), env(x = 10))
+
+x &lt;- expr(!!q2 + !!q3)
+</input></program>
+
+      <p>It evaluates correctly with <c>eval_tidy()</c>:</p>
+
+      <program language="r"><input>
+eval_tidy(x)
+</input></program>
+
+      <p>However, if you print it, you only see the <c>x</c>s, with their formula heritage leaking
+      through:</p>
+
+      <program language="r"><input>
+x
+</input></program>
+
+      <p>
+        You can get a better display with <c>rlang::expr_print()</c>
+        (Section <xref ref="sec-non-standard-ast"/>):
+      </p>
+
+      <program language="r"><input>
+expr_print(x)
+</input></program>
+
+      <p>
+        When you use <c>expr_print()</c> in the console, quosures are coloured according to their
+        environment, making it easier to spot when symbols are bound to different variables.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          Predict what each of the following quosures will return if evaluated.
+        </p>
+        <program language="r"><input>
+q1 &lt;- new_quosure(expr(x), env(x = 1))
+q1
+
+q2 &lt;- new_quosure(expr(x + !!q1), env(x = 10))
+q2
+
+q3 &lt;- new_quosure(expr(x + !!q2), env(x = 100))
+q3
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Write an <c>enenv()</c> function that captures the environment associated with an
+          argument. (Hint: this should only require two function calls.)
+        </p>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-data-masks">
+    <title>Data masks</title>
+    <idx><h>data masks</h></idx>
+
+    <p>
+      In this section, you'll learn about the <alert>data mask</alert>, a data frame where the
+      evaluated code will look first for variable definitions. The data mask is the key idea that
+      powers base functions like <c>with()</c>, <c>subset()</c> and <c>transform()</c>, and is
+      used throughout the tidyverse in packages like dplyr and ggplot2.
+    </p>
+
+    <subsection>
+      <title>Basics</title>
+      <idx><h>eval_tidy()</h></idx>
+
+      <p>
+        The data mask allows you to mingle variables from an environment and a data frame in a
+        single expression. You supply the data mask as the second argument to <c>eval_tidy()</c>:
+      </p>
+
+      <program language="r"><input>
+q1 &lt;- new_quosure(expr(x * y), env(x = 100))
+df &lt;- data.frame(y = 1:10)
+
+eval_tidy(q1, df)
+</input></program>
+
+      <p>
+        This code is a little hard to follow because there's so much syntax as we're creating every
+        object from scratch. It's easier to see what's going on if we make a little wrapper. I call
+        this <c>with2()</c> because it's equivalent to <c>base::with()</c>.
+      </p>
+      <idx><h>with()</h></idx>
+
+      <program language="r"><input>
+with2 &lt;- function(data, expr) {
+  expr &lt;- enquo(expr)
+  eval_tidy(expr, data)
+}
+</input></program>
+
+      <p>We can now rewrite the code above as below:</p>
+
+      <program language="r"><input>
+x &lt;- 100
+with2(df, x * y)
+</input></program>
+
+      <p>
+        <c>base::eval()</c> has similar functionality, although it doesn't call it a data mask.
+        Instead you can supply a data frame to the second argument and an environment to the third.
+        That gives the following implementation of <c>with()</c>:
+      </p>
+
+      <program language="r"><input>
+with3 &lt;- function(data, expr) {
+  expr &lt;- substitute(expr)
+  eval(expr, data, caller_env())
+}
+</input></program>
+    </subsection>
+
+    <subsection xml:id="sec-pronouns">
+      <title>Pronouns</title>
+      <idx><h>pronouns</h></idx>
+      <idx><h>.data</h></idx>
+      <idx><h>.env</h></idx>
+
+      <p>
+        Using a data mask introduces ambiguity. For example, in the following code you can't know
+        whether <c>x</c> will come from the data mask or the environment, unless you know what
+        variables are found in <c>df</c>.
+      </p>
+
+      <program language="r"><input>
+with2(df, x)
+</input></program>
+
+      <p>
+        That makes code harder to reason about (because you need to know more context), which can
+        introduce bugs. To resolve that issue, the data mask provides two pronouns: <c>.data</c>
+        and <c>.env</c>.
+      </p>
+      <ul>
+        <li><p><c>.data$x</c> always refers to <c>x</c> in the data mask.</p></li>
+        <li><p><c>.env$x</c>  always refers to <c>x</c> in the environment.</p></li>
+      </ul>
+
+      <program language="r"><input>
+x &lt;- 1
+df &lt;- data.frame(x = 2)
+
+with2(df, .data$x)
+with2(df, .env$x)
+</input></program>
+
+      <p>
+        You can also subset <c>.data</c> and <c>.env</c> using <c>[[</c>,
+        e.g. <c>.data[["x"]]</c>. Otherwise the pronouns are special objects and you shouldn't
+        expect them to behave like data frames or environments. In particular, they throw an error
+        if the object isn't found:
+      </p>
+
+      <program language="r"><input>
+with2(df, .data$y)
+</input></program>
+    </subsection>
+
+    <subsection xml:id="sec-subset">
+      <title>Application: <c>subset()</c></title>
+      <idx><h>subset()</h></idx>
+      <idx><h>filter()</h></idx>
+
+      <p>
+        We'll explore tidy evaluation in the context of <c>base::subset()</c>, because it's a
+        simple yet powerful function that makes a common data manipulation challenge easier. If you
+        haven't used it before, <c>subset()</c>, like <c>dplyr::filter()</c>, provides a convenient
+        way of selecting rows of a data frame. You give it some data, along with an expression that
+        is evaluated in the context of that data. This considerably reduces the number of times you
+        need to type the name of the data frame:
+      </p>
+
+      <program language="r"><input>
+sample_df &lt;- data.frame(a = 1:5, b = 5:1, c = c(5, 3, 1, 4, 1))
+
+# Shorthand for sample_df[sample_df$a &gt;= 4, ]
+subset(sample_df, a &gt;= 4)
+
+# Shorthand for sample_df[sample_df$b == sample_df$c, ]
+subset(sample_df, b == c)
+</input></program>
+
+      <p>
+        The core of our version of <c>subset()</c>, <c>subset2()</c>, is quite simple. It takes
+        two arguments: a data frame, <c>data</c>, and an expression, <c>rows</c>. We evaluate
+        <c>rows</c> using <c>df</c> as a data mask, then use the results to subset the data frame
+        with <c>[</c>. I've included a very simple check to ensure the result is a logical vector;
+        real code would do more to create an informative error.
+      </p>
+
+      <program language="r"><input>
+subset2 &lt;- function(data, rows) {
+  rows &lt;- enquo(rows)
+  rows_val &lt;- eval_tidy(rows, data)
+  stopifnot(is.logical(rows_val))
+
+  data[rows_val, , drop = FALSE]
+}
+
+subset2(sample_df, b == c)
+</input></program>
+    </subsection>
+
+    <subsection>
+      <title>Application: transform</title>
+      <idx><h>transform()</h></idx>
+
+      <p>
+        A more complicated situation is <c>base::transform()</c> which allows you to add new
+        variables to a data frame, evaluating their expressions in the context of the existing
+        variables:
+      </p>
+
+      <program language="r"><input>
+df &lt;- data.frame(x = c(2, 3, 1), y = runif(3))
+transform(df, x = -x, y2 = 2 * y)
+</input></program>
+
+      <p>
+        Again, our own <c>transform2()</c> requires little code. We capture the unevaluated
+        <c>...</c> with <c>enquos(...)</c>, and then evaluate each expression using a for loop.
+        Real code would do more error checking to ensure that each input is named and evaluates to
+        a vector the same length as <c>data</c>.
+      </p>
+
+      <program language="r"><input>
+transform2 &lt;- function(.data, ...) {
+  dots &lt;- enquos(...)
+
+  for (i in seq_along(dots)) {
+    name &lt;- names(dots)[[i]]
+    dot &lt;- dots[[i]]
+
+    .data[[name]] &lt;- eval_tidy(dot, .data)
+  }
+
+  .data
+}
+
+transform2(df, x2 = x * 2, y = -y)
+</input></program>
+
+      <p>
+        NB: I named the first argument <c>.data</c> to avoid problems if users tried to create a
+        variable called <c>data</c>. They will still have problems if they attempt to create a
+        variable called <c>.data</c>, but this is much less likely. This is the same reasoning that
+        leads to the <c>.x</c> and <c>.f</c> arguments to <c>map()</c>
+        (Section <xref ref="subsec-argument-names"/>).
+      </p>
+    </subsection>
+
+    <subsection xml:id="sec-select">
+      <title>Application: <c>select()</c></title>
+      <idx><h>select()</h></idx>
+
+      <p>
+        A data mask will typically be a data frame, but it's sometimes useful to provide a list
+        filled with more exotic contents. This is basically how the <c>select</c> argument in
+        <c>base::subset()</c> works. It allows you to refer to variables as if they were numbers:
+      </p>
+
+      <program language="r"><input>
+df &lt;- data.frame(a = 1, b = 2, c = 3, d = 4, e = 5)
+subset(df, select = b:d)
+</input></program>
+
+      <p>The key idea is to create a named list where each component gives the position of the
+      corresponding variable:</p>
+
+      <program language="r"><input>
+vars &lt;- as.list(set_names(seq_along(df), names(df)))
+str(vars)
+</input></program>
+
+      <p>Then implementation is again only a few lines of code:</p>
+
+      <program language="r"><input>
+select2 &lt;- function(data, ...) {
+  dots &lt;- enquos(...)
+
+  vars &lt;- as.list(set_names(seq_along(data), names(data)))
+  cols &lt;- unlist(map(dots, eval_tidy, vars))
+
+  data[, cols, drop = FALSE]
+}
+select2(df, b:d)
+</input></program>
+
+      <p>
+        <c>dplyr::select()</c> takes this idea and runs with it, providing a number of helpers
+        that allow you to select variables based on their names (e.g. <c>starts_with("x")</c> or
+        <c>ends_with("_a"</c>)).
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          Why did I use a for loop in <c>transform2()</c> instead of <c>map()</c>?
+          Consider <c>transform2(df, x = x * 2, x = x * 2)</c>.
+        </p>
+      </exercise>
+      <exercise>
+        <p>Here's an alternative implementation of <c>subset2()</c>:</p>
+        <program language="r"><input>
+subset3 &lt;- function(data, rows) {
+  rows &lt;- enquo(rows)
+  eval_tidy(expr(data[!!rows, , drop = FALSE]), data = data)
+}
+
+df &lt;- data.frame(x = 1:3)
+subset3(df, x == 1)
+</input></program>
+        <p>
+          Compare and contrast <c>subset3()</c> to <c>subset2()</c>. What are its advantages and
+          disadvantages?
+        </p>
+      </exercise>
+      <exercise>
+        <p>
+          The following function implements the basics of <c>dplyr::arrange()</c>. Annotate each
+          line with a comment explaining what it does. Can you explain why <c>!!.na.last</c> is
+          strictly correct, but omitting the <c>!!</c> is unlikely to cause problems?
+        </p>
+        <program language="r"><input>
+arrange2 &lt;- function(.df, ..., .na.last = TRUE) {
+  args &lt;- enquos(...)
+
+  order_call &lt;- expr(order(!!!args, na.last = !!.na.last))
+
+  ord &lt;- eval_tidy(order_call, .df)
+  stopifnot(length(ord) == nrow(.df))
+
+  .df[ord, , drop = FALSE]
+}
+</input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-tidy-evaluation">
+    <title>Using tidy evaluation</title>
+
+    <p>
+      While it's important to understand how <c>eval_tidy()</c> works, most of the time you won't
+      call it directly. Instead, you'll usually use it indirectly by calling a function that uses
+      <c>eval_tidy()</c>. This section will give a few practical examples of wrapping functions
+      that use tidy evaluation.
+    </p>
+
+    <subsection>
+      <title>Quoting and unquoting</title>
+      <idx><h>quoting</h><h>in practice</h></idx>
+      <idx><h>unquoting</h><h>in practice</h></idx>
+      <idx><h>bootstrapping</h></idx>
+
+      <p>Imagine we have written a function that resamples a dataset:</p>
+
+      <program language="r"><input>
+resample &lt;- function(df, n) {
+  idx &lt;- sample(nrow(df), n, replace = TRUE)
+  df[idx, , drop = FALSE]
+}
+</input></program>
+
+      <p>
+        We want to create a new function that allows us to resample and subset in a single step.
+        Our naive approach doesn't work:
+      </p>
+
+      <program language="r"><input>
+subsample &lt;- function(df, cond, n = nrow(df)) {
+  df &lt;- subset2(df, cond)
+  resample(df, n)
+}
+
+df &lt;- data.frame(x = c(1, 1, 1, 2, 2), y = 1:5)
+subsample(df, x == 1)
+</input></program>
+
+      <p>
+        <c>subsample()</c> doesn't quote any arguments so <c>cond</c> is evaluated normally (not
+        in a data mask), and we get an error when it tries to find a binding for <c>x</c>. To fix
+        this problem we need to quote <c>cond</c>, and then unquote it when we pass it on to
+        <c>subset2()</c>:
+      </p>
+
+      <program language="r"><input>
+subsample &lt;- function(df, cond, n = nrow(df)) {
+  cond &lt;- enquo(cond)
+
+  df &lt;- subset2(df, !!cond)
+  resample(df, n)
+}
+
+subsample(df, x == 1)
+</input></program>
+
+      <p>
+        This is a very common pattern; whenever you call a quoting function with arguments from the
+        user, you need to quote them and then unquote.
+      </p>
+    </subsection>
+
+    <subsection>
+      <title>Handling ambiguity</title>
+      <idx><h>pronouns</h></idx>
+
+      <p>
+        In the case above, we needed to think about tidy evaluation because of quasiquotation. We
+        also need to think about tidy evaluation even when the wrapper doesn't need to quote any
+        arguments. Take this wrapper around <c>subset2()</c>:
+      </p>
+
+      <program language="r"><input>
+threshold_x &lt;- function(df, val) {
+  subset2(df, x &gt;= val)
+}
+</input></program>
+
+      <p>This function can silently return an incorrect result in two situations:</p>
+      <ul>
+        <li>
+          <p>When <c>x</c> exists in the calling environment, but not in <c>df</c>:</p>
+          <program language="r"><input>
+x &lt;- 10
+no_x &lt;- data.frame(y = 1:3)
+threshold_x(no_x, 2)
+</input></program>
+        </li>
+        <li>
+          <p>When <c>val</c> exists in <c>df</c>:</p>
+          <program language="r"><input>
+has_val &lt;- data.frame(x = 1:3, val = 9:11)
+threshold_x(has_val, 2)
+</input></program>
+        </li>
+      </ul>
+
+      <p>
+        These failure modes arise because tidy evaluation is ambiguous: each variable can be found
+        in <alert>either</alert> the data mask <alert>or</alert> the environment. To make this
+        function safe we need to remove the ambiguity using the <c>.data</c> and <c>.env</c>
+        pronouns:
+      </p>
+
+      <program language="r"><input>
+threshold_x &lt;- function(df, val) {
+  subset2(df, .data$x &gt;= .env$val)
+}
+
+x &lt;- 10
+threshold_x(no_x, 2)
+threshold_x(has_val, 2)
+</input></program>
+
+      <p>
+        Generally, whenever you use the <c>.env</c> pronoun, you can use unquoting instead:
+      </p>
+
+      <program language="r"><input>
+threshold_x &lt;- function(df, val) {
+  subset2(df, .data$x &gt;= !!val)
+}
+</input></program>
+
+      <p>
+        There are subtle differences in when <c>val</c> is evaluated. If you unquote, <c>val</c>
+        will be early evaluated by <c>enquo()</c>; if you use a pronoun, <c>val</c> will be lazily
+        evaluated by <c>eval_tidy()</c>. These differences are usually unimportant, so pick the
+        form that looks most natural.
+      </p>
+    </subsection>
+
+    <subsection>
+      <title>Quoting and ambiguity</title>
+
+      <p>
+        To finish our discussion let's consider the case where we have both quoting and potential
+        ambiguity. I'll generalise <c>threshold_x()</c> slightly so that the user can pick the
+        variable used for thresholding. Here I used <c>.data[[var]]</c> because it makes the code
+        a little simpler; in the exercises you'll have a chance to explore how you might use
+        <c>$</c> instead.
+      </p>
+
+      <program language="r"><input>
+threshold_var &lt;- function(df, var, val) {
+  var &lt;- as_string(ensym(var))
+  subset2(df, .data[[var]] &gt;= !!val)
+}
+
+df &lt;- data.frame(x = 1:10)
+threshold_var(df, x, 8)
+</input></program>
+
+      <p>
+        It is not always the responsibility of the function author to avoid ambiguity. Imagine we
+        generalise further to allow thresholding based on any expression:
+      </p>
+
+      <program language="r"><input>
+threshold_expr &lt;- function(df, expr, val) {
+  expr &lt;- enquo(expr)
+  subset2(df, !!expr &gt;= !!val)
+}
+</input></program>
+
+      <p>
+        It's not possible to evaluate <c>expr</c> only in the data mask, because the data mask
+        doesn't include any functions like <c>+</c> or <c>==</c>. Here, it's the user's
+        responsibility to avoid ambiguity. As a general rule of thumb, as a function author it's
+        your responsibility to avoid ambiguity with any expressions that you create; it's the
+        user's responsibility to avoid ambiguity in expressions that they create.
+      </p>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>
+          I've included an alternative implementation of <c>threshold_var()</c> below. What makes
+          it different to the approach I used above? What makes it harder?
+        </p>
+        <program language="r"><input>
+threshold_var &lt;- function(df, var, val) {
+  var &lt;- ensym(var)
+  subset2(df, `$`(.data, !!var) &gt;= !!val)
+}
+</input></program>
+      </exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-base-evaluation">
+    <title>Base evaluation</title>
+    <idx><h>evaluation</h><h>base R</h></idx>
+
+    <p>
+      Now that you understand tidy evaluation, it's time to come back to the alternative approaches
+      taken by base R. Here I'll explore the two most common uses in base R:
+    </p>
+    <ul>
+      <li><p>
+        <c>substitute()</c> and evaluation in the caller environment, as used by <c>subset()</c>.
+        I'll use this technique to demonstrate why this technique is not programming friendly, as
+        warned about in the <c>subset()</c> documentation.
+      </p></li>
+      <li><p>
+        <c>match.call()</c>, call manipulation, and evaluation in the caller environment, as used
+        by <c>write.csv()</c> and <c>lm()</c>. I'll use this technique to demonstrate how
+        quasiquotation and (regular) evaluation can help you write wrappers around such functions.
+      </p></li>
+    </ul>
+    <p>These two approaches are common forms of non-standard evaluation (NSE).</p>
+
+    <subsection>
+      <title><c>substitute()</c></title>
+      <idx><h>substitute()</h></idx>
+
+      <p>
+        The most common form of NSE in base R is <c>substitute()</c> + <c>eval()</c>. The following
+        code shows how you might write the core of <c>subset()</c> in this style using
+        <c>substitute()</c> and <c>eval()</c> rather than <c>enquo()</c> and <c>eval_tidy()</c>.
+        I repeat the code introduced in Section <xref ref="sec-subset"/> so you can compare easily.
+        The main difference is the evaluation environment: in <c>subset_base()</c> the argument is
+        evaluated in the caller environment, while in <c>subset_tidy()</c>, it's evaluated in the
+        environment where it was defined.
+      </p>
+
+      <program language="r"><input>
+subset_base &lt;- function(data, rows) {
+  rows &lt;- substitute(rows)
+  rows_val &lt;- eval(rows, data, caller_env())
+  stopifnot(is.logical(rows_val))
+
+  data[rows_val, , drop = FALSE]
+}
+
+subset_tidy &lt;- function(data, rows) {
+  rows &lt;- enquo(rows)
+  rows_val &lt;- eval_tidy(rows, data)
+  stopifnot(is.logical(rows_val))
+
+  data[rows_val, , drop = FALSE]
+}
+</input></program>
+
+      <subsection>
+        <title>Programming with <c>subset()</c></title>
+        <idx><h>subset()</h></idx>
+
+        <p>The documentation of <c>subset()</c> includes the following warning:</p>
+
+        <blockquote>
+          <p>
+            This is a convenience function intended for use interactively. For programming it is
+            better to use the standard subsetting functions like <c>[</c>, and in particular the
+            non-standard evaluation of argument <c>subset</c> can have unanticipated consequences.
+          </p>
+        </blockquote>
+
+        <p>There are three main problems:</p>
+        <ul>
+          <li>
+            <p>
+              <c>base::subset()</c> always evaluates <c>rows</c> in the calling environment, but
+              if <c>...</c> has been used, then the expression might need to be evaluated elsewhere:
+            </p>
+            <program language="r"><input>
+f1 &lt;- function(df, ...) {
+  xval &lt;- 3
+  subset_base(df, ...)
+}
+
+my_df &lt;- data.frame(x = 1:3, y = 3:1)
+xval &lt;- 1
+f1(my_df, x == xval)
+</input></program>
+            <p>
+              This may seems like an esoteric concern, but it means that <c>subset_base()</c>
+              cannot reliably work with functionals like <c>map()</c> or <c>lapply()</c>:
+            </p>
+            <program language="r"><input>
+local({
+  zzz &lt;- 2
+  dfs &lt;- list(data.frame(x = 1:3), data.frame(x = 4:6))
+  lapply(dfs, subset_base, x == zzz)
+})
+</input></program>
+          </li>
+          <li>
+            <p>
+              Calling <c>subset()</c> from another function requires some care: you have to use
+              <c>substitute()</c> to capture a call to <c>subset()</c> complete expression, and
+              then evaluate. I think this code is hard to understand because <c>substitute()</c>
+              doesn't use a syntactic marker for unquoting. Here I print the generated call to make
+              it a little easier to see what's happening.
+            </p>
+            <program language="r"><input>
+f2 &lt;- function(df1, expr) {
+  call &lt;- substitute(subset_base(df1, expr))
+  expr_print(call)
+  eval(call, caller_env())
+}
+
+my_df &lt;- data.frame(x = 1:3, y = 3:1)
+f2(my_df, x == 1)
+</input></program>
+          </li>
+          <li>
+            <p>
+              <c>eval()</c> doesn't provide any pronouns so there's no way to require part of the
+              expression to come from the data. As far as I can tell, there's no way to make the
+              following function safe except by manually checking for the presence of <c>z</c>
+              variable in <c>df</c>.
+            </p>
+            <program language="r"><input>
+f3 &lt;- function(df) {
+  call &lt;- substitute(subset_base(df, z &gt; 0))
+  expr_print(call)
+  eval(call, caller_env())
+}
+
+my_df &lt;- data.frame(x = 1:3, y = 3:1)
+z &lt;- -1
+f3(my_df)
+</input></program>
+          </li>
+        </ul>
+      </subsection>
+
+      <subsection>
+        <title>What about <c>[</c>?</title>
+
+        <p>
+          Given that tidy evaluation is quite complex, why not simply use <c>[</c> as <c>?subset</c>
+          recommends? Primarily, it seems unappealing to me to have functions that can only be used
+          interactively, and never inside another function.
+        </p>
+        <p>
+          Additionally, even the simple <c>subset()</c> function provides two useful features
+          compared to <c>[</c>:
+        </p>
+        <ul>
+          <li><p>It sets <c>drop = FALSE</c> by default, so it's guaranteed to return a data frame.</p></li>
+          <li><p>It drops rows where the condition evaluates to <c>NA</c>.</p></li>
+        </ul>
+        <p>
+          That means <c>subset(df, x == y)</c> is not equivalent to <c>df[x == y,]</c> as you
+          might expect. Instead, it is equivalent to
+          <c>df[x == y &amp;&amp; !is.na(x == y), , drop = FALSE]</c>: that's a lot more typing!
+          Real-life alternatives to <c>subset()</c>, like <c>dplyr::filter()</c>, do even more.
+          For example, <c>dplyr::filter()</c> can translate R expressions to SQL so that they can
+          be executed in a database. This makes programming with <c>filter()</c> relatively more
+          important.
+        </p>
+      </subsection>
+    </subsection>
+
+    <subsection>
+      <title><c>match.call()</c></title>
+      <idx><h>match.call()</h></idx>
+
+      <p>
+        Another common form of NSE is to capture the complete call with <c>match.call()</c>,
+        modify it, and evaluate the result. <c>match.call()</c> is similar to
+        <c>substitute()</c>, but instead of capturing a single argument, it captures the complete
+        call. It doesn't have an equivalent in rlang.
+      </p>
+
+      <program language="r"><input>
+g &lt;- function(x, y, z) {
+  match.call()
+}
+g(1, 2, z = 3)
+</input></program>
+
+      <p>
+        One prominent user of <c>match.call()</c> is <c>write.csv()</c>, which basically works by
+        transforming the call into a call to <c>write.table()</c> with the appropriate arguments
+        set. The following code shows the heart of <c>write.csv()</c>:
+      </p>
+
+      <program language="r"><input>
+write.csv &lt;- function(...) {
+  call &lt;- match.call(write.table, expand.dots = TRUE)
+
+  call[[1]] &lt;- quote(write.table)
+  call$sep &lt;- ","
+  call$dec &lt;- "."
+
+  eval(call, parent.frame())
+}
+</input></program>
+
+      <p>
+        I don't think this technique is a good idea because you can achieve the same result without
+        NSE:
+      </p>
+
+      <program language="r"><input>
+write.csv &lt;- function(...) {
+  write.table(..., sep = ",", dec = ".")
+}
+</input></program>
+
+      <p>
+        Nevertheless, it's important to understand this technique because it's commonly used in
+        modelling functions. These functions also prominently print the captured call, which poses
+        some special challenges, as you'll see next.
+      </p>
+
+      <subsection>
+        <title>Wrapping modelling functions</title>
+        <idx><h>lm()</h></idx>
+
+        <p>To begin, consider the simplest possible wrapper around <c>lm()</c>:</p>
+
+        <program language="r"><input>
+lm2 &lt;- function(formula, data) {
+  lm(formula, data)
+}
+</input></program>
+
+        <p>
+          This wrapper works, but is suboptimal because <c>lm()</c> captures its call and displays
+          it when printing.
+        </p>
+
+        <program language="r"><input>
+lm2(mpg ~ disp, mtcars)
+</input></program>
+
+        <p>
+          Fixing this is important because this call is the chief way that you see the model
+          specification when printing the model. To overcome this problem, we need to capture the
+          arguments, create the call to <c>lm()</c> using unquoting, then evaluate that call. To
+          make it easier to see what's going on, I'll also print the expression we generate. This
+          will become more useful as the calls get more complicated.
+        </p>
+
+        <program language="r"><input>
+lm3 &lt;- function(formula, data, env = caller_env()) {
+  formula &lt;- enexpr(formula)
+  data &lt;- enexpr(data)
+
+  lm_call &lt;- expr(lm(!!formula, data = !!data))
+  expr_print(lm_call)
+  eval(lm_call, env)
+}
+
+lm3(mpg ~ disp, mtcars)
+</input></program>
+
+        <p>There are three pieces that you'll use whenever wrapping a base NSE function in this way:</p>
+        <ul>
+          <li><p>
+            You capture the unevaluated arguments using <c>enexpr()</c>, and capture the caller
+            environment using <c>caller_env()</c>.
+          </p></li>
+          <li><p>You generate a new expression using <c>expr()</c> and unquoting.</p></li>
+          <li><p>
+            You evaluate that expression in the caller environment. You have to accept that the
+            function will not work correctly if the arguments are not defined in the caller
+            environment. Providing the <c>env</c> argument at least provides a hook that experts
+            can use if the default environment isn't correct.
+          </p></li>
+        </ul>
+
+        <p>
+          The use of <c>enexpr()</c> has a nice side-effect: we can use unquoting to generate
+          formulas dynamically:
+        </p>
+
+        <program language="r"><input>
+resp &lt;- expr(mpg)
+disp1 &lt;- expr(vs)
+disp2 &lt;- expr(wt)
+lm3(!!resp ~ !!disp1 + !!disp2, mtcars)
+</input></program>
+      </subsection>
+
+      <subsection>
+        <title>Evaluation environment</title>
+
+        <p>
+          What if you want to mingle objects supplied by the user with objects that you create in
+          the function? For example, imagine you want to make an auto-resampling version of
+          <c>lm()</c>. You might write it like this:
+        </p>
+
+        <program language="r"><input>
+resample_lm0 &lt;- function(formula, data, env = caller_env()) {
+  formula &lt;- enexpr(formula)
+  resample_data &lt;- resample(data, n = nrow(data))
+
+  lm_call &lt;- expr(lm(!!formula, data = resample_data))
+  expr_print(lm_call)
+  eval(lm_call, env)
+}
+
+df &lt;- data.frame(x = 1:10, y = 5 + 3 * (1:10) + round(rnorm(10), 2))
+resample_lm0(y ~ x, data = df)
+</input></program>
+
+        <p>
+          Why doesn't this code work? We're evaluating <c>lm_call</c> in the caller environment,
+          but <c>resample_data</c> exists in the execution environment. We could instead evaluate
+          in the execution environment of <c>resample_lm0()</c>, but there's no guarantee that
+          <c>formula</c> could be evaluated in that environment.
+        </p>
+        <p>There are two basic ways to overcome this challenge:</p>
+        <ol>
+          <li>
+            <p>
+              Unquote the data frame into the call. This means that no lookup has to occur, but has
+              all the problems of inlining expressions
+              (Section <xref ref="sec-non-standard-ast"/>). For modelling functions this means that
+              the captured call is suboptimal:
+            </p>
+            <program language="r"><input>
+resample_lm1 &lt;- function(formula, data, env = caller_env()) {
+  formula &lt;- enexpr(formula)
+  resample_data &lt;- resample(data, n = nrow(data))
+
+  lm_call &lt;- expr(lm(!!formula, data = !!resample_data))
+  expr_print(lm_call)
+  eval(lm_call, env)
+}
+resample_lm1(y ~ x, data = df)$call
+#> lm(y ~ x, data = &lt;data.frame&gt;)
+#> lm(formula = y ~ x, data = list(x = c(3L, 7L, 4L, 4L, 
+#> 2L, 7L, 2L, 1L, 8L, 9L), y = c(13.21, 27.04, 18.63, 
+#> 18.63, 10.99, 27.04, 10.99, 7.83, 28.14, 32.72)))
+</input></program>
+          </li>
+          <li>
+            <p>
+              Alternatively you can create a new environment that inherits from the caller, and
+              bind variables that you've created inside the function to that environment.
+            </p>
+            <program language="r"><input>
+resample_lm2 &lt;- function(formula, data, env = caller_env()) {
+  formula &lt;- enexpr(formula)
+  resample_data &lt;- resample(data, n = nrow(data))
+
+  lm_env &lt;- env(env, resample_data = resample_data)
+  lm_call &lt;- expr(lm(!!formula, data = resample_data))
+  expr_print(lm_call)
+  eval(lm_call, lm_env)
+}
+resample_lm2(y ~ x, data = df)
+</input></program>
+            <p>This is more work, but gives the cleanest specification.</p>
+          </li>
+        </ol>
+      </subsection>
+    </subsection>
+
+    <exercises>
+      <exercise>
+        <p>Why does this function fail?</p>
+        <program language="r"><input>
+lm3a &lt;- function(formula, data) {
+  formula &lt;- enexpr(formula)
+
+  lm_call &lt;- expr(lm(!!formula, data = data))
+  eval(lm_call, caller_env())
+}
+lm3a(mpg ~ disp, mtcars)$call
+#> Error in as.data.frame.default(data, optional = TRUE): 
+#> cannot coerce class '"function"' to a data.frame
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          When model building, typically the response and data are relatively constant while you
+          rapidly experiment with different predictors. Write a small wrapper that allows you to
+          reduce duplication in the code below.
+        </p>
+        <program language="r"><input>
+lm(mpg ~ disp, data = mtcars)
+lm(mpg ~ I(1 / disp), data = mtcars)
+lm(mpg ~ disp * cyl, data = mtcars)
+</input></program>
+      </exercise>
+      <exercise>
+        <p>
+          Another way to write <c>resample_lm()</c> would be to include the resample expression
+          (<c>data[sample(nrow(data), replace = TRUE), , drop = FALSE]</c>) in the data argument.
+          Implement that approach. What are the advantages? What are the disadvantages?
+        </p>
+      </exercise>
+    </exercises>
+  </section>
+
+</chapter>

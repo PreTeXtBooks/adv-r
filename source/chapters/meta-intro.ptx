@@ -1,42 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-meta-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>Metaprogramming: Introduction</title>
+<chapter xml:id="ch-meta-intro" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Introduction</title>
 
-    <p>
-      One of the most intriguing things about R is its capability for
-      metaprogramming: the ability of code to inspect and modify other code.
-      This is most commonly seen in R as non-standard evaluation (NSE): the
-      ability of functions to quote arguments rather than evaluating them.
-    </p>
+  <idx><h>metaprogramming</h></idx>
+  <idx><h>non-standard evaluation</h></idx>
 
-    <p>
-      The following chapters explain the metaprogramming capabilities of R:
-    </p>
+  <p>
+    One of the most intriguing things about R is its ability to do <alert>metaprogramming</alert>.
+    This is the idea that code is data that can be inspected and modified programmatically.
+    This is a powerful idea; one that deeply influences much R code. At the most basic level,
+    it allows you to do things like write <c>library(purrr)</c> instead of
+    <c>library("purrr")</c> and enable <c>plot(x, sin(x))</c> to automatically label the
+    axes with <c>x</c> and <c>sin(x)</c>. At a deeper level, it allows you to do things like
+    use <c>y ~ x1 + x2</c> to represent a model that predicts the value of <c>y</c> from
+    <c>x1</c> and <c>x2</c>, to translate <c>subset(df, x == y)</c> into
+    <c>df[df$x == df$y, , drop = FALSE]</c>, and to use <c>dplyr::filter(db, is.na(x))</c>
+    to generate the SQL <c>WHERE x IS NULL</c> when <c>db</c> is a remote database table.
+  </p>
 
-    <p><ol>
-      <li><p>
-        <xref ref="ch-meta-big-picture"/> gives you a big picture of
-        metaprogramming. It introduces important vocabulary, gives a broad
-        overview of the main ideas, and introduces a few simpler tools.
-      </p></li>
-      <li><p>
-        <xref ref="ch-expressions"/> dives into the details of expressions:
-        the data structures that represent code.
-      </p></li>
-      <li><p>
-        <xref ref="ch-quasiquotation"/> teaches you about quasiquotation, which
-        allows you to create code that mixes user-supplied code and developer
-        code.
-      </p></li>
-      <li><p>
-        <xref ref="ch-evaluation"/> shows how to take an expression and evaluate
-        it in a custom environment.
-      </p></li>
-      <li><p>
-        <xref ref="ch-translation"/> ties the previous four chapters together
-        by showing how you might use metaprogramming to translate R code into
-        another language.
-      </p></li>
-    </ol></p>
+  <p>
+    Closely related to metaprogramming is <alert>non-standard evaluation</alert>, NSE for short.
+    This term, which is commonly used to describe the behaviour of R functions, is problematic
+    in two ways. Firstly, NSE is actually a property of the argument (or arguments) of a
+    function, so talking about NSE functions is a little sloppy. Secondly, it's confusing to
+    define something by what it's not (standard), so in this book I'll introduce more precise
+    vocabulary.
+  </p>
 
-  </chapter>
+  <p>
+    Specifically, this book focuses on tidy evaluation (sometimes called tidy eval for short).
+    Tidy evaluation is implemented in the rlang package, and I'll use rlang extensively in
+    these chapters. This will allow you to focus on the big ideas, without being distracted by
+    the quirks of implementation that arise from R's history. After I introduce each big idea
+    with rlang, I'll then circle back to talk about how those ideas are expressed in base R.
+    This approach may seem backward to some, but it's like learning how to drive using an
+    automatic transmission rather than a stick shift: it allows you to focus on the big picture
+    before having to learn the details. This book focusses on the theoretical side of tidy
+    evaluation, so you can fully understand how it works from the ground up. If you are looking
+    for a more practical introduction, I recommend the tidy evaluation book at
+    <url href="https://tidyeval.tidyverse.org"/><fn>As I write this chapter, the tidy evaluation
+    book is still a work-in-progress, but by the time you read this it will hopefully be
+    finished.</fn>.
+  </p>
+
+  <p>
+    You'll learn about metaprogramming and tidy evaluation in the following five chapters:
+  </p>
+
+  <ol>
+    <li><p>
+      Chapter <xref ref="ch-meta-big-picture"/> gives a high level description of the whole
+      metaprogramming story, briefly learning about all major components and how they fit
+      together to form a cohesive whole.
+    </p></li>
+    <li><p>
+      Chapter <xref ref="ch-expressions"/> shows that all R code can be described as a tree.
+      You'll learn how to visualise these trees, how the rules of R's grammar convert linear
+      sequences of characters into these trees, and how to use recursive functions to work
+      with code trees.
+    </p></li>
+    <li><p>
+      Chapter <xref ref="ch-quasiquotation"/> presents tools from rlang that you can use to
+      capture (quote) unevaluated function arguments. You'll also learn about quasiquotation,
+      which provides a set of techniques to unquote input to make it possible to easily
+      generate new trees from code fragments.
+    </p></li>
+    <li><p>
+      Chapter <xref ref="ch-evaluation"/> moves on to evaluating captured code. Here you'll
+      learn about an important data structure, the <alert>quosure</alert>, which ensures
+      correct evaluation by capturing both the code to evaluate, and the environment in which
+      to evaluate it. This chapter will show you how to put all the pieces together to
+      understand how NSE works in base R, and how to write functions that work like
+      <c>subset()</c>.
+    </p></li>
+    <li><p>
+      Chapter <xref ref="ch-translation"/> finishes up by combining first-class environments,
+      lexical scoping, and metaprogramming to translate R code into other languages, namely
+      HTML and LaTeX.
+    </p></li>
+  </ol>
+
+</chapter>
