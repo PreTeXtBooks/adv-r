@@ -1,38 +1,1054 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-s4" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>S4</title>
+<chapter xml:id="ch-s4" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>S4</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      S4 provides a formal approach to functional OOP. The underlying ideas are
+      similar to S3 (the topic of <xref ref="ch-s3"/>), but implementation is
+      much stricter and makes use of specialised functions for creating classes
+      (<c>setClass()</c>), generics (<c>setGeneric()</c>), and methods
+      (<c>setMethod()</c>). Additionally, S4 provides both multiple inheritance
+      (i.e. a class can have multiple parents) and multiple dispatch (i.e. method
+      dispatch can use the class of multiple arguments).
+    </p>
+
+    <p>
+      An important new component of S4 is the <alert>slot</alert>, a named
+      component of the object that is accessed using the specialised subsetting
+      operator <c>@</c> (pronounced at). The set of slots, and their classes,
+      forms an important part of the definition of an S4 class.
+    </p>
+
+    <paragraphs xml:id="para-s4-outline">
+      <title>Outline</title>
+      <p><ul>
+        <li><p>
+          <xref ref="sec-s4-basics"/> gives a quick overview of the main
+          components of S4: classes, generics, and methods.
+        </p></li>
+        <li><p>
+          <xref ref="sec-s4-classes"/> dives into the details of S4 classes,
+          including prototypes, constructors, helpers, and validators.
+        </p></li>
+        <li><p>
+          <xref ref="sec-s4-generics"/> shows you how to create new S4 generics,
+          and how to supply those generics with methods. You'll also learn about
+          accessor functions which are designed to allow users to safely inspect
+          and modify object slots.
+        </p></li>
+        <li><p>
+          <xref ref="sec-s4-dispatch"/> dives into the full details of method
+          dispatch in S4. The basic idea is simple, then it rapidly gets more
+          complex once multiple inheritance and multiple dispatch are combined.
+        </p></li>
+        <li><p>
+          <xref ref="sec-s4-s3"/> discusses the interaction between S4 and S3,
+          showing you how to use them together.
+        </p></li>
+      </ul></p>
+    </paragraphs>
+
+    <paragraphs xml:id="para-s4-learning-more">
+      <title>Learning more</title>
       <p>
-        S4 provides a formal approach to functional OOP. The underlying ideas
-        are similar to S3 (the topic of <xref ref="ch-s3"/>), but implementation
-        is much stricter and makes use of specialised functions for creating
-        classes (<c>setClass()</c>), generics (<c>setGeneric()</c>), and
-        methods (<c>setMethod()</c>). Additionally, S4 provides both multiple
-        inheritance (i.e. a class can have multiple parents) and multiple
-        dispatch (i.e. method dispatch can use the class of multiple arguments).
+        Like the other OO chapters, the focus here will be on how S4 works, not
+        how to deploy it most effectively. If you do want to use it in practice,
+        there are two main challenges:
       </p>
-    </introduction>
-
-    <section xml:id="sec-s4-classes">
-      <title>Classes</title>
-
+      <p><ul>
+        <li><p>There is no one reference that will answer all your questions about
+        S4.</p></li>
+        <li><p>R's built-in documentation sometimes clashes with community best
+        practices.</p></li>
+      </ul></p>
       <p>
-        Unlike S3, S4 classes have a formal definition. To define an S4 class,
-        you call <c>setClass()</c> with the class name and a definition of its
-        fields (called <em>slots</em>):
+        As you move towards more advanced usage, you will need to piece together
+        needed information by carefully reading the documentation, asking questions
+        on StackOverflow, and performing experiments. Some recommendations:
       </p>
+      <p><ul>
+        <li><p>
+          The Bioconductor community is a long-term user of S4 and has produced
+          much of the best material about its effective use. Start with
+          <url href="https://bioconductor.org/help/course-materials/2017/Zurich/S4-classes-and-methods.html"
+            visual="bioconductor.org/help/course-materials/2017/Zurich/S4-classes-and-methods.html">S4
+          classes and methods</url> taught by Martin Morgan and Hervé Pagès, or
+          check for a newer version at
+          <url href="https://bioconductor.org/help/course-materials/"
+            visual="bioconductor.org/help/course-materials/">Bioconductor course
+          materials</url>.
+        </p>
+        <p>
+          Martin Morgan is a ex-member of R-core and the project lead of
+          Bioconductor. He's a world expert on the practical use of S4, and I
+          recommend reading anything he has written about it, starting with the
+          questions he has answered on
+          <url href="http://stackoverflow.com/search?tab=votes&amp;q=user%3a547331%20%5bs4%5d%20is%3aanswe"
+            visual="stackoverflow.com">stackoverflow</url>.
+        </p></li>
+        <li><p>
+          John Chambers is the author of the S4 system, and provides an overview
+          of its motivation and historical context in <em>Object-oriented
+          programming, functional programming and R</em>. For a fuller exploration
+          of S4, see his book <em>Software for Data Analysis</em>.
+        </p></li>
+      </ul></p>
+    </paragraphs>
 
-      <program language="r">
-        <input>
-setClass("Person", 
-  representation(
-    name = "character", 
+    <paragraphs xml:id="para-s4-prerequisites">
+      <title>Prerequisites</title>
+      <p>
+        All functions related to S4 live in the methods package. This package is
+        always available when you're running R interactively, but may not be
+        available when running R in batch mode, i.e. from
+        <c>Rscript</c>.<fn>This is a historical quirk introduced because the
+        methods package used to take a long time to load and <c>Rscript</c> is
+        optimised for fast command line invocation.</fn> For this reason, it's a
+        good idea to call <c>library(methods)</c> whenever you use S4. This also
+        signals to the reader that you'll be using the S4 object system.
+      </p>
+      <program language="r"><input>
+library(methods)
+      </input></program>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-s4-basics">
+    <title>Basics</title>
+
+    <p>
+      We'll start with a quick overview of the main components of S4. You define
+      an S4 class by calling <c>setClass()</c> with the class name and a
+      definition of its slots, and the names and classes of the class data:
+    </p>
+
+    <program language="r"><input>
+setClass("Person",
+  slots = c(
+    name = "character",
     age = "numeric"
   )
 )
-        </input>
-      </program>
-    </section>
+    </input></program>
 
-  </chapter>
+    <p>
+      Once the class is defined, you can construct new objects from it by calling
+      <c>new()</c> with the name of the class and a value for each slot:
+    </p>
+
+    <program language="r"><input>
+john &lt;- new("Person", name = "John Smith", age = NA_real_)
+    </input></program>
+
+    <p>
+      Given an S4 object you can see its class with <c>is()</c> and access slots
+      with <c>@</c> (equivalent to <c>$</c>) and <c>slot()</c> (equivalent to
+      <c>[[</c>):
+    </p>
+
+    <program language="r"><input>
+is(john)
+john@name
+slot(john, "age")
+    </input></program>
+
+    <p>
+      Generally, you should only use <c>@</c> in your methods. If you're working
+      with someone else's class, look for <alert>accessor</alert> functions that
+      allow you to safely set and get slot values. As the developer of a class,
+      you should also provide your own accessor functions. Accessors are typically
+      S4 generics allowing multiple classes to share the same external interface.
+    </p>
+
+    <p>
+      Here we'll create a setter and getter for the <c>age</c> slot by first
+      creating generics with <c>setGeneric()</c>:
+    </p>
+
+    <program language="r"><input>
+setGeneric("age", function(x) standardGeneric("age"))
+setGeneric("age&lt;-", function(x, value) standardGeneric("age&lt;-"))
+    </input></program>
+
+    <p>
+      And then defining methods with <c>setMethod()</c>:
+    </p>
+
+    <program language="r"><input>
+setMethod("age", "Person", function(x) x@age)
+setMethod("age&lt;-", "Person", function(x, value) {
+  x@age &lt;- value
+  x
+})
+
+age(john) &lt;- 50
+age(john)
+    </input></program>
+
+    <p>
+      If you're using an S4 class defined in a package, you can get help on it
+      with <c>class?Person</c>. To get help for a method, put <c>?</c> in front
+      of a call (e.g. <c>?age(john)</c>) and <c>?</c> will use the class of the
+      arguments to figure out which help file you need.
+    </p>
+
+    <p>
+      Finally, you can use sloop functions to identify S4 objects and generics
+      found in the wild:
+    </p>
+
+    <program language="r"><input>
+sloop::otype(john)
+sloop::ftype(age)
+    </input></program>
+
+    <exercises xml:id="exercises-s4-basics">
+      <exercise><p>
+        <c>lubridate::period()</c> returns an S4 class. What slots does it have?
+        What class is each slot? What accessors does it provide?
+      </p></exercise>
+      <exercise><p>
+        What other ways can you find help for a method? Read <c>?"?"</c> and
+        summarise the details.
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s4-classes">
+    <title>Classes</title>
+
+    <p>
+      To define an S4 class, call <c>setClass()</c> with three arguments:
+    </p>
+
+    <p><ul>
+      <li><p>
+        The class <alert>name</alert>. By convention, S4 class names use
+        <c>UpperCamelCase</c>.
+      </p></li>
+      <li><p>
+        A named character vector that describes the names and classes of the
+        <alert>slots</alert> (fields). For example, a person might be represented
+        by a character name and a numeric age:
+        <c>c(name = "character", age = "numeric")</c>. The pseudo-class
+        <c>ANY</c> allows a slot to accept objects of any type.
+      </p></li>
+      <li><p>
+        A <alert>prototype</alert>, a list of default values for each slot.
+        Technically, the prototype is optional,<fn><c>?setClass</c> recommends
+        that you avoid the <c>prototype</c> argument, but this is generally
+        considered to be bad advice.</fn> but you should always provide it.
+      </p></li>
+    </ul></p>
+
+    <p>
+      The code below illustrates the three arguments by creating a
+      <c>Person</c> class with character <c>name</c> and numeric <c>age</c>
+      slots.
+    </p>
+
+    <program language="r"><input>
+setClass("Person",
+  slots = c(
+    name = "character",
+    age = "numeric"
+  ),
+  prototype = list(
+    name = NA_character_,
+    age = NA_real_
+  )
+)
+
+me &lt;- new("Person", name = "Hadley")
+str(me)
+    </input></program>
+
+    <subsection xml:id="subsec-s4-inheritance">
+      <title>Inheritance</title>
+
+      <p>
+        There is one other important argument to <c>setClass()</c>:
+        <c>contains</c>. This specifies a class (or classes) to inherit slots and
+        behaviour from. For example, we can create an <c>Employee</c> class that
+        inherits from the <c>Person</c> class, adding an extra slot that describes
+        their <c>boss</c>.
+      </p>
+
+      <program language="r"><input>
+setClass("Employee",
+  contains = "Person",
+  slots = c(
+    boss = "Person"
+  ),
+  prototype = list(
+    boss = new("Person")
+  )
+)
+
+str(new("Employee"))
+      </input></program>
+
+      <p>
+        <c>setClass()</c> has 9 other arguments but they are either deprecated or
+        not recommended.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-introspection">
+      <title>Introspection</title>
+
+      <p>
+        To determine what classes an object inherits from, use <c>is()</c>:
+      </p>
+
+      <program language="r"><input>
+is(new("Person"))
+is(new("Employee"))
+      </input></program>
+
+      <p>
+        To test if an object inherits from a specific class, use the second
+        argument of <c>is()</c>:
+      </p>
+
+      <program language="r"><input>
+is(john, "Person")
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-redefinition">
+      <title>Redefinition</title>
+
+      <p>
+        In most programming languages, class definition occurs at compile-time and
+        object construction occurs later, at run-time. In R, however, both
+        definition and construction occur at run time. When you call
+        <c>setClass()</c>, you are registering a class definition in a (hidden)
+        global variable. As with all state-modifying functions you need to use
+        <c>setClass()</c> with care. It's possible to create invalid objects if
+        you redefine a class after already having instantiated an object:
+      </p>
+
+      <program language="r"><input>
+setClass("A", slots = c(x = "numeric"))
+a &lt;- new("A", x = 10)
+
+setClass("A", slots = c(a_different_slot = "numeric"))
+a
+#&gt; An object of class "A"
+#&gt; Slot "a_different_slot":
+#&gt; Error in slot(object, what) : no slot of name "a_different_slot" for this object of class "A"
+      </input></program>
+
+      <p>
+        This can cause confusion during interactive creation of new classes. (R6
+        classes have the same problem, as described in
+        <xref ref="subsec-r6-important-methods"/>.)
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-helper">
+      <title>Helper</title>
+
+      <p>
+        <c>new()</c> is a low-level constructor suitable for use by you, the
+        developer. User-facing classes should always be paired with a
+        user-friendly helper. A helper should always:
+      </p>
+
+      <p><ul>
+        <li><p>Have the same name as the class, e.g. <c>myclass()</c>.</p></li>
+        <li><p>Have a thoughtfully crafted user interface with carefully chosen
+        default values and useful conversions.</p></li>
+        <li><p>Create carefully crafted error messages tailored towards an
+        end-user.</p></li>
+        <li><p>Finish by calling <c>methods::new()</c>.</p></li>
+      </ul></p>
+
+      <p>
+        The <c>Person</c> class is so simple so a helper is almost superfluous,
+        but we can use it to clearly define the contract: <c>age</c> is optional
+        but <c>name</c> is required. We'll also coerce age to a double so the
+        helper also works when passed an integer.
+      </p>
+
+      <program language="r"><input>
+Person &lt;- function(name, age = NA) {
+  age &lt;- as.double(age)
+
+  new("Person", name = name, age = age)
+}
+
+Person("Hadley")
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-validator">
+      <title>Validator</title>
+
+      <p>
+        The constructor automatically checks that the slots have correct classes:
+      </p>
+
+      <program language="r"><input>
+Person(mtcars)
+#&gt; Error in validObject(.Object) :
+#&gt;   invalid class "Person" object: invalid object for slot "name" in class
+#&gt;   "Person": got class "data.frame", should be or extend class "character"
+      </input></program>
+
+      <p>
+        You will need to implement more complicated checks (i.e. checks that
+        involve lengths, or multiple slots) yourself. For example, we might want
+        to make it clear that the Person class is a vector class, and can store
+        data about multiple people. That's not currently clear because
+        <c>@name</c> and <c>@age</c> can be different lengths:
+      </p>
+
+      <program language="r"><input>
+Person("Hadley", age = c(30, 37))
+      </input></program>
+
+      <p>
+        To enforce these additional constraints we write a validator with
+        <c>setValidity()</c>. It takes a class and a function that returns
+        <c>TRUE</c> if the input is valid, and otherwise returns a character
+        vector describing the problem(s):
+      </p>
+
+      <program language="r"><input>
+setValidity("Person", function(object) {
+  if (length(object@name) != length(object@age)) {
+    "@name and @age must be same length"
+  } else {
+    TRUE
+  }
+})
+      </input></program>
+
+      <p>
+        Now we can no longer create an invalid object:
+      </p>
+
+      <program language="r"><input>
+Person("Hadley", age = c(30, 37))
+#&gt; Error in validObject(object) :
+#&gt;   invalid class "Person" object: @name and @age must be same length
+      </input></program>
+
+      <p>
+        NB: The validity method is only called automatically by <c>new()</c>, so
+        you can still create an invalid object by modifying it:
+      </p>
+
+      <program language="r"><input>
+alex &lt;- Person("Alex", age = 30)
+alex@age &lt;- 1:10
+      </input></program>
+
+      <p>
+        You can explicitly check the validity yourself by calling
+        <c>validObject()</c>:
+      </p>
+
+      <program language="r"><input>
+validObject(alex)
+#&gt; Error in validObject(alex) :
+#&gt;   invalid class "Person" object: @name and @age must be same length
+      </input></program>
+
+      <p>
+        In <xref ref="subsec-s4-accessors"/>, we'll use <c>validObject()</c> to
+        create accessors that can not create invalid objects.
+      </p>
+    </subsection>
+
+    <exercises xml:id="exercises-s4-classes">
+      <exercise><p>
+        Extend the Person class with fields to match <c>utils::person()</c>.
+        Think about what slots you will need, what class each slot should have,
+        and what you'll need to check in your validity method.
+      </p></exercise>
+      <exercise><p>
+        What happens if you define a new S4 class that doesn't have any slots?
+        (Hint: read about virtual classes in <c>?setClass</c>.)
+      </p></exercise>
+      <exercise><p>
+        Imagine you were going to reimplement factors, dates, and data frames in
+        S4. Sketch out the <c>setClass()</c> calls that you would use to define
+        the classes. Think about appropriate <c>slots</c> and <c>prototype</c>.
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s4-generics">
+    <title>Generics and methods</title>
+
+    <p>
+      The job of a generic is to perform method dispatch, i.e. find the specific
+      implementation for the combination of classes passed to the generic. Here
+      you'll learn how to define S4 generics and methods, then in the next section
+      we'll explore precisely how S4 method dispatch works.
+    </p>
+
+    <p>
+      To create a new S4 generic, call <c>setGeneric()</c> with a function that
+      calls <c>standardGeneric()</c>:
+    </p>
+
+    <program language="r"><input>
+setGeneric("myGeneric", function(x) standardGeneric("myGeneric"))
+    </input></program>
+
+    <p>
+      By convention, new S4 generics should use <c>lowerCamelCase</c>.
+    </p>
+
+    <p>
+      It is bad practice to use <c>{}</c> in the generic as it triggers a special
+      case that is more expensive, and generally best avoided.
+    </p>
+
+    <program language="r"><input>
+# Don't do this!
+setGeneric("myGeneric", function(x) {
+  standardGeneric("myGeneric")
+})
+    </input></program>
+
+    <subsection xml:id="subsec-s4-signature">
+      <title>Signature</title>
+
+      <p>
+        Like <c>setClass()</c>, <c>setGeneric()</c> has many other arguments.
+        There is only one that you need to know about: <c>signature</c>. This
+        allows you to control the arguments that are used for method dispatch. If
+        <c>signature</c> is not supplied, all arguments (apart from <c>...</c>)
+        are used. It is occasionally useful to remove arguments from dispatch.
+        This allows you to require that methods provide arguments like
+        <c>verbose = TRUE</c> or <c>quiet = FALSE</c>, but they don't take part
+        in dispatch.
+      </p>
+
+      <program language="r"><input>
+setGeneric("myGeneric",
+  function(x, ..., verbose = TRUE) standardGeneric("myGeneric"),
+  signature = "x"
+)
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-methods">
+      <title>Methods</title>
+
+      <p>
+        A generic isn't useful without some methods, and in S4 you define methods
+        with <c>setMethod()</c>. There are three important arguments: the name of
+        the generic, the name of the class, and the method itself.
+      </p>
+
+      <program language="r"><input>
+setMethod("myGeneric", "Person", function(x) {
+  # method implementation
+})
+      </input></program>
+
+      <p>
+        More formally, the second argument to <c>setMethod()</c> is called the
+        <alert>signature</alert>. In S4, unlike S3, the signature can include
+        multiple arguments. This makes method dispatch in S4 substantially more
+        complicated, but avoids having to implement double-dispatch as a special
+        case. We'll talk more about multiple dispatch in the next section.
+        <c>setMethod()</c> has other arguments, but you should never use them.
+      </p>
+
+      <p>
+        To list all the methods that belong to a generic, or that are associated
+        with a class, use <c>methods("generic")</c> or
+        <c>methods(class = "class")</c>; to find the implementation of a specific
+        method, use <c>selectMethod("generic", "class")</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-show-method">
+      <title>Show method</title>
+
+      <p>
+        The most commonly defined S4 method that controls printing is
+        <c>show()</c>, which controls how the object appears when it is printed.
+        To define a method for an existing generic, you must first determine the
+        arguments. You can get those from the documentation or by looking at the
+        <c>args()</c> of the generic:
+      </p>
+
+      <program language="r"><input>
+args(getGeneric("show"))
+      </input></program>
+
+      <p>
+        Our show method needs to have a single argument <c>object</c>:
+      </p>
+
+      <program language="r"><input>
+setMethod("show", "Person", function(object) {
+  cat(is(object)[[1]], "\n",
+      "  Name: ", object@name, "\n",
+      "  Age:  ", object@age, "\n",
+      sep = ""
+  )
+})
+john
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-accessors">
+      <title>Accessors</title>
+
+      <p>
+        Slots should be considered an internal implementation detail: they can
+        change without warning and user code should avoid accessing them directly.
+        Instead, all user-accessible slots should be accompanied by a pair of
+        <alert>accessors</alert>. If the slot is unique to the class, this can
+        just be a function:
+      </p>
+
+      <program language="r"><input>
+person_name &lt;- function(x) x@name
+      </input></program>
+
+      <p>
+        Typically, however, you'll define a generic so that multiple classes can
+        use the same interface:
+      </p>
+
+      <program language="r"><input>
+setGeneric("name", function(x) standardGeneric("name"))
+setMethod("name", "Person", function(x) x@name)
+
+name(john)
+      </input></program>
+
+      <p>
+        If the slot is also writeable, you should provide a setter function. You
+        should always include <c>validObject()</c> in the setter to prevent the
+        user from creating invalid objects.
+      </p>
+
+      <program language="r"><input>
+setGeneric("name&lt;-", function(x, value) standardGeneric("name&lt;-"))
+setMethod("name&lt;-", "Person", function(x, value) {
+  x@name &lt;- value
+  validObject(x)
+  x
+})
+
+name(john) &lt;- "Jon Smythe"
+name(john)
+
+name(john) &lt;- letters
+#&gt; Error in validObject(x) :
+#&gt;   invalid class "Person" object: @name and @age must be same length
+      </input></program>
+
+      <p>
+        (If the <c>name&lt;-</c> notation is unfamiliar, review
+        <xref ref="sec-function-forms"/>.)
+      </p>
+    </subsection>
+
+    <exercises xml:id="exercises-s4-generics">
+      <exercise><p>
+        Add <c>age()</c> accessors for the <c>Person</c> class.
+      </p></exercise>
+      <exercise><p>
+        In the definition of the generic, why is it necessary to repeat the name
+        of the generic twice?
+      </p></exercise>
+      <exercise><p>
+        Why does the <c>show()</c> method defined in
+        <xref ref="subsec-s4-show-method"/> use <c>is(object)[[1]]</c>? (Hint:
+        try printing the employee subclass.)
+      </p></exercise>
+      <exercise><p>
+        What happens if you define a method with different argument names to the
+        generic?
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s4-dispatch">
+    <title>Method dispatch</title>
+
+    <p>
+      S4 dispatch is complicated because S4 has two important features:
+    </p>
+
+    <p><ul>
+      <li><p>Multiple inheritance, i.e. a class can have multiple parents.</p></li>
+      <li><p>Multiple dispatch, i.e. a generic can use multiple arguments to pick
+      a method.</p></li>
+    </ul></p>
+
+    <p>
+      These features make S4 very powerful, but can also make it hard to
+      understand which method will get selected for a given combination of inputs.
+      In practice, keep method dispatch as simple as possible by avoiding multiple
+      inheritance, and reserving multiple dispatch only for where it is absolutely
+      necessary.
+    </p>
+
+    <p>
+      But it's important to describe the full details, so here we'll start simple
+      with single inheritance and single dispatch, and work our way up to the more
+      complicated cases. To illustrate the ideas without getting bogged down in
+      the details, we'll use an imaginary <alert>class graph</alert> based on
+      emoji:
+    </p>
+
+    <figure>
+      <image source="../images/s4/emoji.png"/>
+    </figure>
+
+    <p>
+      Emoji give us very compact class names that evoke the relationships between
+      the classes.
+    </p>
+
+    <subsection xml:id="subsec-s4-single-dispatch">
+      <title>Single dispatch</title>
+
+      <p>
+        Let's start with the simplest case: a generic function that dispatches on
+        a single class with a single parent. The method dispatch here is simple so
+        it's a good place to define the graphical conventions we'll use for the
+        more complex cases.
+      </p>
+
+      <figure>
+        <image source="../images/s4/single.png"/>
+      </figure>
+
+      <p>
+        There are two parts to this diagram:
+      </p>
+
+      <p><ul>
+        <li><p>
+          The top part, <c>f(...)</c>, defines the scope of the diagram. Here we
+          have a generic with one argument, that has a class hierarchy that is
+          three levels deep.
+        </p></li>
+        <li><p>
+          The bottom part is the <alert>method graph</alert> and displays all the
+          possible methods that could be defined. Methods that exist, i.e. that
+          have been defined with <c>setMethod()</c>, have a grey background.
+        </p></li>
+      </ul></p>
+
+      <p>
+        To find the method that gets called, you start with the most specific
+        class of the actual arguments, then follow the arrows until you find a
+        method that exists. If no method is found, method dispatch has failed and
+        an error is thrown. In practice, this means that you should always define
+        methods defined for the terminal nodes, i.e. those on the far right.
+      </p>
+
+      <p>
+        There are two <alert>pseudo-classes</alert> that you can define methods
+        for. These are called pseudo-classes because they don't actually exist,
+        but allow you to define useful behaviours. The first pseudo-class is
+        <c>ANY</c> which matches any class.<fn>The S4 <c>ANY</c> pseudo-class
+        plays the same role as the S3 <c>default</c> pseudo-class.</fn> For
+        technical reasons that we'll get to later, the link to the <c>ANY</c>
+        method is longer than the links between the other classes:
+      </p>
+
+      <figure>
+        <image source="../images/s4/single-any.png"/>
+      </figure>
+
+      <p>
+        The second pseudo-class is <c>MISSING</c>. If you define a method for
+        this pseudo-class, it will match whenever the argument is missing. It's
+        not useful for single dispatch, but is important for functions like
+        <c>+</c> and <c>-</c> that use double dispatch and behave differently
+        depending on whether they have one or two arguments.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-multiple-inheritance">
+      <title>Multiple inheritance</title>
+
+      <p>
+        Things get more complicated when the class has multiple parents.
+      </p>
+
+      <figure>
+        <image source="../images/s4/multiple.png"/>
+      </figure>
+
+      <p>
+        The basic process remains the same: you start from the actual class
+        supplied to the generic, then follow the arrows until you find a defined
+        method. The wrinkle is that now there are multiple arrows to follow, so
+        you might find multiple methods. If that happens, you pick the method that
+        is closest, i.e. requires travelling the fewest arrows.
+      </p>
+
+      <p>
+        NB: While the method graph is a powerful metaphor for understanding method
+        dispatch, implementing it in this way would be rather inefficient, so the
+        actual approach that S4 uses is somewhat different. You can read the
+        details in <c>?Methods_Details</c>.
+      </p>
+
+      <p>
+        What happens if methods are the same distance? This is called an
+        <alert>ambiguous</alert> method, and in diagrams I'll illustrate it with a
+        thick dotted border. When this happens in R, you'll get a warning, and the
+        method for the class that comes earlier in the alphabet will be picked
+        (this is effectively random and should not be relied upon). When you
+        discover ambiguity you should always resolve it by providing a more precise
+        method:
+      </p>
+
+      <figure>
+        <image source="../images/s4/multiple-ambig.png"/>
+      </figure>
+
+      <figure>
+        <image source="../images/s4/multiple-ambig-2.png"/>
+      </figure>
+
+      <p>
+        The fallback <c>ANY</c> method still exists but the rules are little more
+        complex. As indicated by the wavy dotted lines, the <c>ANY</c> method is
+        always considered further away than a method for a real class. This means
+        that it will never contribute to ambiguity.
+      </p>
+
+      <figure>
+        <image source="../images/s4/multiple-any.png"/>
+      </figure>
+
+      <p>
+        With multiple inheritances it is hard to simultaneously prevent ambiguity,
+        ensure that every terminal method has an implementation, and minimise the
+        number of defined methods (in order to benefit from OOP). For example, of
+        the six ways to define only two methods for this call, only one is free
+        from problems. For this reason, I recommend using multiple inheritance with
+        extreme care: you will need to carefully think about the method graph and
+        plan accordingly.
+      </p>
+
+      <figure>
+        <image source="../images/s4/multiple-all.png"/>
+      </figure>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-multiple-dispatch">
+      <title>Multiple dispatch</title>
+
+      <p>
+        Once you understand multiple inheritance, understanding multiple dispatch
+        is straightforward. You follow multiple arrows in the same way as
+        previously, but now each method is specified by two classes (separated by
+        a comma).
+      </p>
+
+      <figure>
+        <image source="../images/s4/single-single.png"/>
+      </figure>
+
+      <p>
+        I'm not going to show examples of dispatching on more than two arguments,
+        but you can follow the basic principles to generate your own method graphs.
+      </p>
+
+      <p>
+        The main difference between multiple inheritance and multiple dispatch is
+        that there are many more arrows to follow. The following diagram shows
+        four defined methods which produce two ambiguous cases:
+      </p>
+
+      <figure>
+        <image source="../images/s4/single-single-ambig.png"/>
+      </figure>
+
+      <p>
+        Multiple dispatch tends to be less tricky to work with than multiple
+        inheritance because there are usually fewer terminal class combinations.
+        In this example, there's only one. That means, at a minimum, you can
+        define a single method and have default behaviour for all inputs.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-multiple-dispatch-inheritance">
+      <title>Multiple dispatch and multiple inheritance</title>
+
+      <p>
+        Of course you can combine multiple dispatch with multiple inheritance:
+      </p>
+
+      <figure>
+        <image source="../images/s4/single-multiple.png"/>
+      </figure>
+
+      <p>
+        A still more complicated case dispatches on two classes, both of which
+        have multiple inheritance:
+      </p>
+
+      <figure>
+        <image source="../images/s4/multiple-multiple.png"/>
+      </figure>
+
+      <p>
+        As the method graph gets more and more complicated it gets harder and
+        harder to predict which method will get called given a combination of
+        inputs, and it gets harder and harder to make sure that you haven't
+        introduced ambiguity. If you have to draw diagrams to figure out what
+        method is actually going to be called, it's a strong indication that you
+        should go back and simplify your design.
+      </p>
+    </subsection>
+
+    <exercises xml:id="exercises-s4-dispatch">
+      <exercise><p>
+        Draw the method graph for <c>f(😅, 😽)</c>.
+      </p></exercise>
+      <exercise><p>
+        Draw the method graph for <c>f(😃, 😉, 😙)</c>.
+      </p></exercise>
+      <exercise><p>
+        Take the last example which shows multiple dispatch over two classes that
+        use multiple inheritance. What happens if you define a method for all
+        terminal classes? Why does method dispatch not save us much work here?
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-s4-s3">
+    <title>S4 and S3</title>
+
+    <p>
+      When writing S4 code, you'll often need to interact with existing S3 classes
+      and generics. This section describes how S4 classes, methods, and generics
+      interact with existing code.
+    </p>
+
+    <subsection xml:id="subsec-s4-s3-classes">
+      <title>Classes</title>
+
+      <p>
+        In <c>slots</c> and <c>contains</c> you can use S4 classes, S3 classes,
+        or the implicit class (<xref ref="subsec-implicit-class"/>) of a base type.
+        To use an S3 class, you must first register it with
+        <c>setOldClass()</c>. You call this function once for each S3 class,
+        giving it the class attribute. For example, the following definitions are
+        already provided by base R:
+      </p>
+
+      <program language="r"><input>
+setOldClass("data.frame")
+setOldClass(c("ordered", "factor"))
+setOldClass(c("glm", "lm"))
+      </input></program>
+
+      <p>
+        However, it's generally better to be more specific and provide a full S4
+        definition with <c>slots</c> and a <c>prototype</c>:
+      </p>
+
+      <program language="r"><input>
+setClass("factor",
+  contains = "integer",
+  slots = c(
+    levels = "character"
+  ),
+  prototype = structure(
+    integer(),
+    levels = character()
+  )
+)
+setOldClass("factor", S4Class = "factor")
+      </input></program>
+
+      <p>
+        Generally, these definitions should be provided by the creator of the S3
+        class. If you're trying to build an S4 class on top of an S3 class
+        provided by a package, you should request that the package maintainer add
+        this call to their package, rather than adding it to your own code.
+      </p>
+
+      <p>
+        If an S4 object inherits from an S3 class or a base type, it will have a
+        special virtual slot called <c>.Data</c>. This contains the underlying
+        base type or S3 object:
+      </p>
+
+      <program language="r"><input>
+RangedNumeric &lt;- setClass(
+  "RangedNumeric",
+  contains = "numeric",
+  slots = c(min = "numeric", max = "numeric"),
+  prototype = structure(numeric(), min = NA_real_, max = NA_real_)
+)
+rn &lt;- RangedNumeric(1:10, min = 1, max = 10)
+rn@min
+rn@.Data
+      </input></program>
+
+      <p>
+        It is possible to define S3 methods for S4 generics, and S4 methods for
+        S3 generics (provided you've called <c>setOldClass()</c>). However, it's
+        more complicated than it might appear at first glance, so make sure you
+        thoroughly read <c>?Methods_for_S3</c>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-s4-s3-generics">
+      <title>Generics</title>
+
+      <p>
+        As well as creating a new generic from scratch, it's also possible to
+        convert an existing S3 generic to an S4 generic:
+      </p>
+
+      <program language="r"><input>
+setGeneric("mean")
+      </input></program>
+
+      <p>
+        In this case, the existing function becomes the default (<c>ANY</c>)
+        method:
+      </p>
+
+      <program language="r"><input>
+selectMethod("mean", "ANY")
+      </input></program>
+
+      <p>
+        NB: <c>setMethod()</c> will automatically call <c>setGeneric()</c> if the
+        first argument isn't already a generic, enabling you to turn any existing
+        function into an S4 generic. It is OK to convert an existing S3 generic
+        to S4, but you should avoid converting regular functions to S4 generics in
+        packages because that requires careful coordination if done by multiple
+        packages.
+      </p>
+    </subsection>
+
+    <exercises xml:id="exercises-s4-s3">
+      <exercise><p>
+        What would a full <c>setOldClass()</c> definition look like for an
+        ordered factor (i.e. add <c>slots</c> and <c>prototype</c> the definition
+        above)?
+      </p></exercise>
+      <exercise><p>
+        Define a <c>length</c> method for the <c>Person</c> class.
+      </p></exercise>
+    </exercises>
+  </section>
+
+</chapter>

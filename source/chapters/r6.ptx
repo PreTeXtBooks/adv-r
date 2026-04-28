@@ -1,39 +1,932 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <chapter xml:id="ch-r6" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <title>R6</title>
+<chapter xml:id="ch-r6" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>R6</title>
 
-    <introduction>
+  <introduction>
+    <p>
+      This chapter describes the R6 OOP system. R6 has two special properties:
+    </p>
+
+    <p><ul>
+      <li><p>
+        It uses the encapsulated OOP paradigm, which means that methods belong to
+        objects, not generics, and you call them like <c>object$method()</c>.
+      </p></li>
+      <li><p>
+        R6 objects are <alert>mutable</alert>, which means that they are modified
+        in place, and hence have reference semantics.
+      </p></li>
+    </ul></p>
+
+    <p>
+      If you've learned OOP in another programming language, it's likely that R6
+      will feel very natural, and you'll be inclined to prefer it over S3. Resist
+      the temptation to follow the path of least resistance: in most cases R6 will
+      lead you to non-idiomatic R code. We'll come back to this theme in
+      <xref ref="sec-s3-r6"/>.
+    </p>
+
+    <p>
+      R6 is very similar to a base OOP system called <alert>reference classes</alert>,
+      or RC for short. I describe why I teach R6 and not RC in
+      <xref ref="sec-why-r6"/>.
+    </p>
+
+    <paragraphs xml:id="para-r6-outline">
+      <title>Outline</title>
+      <p><ul>
+        <li><p>
+          <xref ref="sec-r6-classes"/> introduces <c>R6::R6Class()</c>, the one
+          function that you need to know to create R6 classes. You'll learn about
+          the constructor method, <c>$new()</c>, which allows you to create R6
+          objects, as well as other important methods like <c>$initialize()</c>
+          and <c>$print()</c>.
+        </p></li>
+        <li><p>
+          <xref ref="sec-r6-access"/> discusses the access mechanisms of R6:
+          private and active fields. Together, these allow you to hide data from
+          the user, or expose private data for reading but not writing.
+        </p></li>
+        <li><p>
+          <xref ref="sec-r6-semantics"/> explores the consequences of R6's
+          reference semantics. You'll learn about the use of finalizers to
+          automatically clean up any operations performed in the initializer, and
+          a common gotcha if you use an R6 object as a field in another R6 object.
+        </p></li>
+        <li><p>
+          <xref ref="sec-why-r6"/> describes why I cover R6, rather than the base
+          RC system.
+        </p></li>
+      </ul></p>
+    </paragraphs>
+
+    <paragraphs xml:id="para-r6-prerequisites">
+      <title>Prerequisites</title>
       <p>
-        This chapter describes the R6 OOP system. R6 has two special properties:
+        Because <url href="https://r6.r-lib.org" visual="r6.r-lib.org">R6</url>
+        is not built into base R, you'll need to install and load the R6 package
+        to use it:
+      </p>
+      <program language="r"><input>
+# install.packages("R6")
+library(R6)
+      </input></program>
+      <p>
+        R6 objects have reference semantics which means that they are modified
+        in-place, not copied-on-modify. If you're not familiar with these terms,
+        brush up your vocab by reading <xref ref="sec-modify-in-place"/>.
+      </p>
+    </paragraphs>
+  </introduction>
+
+  <section xml:id="sec-r6-classes">
+    <title>Classes and methods</title>
+
+    <p>
+      R6 only needs a single function call to create both the class and its
+      methods: <c>R6::R6Class()</c>. This is the only function from the package
+      that you'll ever use!<fn>That means if you're creating R6 in a package, you
+      only need to make sure it's listed in the <c>Imports</c> field of the
+      <c>DESCRIPTION</c>. There's no need to import the package into the
+      <c>NAMESPACE</c>.</fn>
+    </p>
+
+    <p>
+      The following example shows the two most important arguments to
+      <c>R6Class()</c>:
+    </p>
+
+    <p><ul>
+      <li><p>
+        The first argument is the <c>classname</c>. It's not strictly needed, but
+        it improves error messages and makes it possible to use R6 objects with S3
+        generics. By convention, R6 classes have <c>UpperCamelCase</c> names.
+      </p></li>
+      <li><p>
+        The second argument, <c>public</c>, supplies a list of methods (functions)
+        and fields (anything else) that make up the public interface of the object.
+        By convention, methods and fields use <c>snake_case</c>. Methods can access
+        the methods and fields of the current object via
+        <c>self$</c>.<fn>Unlike in Python, the <c>self</c> variable is automatically
+        provided by R6, and does not form part of the method signature.</fn>
+      </p></li>
+    </ul></p>
+
+    <program language="r"><input>
+Accumulator &lt;- R6Class("Accumulator", list(
+  sum = 0,
+  add = function(x = 1) {
+    self$sum &lt;- self$sum + x
+    invisible(self)
+  })
+)
+    </input></program>
+
+    <p>
+      You should always assign the result of <c>R6Class()</c> into a variable
+      with the same name as the class, because <c>R6Class()</c> returns an R6
+      object that defines the class:
+    </p>
+
+    <program language="r"><input>
+Accumulator
+    </input></program>
+
+    <p>
+      You construct a new object from the class by calling the <c>new()</c>
+      method. In R6, methods belong to objects, so you use <c>$</c> to access
+      <c>new()</c>:
+    </p>
+
+    <program language="r"><input>
+x &lt;- Accumulator$new()
+    </input></program>
+
+    <p>
+      You can then call methods and access fields with <c>$</c>:
+    </p>
+
+    <program language="r"><input>
+x$add(4)
+x$sum
+    </input></program>
+
+    <p>
+      In this class, the fields and methods are public, which means that you can
+      get or set the value of any field. Later, we'll see how to use private fields
+      and methods to prevent casual access to the internals of your class.
+    </p>
+
+    <p>
+      To make it clear when we're talking about fields and methods as opposed to
+      variables and functions, I'll prefix their names with <c>$</c>. For example,
+      the <c>Accumulate</c> class has field <c>$sum</c> and method <c>$add()</c>.
+    </p>
+
+    <subsection xml:id="subsec-r6-method-chaining">
+      <title>Method chaining</title>
+
+      <p>
+        <c>$add()</c> is called primarily for its side-effect of updating
+        <c>$sum</c>.
+      </p>
+
+      <program language="r"><input>
+Accumulator &lt;- R6Class("Accumulator", list(
+  sum = 0,
+  add = function(x = 1) {
+    self$sum &lt;- self$sum + x
+    invisible(self)
+  })
+)
+      </input></program>
+
+      <p>
+        Side-effect R6 methods should always return <c>self</c> invisibly. This
+        returns the "current" object and makes it possible to chain together
+        multiple method calls:
+      </p>
+
+      <program language="r"><input>
+x$add(10)$add(10)$sum
+      </input></program>
+
+      <p>
+        For readability, you might put one method call on each line:
+      </p>
+
+      <program language="r"><input>
+x$
+  add(10)$
+  add(10)$
+  sum
+      </input></program>
+
+      <p>
+        This technique is called <alert>method chaining</alert> and is commonly
+        used in languages like Python and JavaScript. Method chaining is deeply
+        related to the pipe, and we'll discuss the pros and cons of each approach
+        in <xref ref="sec-tradeoffs-pipe"/>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-important-methods">
+      <title>Important methods</title>
+
+      <p>
+        There are two important methods that should be defined for most classes:
+        <c>$initialize()</c> and <c>$print()</c>. They're not required, but
+        providing them will make your class easier to use.
+      </p>
+
+      <p>
+        <c>$initialize()</c> overrides the default behaviour of <c>$new()</c>.
+        For example, the following code defines a Person class with fields
+        <c>$name</c> and <c>$age</c>. To ensure that <c>$name</c> is always a
+        single string, and <c>$age</c> is always a single number, I placed checks
+        in <c>$initialize()</c>.
+      </p>
+
+      <program language="r"><input>
+Person &lt;- R6Class("Person", list(
+  name = NULL,
+  age = NA,
+  initialize = function(name, age = NA) {
+    stopifnot(is.character(name), length(name) == 1)
+    stopifnot(is.numeric(age), length(age) == 1)
+
+    self$name &lt;- name
+    self$age &lt;- age
+  }
+))
+
+hadley &lt;- Person$new("Hadley", age = "thirty-eight")
+#&gt; Error in initialize(...): is.numeric(age) is not TRUE
+
+hadley &lt;- Person$new("Hadley", age = 38)
+      </input></program>
+
+      <p>
+        If you have more expensive validation requirements, implement them in a
+        separate <c>$validate()</c> and only call when needed.
+      </p>
+
+      <p>
+        Defining <c>$print()</c> allows you to override the default printing
+        behaviour. As with any R6 method called for its side effects,
+        <c>$print()</c> should return <c>invisible(self)</c>.
+      </p>
+
+      <program language="r"><input>
+Person &lt;- R6Class("Person", list(
+  name = NULL,
+  age = NA,
+  initialize = function(name, age = NA) {
+    self$name &lt;- name
+    self$age &lt;- age
+  },
+  print = function(...) {
+    cat("Person: \n")
+    cat("  Name: ", self$name, "\n", sep = "")
+    cat("  Age:  ", self$age, "\n", sep = "")
+    invisible(self)
+  }
+))
+
+hadley2 &lt;- Person$new("Hadley")
+hadley2
+      </input></program>
+
+      <p>
+        This code illustrates an important aspect of R6. Because methods are bound
+        to individual objects, the previously created <c>hadley</c> object does not
+        get this new method:
+      </p>
+
+      <program language="r"><input>
+hadley
+
+hadley$print
+      </input></program>
+
+      <p>
+        From the perspective of R6, there is no relationship between <c>hadley</c>
+        and <c>hadley2</c>; they just coincidentally share the same class name.
+        This doesn't cause problems when using already developed R6 objects but
+        can make interactive experimentation confusing. If you're changing the code
+        and can't figure out why the results of method calls aren't any different,
+        make sure you've re-constructed R6 objects with the new class.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-adding-methods">
+      <title>Adding methods after creation</title>
+
+      <p>
+        Instead of continuously creating new classes, it's also possible to modify
+        the fields and methods of an existing class. This is useful when exploring
+        interactively, or when you have a class with many functions that you'd like
+        to break up into pieces. Add new elements to an existing class with
+        <c>$set()</c>, supplying the visibility (more on in
+        <xref ref="sec-r6-access"/>), the name, and the component.
+      </p>
+
+      <program language="r"><input>
+Accumulator &lt;- R6Class("Accumulator")
+Accumulator$set("public", "sum", 0)
+Accumulator$set("public", "add", function(x = 1) {
+  self$sum &lt;- self$sum + x
+  invisible(self)
+})
+      </input></program>
+
+      <p>
+        As above, new methods and fields are only available to new objects; they
+        are not retrospectively added to existing objects.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-inheritance">
+      <title>Inheritance</title>
+
+      <p>
+        To inherit behaviour from an existing class, provide the class object to
+        the <c>inherit</c> argument:
+      </p>
+
+      <program language="r"><input>
+AccumulatorChatty &lt;- R6Class("AccumulatorChatty",
+  inherit = Accumulator,
+  public = list(
+    add = function(x = 1) {
+      cat("Adding ", x, "\n", sep = "")
+      super$add(x = x)
+    }
+  )
+)
+
+x2 &lt;- AccumulatorChatty$new()
+x2$add(10)$add(1)$sum
+      </input></program>
+
+      <p>
+        <c>$add()</c> overrides the superclass implementation, but we can still
+        delegate to the superclass implementation by using <c>super$</c>. (This is
+        analogous to <c>NextMethod()</c> in S3, as discussed in
+        <xref ref="sec-s3-inheritance"/>.) Any methods which are not overridden
+        will use the implementation in the parent class.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-introspection">
+      <title>Introspection</title>
+
+      <p>
+        Every R6 object has an S3 class that reflects its hierarchy of R6 classes.
+        This means that the easiest way to determine the class (and all classes it
+        inherits from) is to use <c>class()</c>:
+      </p>
+
+      <program language="r"><input>
+class(hadley2)
+      </input></program>
+
+      <p>
+        The S3 hierarchy includes the base "R6" class. This provides common
+        behaviour, including a <c>print.R6()</c> method which calls
+        <c>$print()</c>, as described above.
+      </p>
+
+      <p>
+        You can list all methods and fields with <c>names()</c>:
+      </p>
+
+      <program language="r"><input>
+names(hadley2)
+      </input></program>
+
+      <p>
+        We defined <c>$name</c>, <c>$age</c>, <c>$print</c>, and
+        <c>$initialize</c>. As suggested by the name,
+        <c>.__enclos_env__</c> is an internal implementation detail that you
+        shouldn't touch; we'll come back to <c>$clone()</c> in
+        <xref ref="sec-r6-semantics"/>.
+      </p>
+    </subsection>
+
+    <exercises xml:id="exercises-r6-classes">
+      <exercise><p>
+        Create a bank account R6 class that stores a balance and allows you to
+        deposit and withdraw money. Create a subclass that throws an error if you
+        attempt to go into overdraft. Create another subclass that allows you to
+        go into overdraft, but charges you a fee.
+      </p></exercise>
+      <exercise>
+        <p>
+          Create an R6 class that represents a shuffled deck of cards. You should
+          be able to draw cards from the deck with <c>$draw(n)</c>, and return all
+          cards to the deck and reshuffle with <c>$reshuffle()</c>. Use the
+          following code to make a vector of cards.
+        </p>
+        <program language="r"><input>
+suit &lt;- c("♠", "♥", "♦", "♣")
+value &lt;- c("A", 2:10, "J", "Q", "K")
+cards &lt;- paste0(rep(value, 4), suit)
+        </input></program>
+      </exercise>
+      <exercise><p>
+        Why can't you model a bank account or a deck of cards with an S3 class?
+      </p></exercise>
+      <exercise><p>
+        Create an R6 class that allows you to get and set the current time zone.
+        You can access the current time zone with <c>Sys.timezone()</c> and set
+        it with <c>Sys.setenv(TZ = "newtimezone")</c>. When setting the time
+        zone, make sure the new time zone is in the list provided by
+        <c>OlsonNames()</c>.
+      </p></exercise>
+      <exercise><p>
+        Create an R6 class that manages the current working directory. It should
+        have <c>$get()</c> and <c>$set()</c> methods.
+      </p></exercise>
+      <exercise><p>
+        Why can't you model the time zone or current working directory with an S3
+        class?
+      </p></exercise>
+      <exercise><p>
+        What base type are R6 objects built on top of? What attributes do they
+        have?
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-r6-access">
+    <title>Controlling access</title>
+
+    <p>
+      <c>R6Class()</c> has two other arguments that work similarly to
+      <c>public</c>:
+    </p>
+
+    <p><ul>
+      <li><p>
+        <c>private</c> allows you to create fields and methods that are only
+        available from within the class, not outside of it.
+      </p></li>
+      <li><p>
+        <c>active</c> allows you to use accessor functions to define dynamic, or
+        active, fields.
+      </p></li>
+    </ul></p>
+
+    <p>
+      These are described in the following sections.
+    </p>
+
+    <subsection xml:id="subsec-r6-privacy">
+      <title>Privacy</title>
+
+      <p>
+        With R6 you can define <alert>private</alert> fields and methods, elements
+        that can only be accessed from within the class, not from the
+        outside.<fn>Because R is such a flexible language, it's technically still
+        possible to access private values, but you'll have to try much harder,
+        spelunking in to the details of R6's implementation.</fn> There are two
+        things that you need to know to take advantage of private elements:
       </p>
 
       <p><ul>
         <li><p>
-          It uses the encapsulated OOP paradigm, which means that methods
-          belong to objects, not generics, and you call them like
-          <c>object$method()</c>.
+          The <c>private</c> argument to <c>R6Class</c> works in the same way as
+          the <c>public</c> argument: you give it a named list of methods
+          (functions) and fields (everything else).
         </p></li>
         <li><p>
-          R6 objects are mutable, which means that they are modified in place,
-          and hence have reference semantics.
+          Fields and methods defined in <c>private</c> are available within the
+          methods using <c>private$</c> instead of <c>self$</c>. You cannot access
+          private fields or methods outside of the class.
         </p></li>
       </ul></p>
 
       <p>
-        If you've learned OOP in another mainstream language, it's likely that
-        R6 will feel very natural. If not, you may prefer S3 <em>first</em>,
-        since R6 will be harder to follow.
+        To make this concrete, we could make <c>$age</c> and <c>$name</c> fields
+        of the Person class private. With this definition of <c>Person</c> we can
+        only set <c>$age</c> and <c>$name</c> during object creation, and we
+        cannot access their values from outside of the class.
       </p>
-    </introduction>
 
-    <section xml:id="sec-r6-classes">
-      <title>Classes and methods</title>
+      <program language="r"><input>
+Person &lt;- R6Class("Person",
+  public = list(
+    initialize = function(name, age = NA) {
+      private$name &lt;- name
+      private$age &lt;- age
+    },
+    print = function(...) {
+      cat("Person: \n")
+      cat("  Name: ", private$name, "\n", sep = "")
+      cat("  Age:  ", private$age, "\n", sep = "")
+    }
+  ),
+  private = list(
+    age = NA,
+    name = NULL
+  )
+)
+
+hadley3 &lt;- Person$new("Hadley")
+hadley3
+hadley3$name
+#&gt; NULL
+      </input></program>
 
       <p>
-        R6 only needs a single function call to create both the class and its
-        methods: <c>R6::R6Class()</c>. This is the only function from the
-        package that you'll ever use!
+        The distinction between public and private fields is important when you
+        create complex networks of classes, and you want to make it as clear as
+        possible what is ok for others to access. Anything that's private can be
+        more easily refactored because you know others aren't relying on it.
+        Private methods tend to be less important in R compared to other
+        programming languages because the object hierarchies in R tend to be
+        simpler.
       </p>
-    </section>
+    </subsection>
 
-  </chapter>
+    <subsection xml:id="subsec-r6-active-fields">
+      <title>Active fields</title>
+
+      <p>
+        Active fields allow you to define components that look like fields from
+        the outside, but are defined with functions, like methods. Active fields
+        are implemented using <alert>active bindings</alert>
+        (<xref ref="subsec-advanced-bindings"/>). Each active binding is a function
+        that takes a single argument: <c>value</c>. If the argument is
+        <c>missing()</c>, the value is being retrieved; otherwise it's being
+        modified.
+      </p>
+
+      <p>
+        For example, you could make an active field <c>random</c> that returns a
+        different value every time you access it:
+      </p>
+
+      <program language="r"><input>
+Rando &lt;- R6::R6Class("Rando", active = list(
+  random = function(value) {
+    if (missing(value)) {
+      runif(1)
+    } else {
+      stop("Can't set `$random`", call. = FALSE)
+    }
+  }
+))
+x &lt;- Rando$new()
+x$random
+#&gt; [1] 0.0808
+x$random
+#&gt; [1] 0.834
+x$random
+#&gt; [1] 0.601
+      </input></program>
+
+      <p>
+        Active fields are particularly useful in conjunction with private fields,
+        because they make it possible to implement components that look like fields
+        from the outside but provide additional checks. For example, we can use
+        them to make a read-only <c>age</c> field, and to ensure that <c>name</c>
+        is a length 1 character vector.
+      </p>
+
+      <program language="r"><input>
+Person &lt;- R6Class("Person",
+  private = list(
+    .age = NA,
+    .name = NULL
+  ),
+  active = list(
+    age = function(value) {
+      if (missing(value)) {
+        private$.age
+      } else {
+        stop("`$age` is read only", call. = FALSE)
+      }
+    },
+    name = function(value) {
+      if (missing(value)) {
+        private$.name
+      } else {
+        stopifnot(is.character(value), length(value) == 1)
+        private$.name &lt;- value
+        self
+      }
+    }
+  ),
+  public = list(
+    initialize = function(name, age = NA) {
+      private$.name &lt;- name
+      private$.age &lt;- age
+    }
+  )
+)
+
+hadley4 &lt;- Person$new("Hadley", age = 38)
+hadley4$name
+#&gt; [1] "Hadley"
+hadley4$name &lt;- 10
+#&gt; Error: is.character(value) is not TRUE
+hadley4$age &lt;- 20
+#&gt; Error: `$age` is read only
+      </input></program>
+    </subsection>
+
+    <exercises xml:id="exercises-r6-access">
+      <exercise><p>
+        Create a bank account class that prevents you from directly setting the
+        account balance, but you can still withdraw from and deposit to. Throw an
+        error if you attempt to go into overdraft.
+      </p></exercise>
+      <exercise><p>
+        Create a class with a write-only <c>$password</c> field. It should have a
+        <c>$check_password(password)</c> method that returns <c>TRUE</c> or
+        <c>FALSE</c>, but there should be no way to view the complete password.
+      </p></exercise>
+      <exercise><p>
+        Extend the <c>Rando</c> class with another active binding that allows you
+        to access the previous random value. Ensure that active binding is the only
+        way to access the value.
+      </p></exercise>
+      <exercise><p>
+        Can subclasses access private fields/methods from their parent? Perform an
+        experiment to find out.
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-r6-semantics">
+    <title>Reference semantics</title>
+
+    <p>
+      One of the big differences between R6 and most other objects is that they
+      have reference semantics. The primary consequence of reference semantics is
+      that objects are not copied when modified:
+    </p>
+
+    <program language="r"><input>
+y1 &lt;- Accumulator$new()
+y2 &lt;- y1
+
+y1$add(10)
+c(y1 = y1$sum, y2 = y2$sum)
+#&gt; y1 y2
+#&gt; 10 10
+    </input></program>
+
+    <p>
+      Instead, if you want a copy, you'll need to explicitly <c>$clone()</c> the
+      object:
+    </p>
+
+    <program language="r"><input>
+y1 &lt;- Accumulator$new()
+y2 &lt;- y1$clone()
+
+y1$add(10)
+c(y1 = y1$sum, y2 = y2$sum)
+#&gt; y1 y2
+#&gt; 10  0
+    </input></program>
+
+    <p>
+      (<c>$clone()</c> does not recursively clone nested R6 objects. If you want
+      that, you'll need to use <c>$clone(deep = TRUE)</c>.)
+    </p>
+
+    <p>
+      There are three other less obvious consequences:
+    </p>
+
+    <p><ul>
+      <li><p>
+        It is harder to reason about code that uses R6 objects because you need to
+        understand more context.
+      </p></li>
+      <li><p>
+        It makes sense to think about when an R6 object is deleted, and you can
+        write a <c>$finalize()</c> to complement the <c>$initialize()</c>.
+      </p></li>
+      <li><p>
+        If one of the fields is an R6 object, you must create it inside
+        <c>$initialize()</c>, not <c>R6Class()</c>.
+      </p></li>
+    </ul></p>
+
+    <p>
+      These consequences are described in more detail below.
+    </p>
+
+    <subsection xml:id="subsec-r6-reasoning">
+      <title>Reasoning</title>
+
+      <p>
+        Generally, reference semantics makes code harder to reason about. Take
+        this very simple example:
+      </p>
+
+      <program language="r"><input>
+x &lt;- list(a = 1)
+y &lt;- list(b = 2)
+
+z &lt;- f(x, y)
+      </input></program>
+
+      <p>
+        For the vast majority of functions, you know that the final line only
+        modifies <c>z</c>.
+      </p>
+
+      <p>
+        Take a similar example that uses an imaginary <c>List</c> reference class:
+      </p>
+
+      <program language="r"><input>
+x &lt;- List$new(a = 1)
+y &lt;- List$new(b = 2)
+
+z &lt;- f(x, y)
+      </input></program>
+
+      <p>
+        The final line is much harder to reason about: if <c>f()</c> calls methods
+        of <c>x</c> or <c>y</c>, it might modify them as well as <c>z</c>. This
+        is the biggest potential downside of R6 and you should take care to avoid
+        it by writing functions that either return a value, or modify their R6
+        inputs, but not both. That said, doing both can lead to substantially
+        simpler code in some cases, and we'll discuss this further in
+        <xref ref="sec-threading-state"/>.
+      </p>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-finalizer">
+      <title>Finalizer</title>
+
+      <p>
+        One useful property of reference semantics is that it makes sense to think
+        about when an R6 object is <alert>finalized</alert>, i.e. when it's
+        deleted. This doesn't make sense for most objects because copy-on-modify
+        semantics mean that there may be many transient versions of an object, as
+        alluded to in <xref ref="sec-gc"/>. For example, the following creates two
+        factor objects: the second is created when the levels are modified, leaving
+        the first to be destroyed by the garbage collector.
+      </p>
+
+      <program language="r"><input>
+x &lt;- factor(c("a", "b", "c"))
+levels(x) &lt;- c("c", "b", "a")
+      </input></program>
+
+      <p>
+        Since R6 objects are not copied-on-modify they are only deleted once, and
+        it makes sense to think about <c>$finalize()</c> as a complement to
+        <c>$initialize()</c>. Finalizers usually play a similar role to
+        <c>on.exit()</c> (as described in <xref ref="subsec-on-exit"/>), cleaning up
+        any resources created by the initializer. For example, the following class
+        wraps up a temporary file, automatically deleting it when the class is
+        finalized.
+      </p>
+
+      <program language="r"><input>
+TemporaryFile &lt;- R6Class("TemporaryFile", list(
+  path = NULL,
+  initialize = function() {
+    self$path &lt;- tempfile()
+  },
+  finalize = function() {
+    message("Cleaning up ", self$path)
+    unlink(self$path)
+  }
+))
+      </input></program>
+
+      <p>
+        The finalize method will be run when the object is deleted (or more
+        precisely, by the first garbage collection after the object has been
+        unbound from all names) or when R exits. This means that the finalizer can
+        be called effectively anywhere in your R code, and therefore it's almost
+        impossible to reason about finalizer code that touches shared data
+        structures. Avoid these potential problems by only using the finalizer to
+        clean up private resources allocated by initializer.
+      </p>
+
+      <program language="r"><input>
+tf &lt;- TemporaryFile$new()
+rm(tf)
+#&gt; Cleaning up /tmp/Rtmpk73JdI/file155f31d8424bd
+      </input></program>
+    </subsection>
+
+    <subsection xml:id="subsec-r6-fields">
+      <title>R6 fields</title>
+
+      <p>
+        A final consequence of reference semantics can crop up where you don't
+        expect it. If you use an R6 class as the default value of a field, it will
+        be shared across all instances of the object! Take the following code: we
+        want to create a temporary database every time we call
+        <c>TemporaryDatabase$new()</c>, but the current code always uses the same
+        path.
+      </p>
+
+      <program language="r"><input>
+TemporaryDatabase &lt;- R6Class("TemporaryDatabase", list(
+  con = NULL,
+  file = TemporaryFile$new(),
+  initialize = function() {
+    self$con &lt;- DBI::dbConnect(RSQLite::SQLite(), path = file$path)
+  },
+  finalize = function() {
+    DBI::dbDisconnect(self$con)
+  }
+))
+
+db_a &lt;- TemporaryDatabase$new()
+db_b &lt;- TemporaryDatabase$new()
+
+db_a$file$path == db_b$file$path
+#&gt; [1] TRUE
+      </input></program>
+
+      <p>
+        (If you're familiar with Python, this is very similar to the "mutable
+        default argument" problem.)
+      </p>
+
+      <p>
+        The problem arises because <c>TemporaryFile$new()</c> is called only once
+        when the <c>TemporaryDatabase</c> class is defined. To fix the problem, we
+        need to make sure it's called every time that
+        <c>TemporaryDatabase$new()</c> is called, i.e. we need to put it in
+        <c>$initialize()</c>:
+      </p>
+
+      <program language="r"><input>
+TemporaryDatabase &lt;- R6Class("TemporaryDatabase", list(
+  con = NULL,
+  file = NULL,
+  initialize = function() {
+    self$file &lt;- TemporaryFile$new()
+    self$con &lt;- DBI::dbConnect(RSQLite::SQLite(), path = file$path)
+  },
+  finalize = function() {
+    DBI::dbDisconnect(self$con)
+  }
+))
+
+db_a &lt;- TemporaryDatabase$new()
+db_b &lt;- TemporaryDatabase$new()
+
+db_a$file$path == db_b$file$path
+#&gt; [1] FALSE
+      </input></program>
+    </subsection>
+
+    <exercises xml:id="exercises-r6-semantics">
+      <exercise><p>
+        Create a class that allows you to write a line to a specified file. You
+        should open a connection to the file in <c>$initialize()</c>, append a
+        line using <c>cat()</c> in <c>$append_line()</c>, and close the connection
+        in <c>$finalize()</c>.
+      </p></exercise>
+    </exercises>
+  </section>
+
+  <section xml:id="sec-why-r6">
+    <title>Why R6?</title>
+
+    <p>
+      R6 is very similar to a built-in OO system called <alert>reference
+      classes</alert>, or RC for short. I prefer R6 to RC because:
+    </p>
+
+    <p><ul>
+      <li><p>
+        R6 is much simpler. Both R6 and RC are built on top of environments, but
+        while R6 uses S3, RC uses S4. This means to fully understand RC, you need
+        to understand how the more complicated S4 works.
+      </p></li>
+      <li><p>
+        R6 has comprehensive online documentation at
+        <url href="https://r6.r-lib.org" visual="r6.r-lib.org">https://r6.r-lib.org</url>.
+      </p></li>
+      <li><p>
+        R6 has a simpler mechanism for cross-package subclassing, which just works
+        without you having to think about it. For RC, read the details in the
+        "External Methods; Inter-Package Superclasses" section of
+        <c>?setRefClass</c>.
+      </p></li>
+      <li><p>
+        RC mingles variables and fields in the same stack of environments so that
+        you get (<c>field</c>) and set (<c>field &lt;&lt;- value</c>) fields like
+        regular values. R6 puts fields in a separate environment so you get
+        (<c>self$field</c>) and set (<c>self$field &lt;- value</c>) with a prefix.
+        The R6 approach is more verbose but I like it because it is more explicit.
+      </p></li>
+      <li><p>
+        R6 is much faster than RC. Generally, the speed of method dispatch is not
+        important outside of microbenchmarks. However, RC is quite slow, and
+        switching from RC to R6 led to a substantial performance improvement in the
+        shiny package. For more details, see
+        <c>vignette("Performance", "R6")</c>.
+      </p></li>
+      <li><p>
+        RC is tied to R. That means if any bugs are fixed, you can only take
+        advantage of the fixes by requiring a newer version of R. This makes it
+        difficult for packages (like those in the tidyverse) that need to work
+        across many R versions.
+      </p></li>
+      <li><p>
+        Finally, because the ideas that underlie R6 and RC are similar, it will
+        only require a small amount of additional effort to learn RC if you need
+        to.
+      </p></li>
+    </ul></p>
+  </section>
+
+</chapter>
