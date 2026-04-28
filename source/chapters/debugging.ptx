@@ -216,7 +216,7 @@ traceback()
         <p>
           One drawback to <c>traceback()</c> is that it always linearises the
           call tree, which can be confusing if there is much lazy evaluation
-          involved (<xref ref="sec-lazy-call-stack"/>). For example, take the
+          involved (<xref ref="subsec-lazy-call-stack"/>). For example, take the
           following example where the error happens when evaluating the first
           argument to <c>f()</c>:
         </p>

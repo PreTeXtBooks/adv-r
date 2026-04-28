@@ -480,15 +480,15 @@ rowAll &lt;- function(x) rowSums(x) == ncol(x)
       </li>
       <li><p>Vectorised subsetting can lead to big improvements in speed.
       Remember the techniques behind lookup tables
-      (<xref ref="sec-lookup-tables"/>) and matching and merging by hand
-      (<xref ref="sec-matching-merging"/>). Also remember that you can use
+      (<xref ref="subsec-lookup-tables"/>) and matching and merging by hand
+      (<xref ref="subsec-matching-merging"/>). Also remember that you can use
       subsetting assignment to replace multiple values in a single step. If
       <c>x</c> is a vector, matrix or data frame then
       <c>x[is.na(x)] &lt;- 0</c> will replace all missing values with
       0.</p></li>
       <li><p>If you're extracting or replacing values in scattered locations in a
       matrix or data frame, subset with an integer matrix. See
-      <xref ref="sec-matrix-subsetting"/> for more details.</p></li>
+      <xref ref="subsec-matrix-subsetting"/> for more details.</p></li>
       <li><p>If you're converting continuous values to categorical make sure you
       know how to use <c>cut()</c> and <c>findInterval()</c>.</p></li>
       <li><p>Be aware of vectorised functions like <c>cumsum()</c> and
@@ -608,7 +608,7 @@ bench::mark(
 
       <p>Modifying an object in a loop, e.g., <c>x[i] &lt;- y</c>, can also
       create a copy, depending on the class of <c>x</c>.
-      <xref ref="sec-single-binding"/> discusses this issue in more depth and
+      <xref ref="subsec-single-binding"/> discusses this issue in more depth and
       gives you some tools to determine when you're making copies.</p>
     </subsection>
   </section>

@@ -255,7 +255,7 @@ for (i in 1:1e4) {
 
         <li><p>Lazy evaluation means that arguments are often evaluated inside
         another function, and this complicates the call stack
-        (<xref ref="sec-lazy-call-stack"/>). Unfortunately R's profiler doesn't
+        (<xref ref="subsec-lazy-call-stack"/>). Unfortunately R's profiler doesn't
         store enough information to disentangle lazy evaluation so that in the
         following code, profiling would make it seem like <c>i()</c> was called
         by <c>j()</c> because the argument isn't evaluated until it's needed by
@@ -273,7 +273,7 @@ j(i())
           </input>
         </program>
         <p>If this is confusing, use <c>force()</c>
-        (<xref ref="sec-forcing-evaluation"/>) to force computation to happen
+        to force computation to happen
         earlier.</p></li>
       </ul></p>
     </subsection>
