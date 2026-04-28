@@ -27,7 +27,7 @@
         visual="github.com/PreTeXtBooks/adv-r">GitHub repository</url>.
     </p>
 
-    <section xml:id="sec-welcome-license">
+    <paragraphs xml:id="sec-welcome-license">
       <title>License</title>
 
       <p>
@@ -45,9 +45,9 @@
         that you are free to use it in your own packages, as long as you cite
         the source.
       </p>
-    </section>
+    </paragraphs>
 
-    <section xml:id="sec-welcome-other-books">
+    <paragraphs xml:id="sec-welcome-other-books">
       <title>Other Books</title>
 
       <p>
@@ -73,6 +73,6 @@
           to make the most of R's fantastic package system.
         </p></li>
       </ul></p>
-    </section>
+    </paragraphs>
 
   </preface>
