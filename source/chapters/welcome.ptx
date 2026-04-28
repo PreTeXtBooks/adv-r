@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <preface xml:id="ch-welcome" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Welcome</title>
+
+    <p>
+      This is the website for the 2nd edition of
+      <em><url href="https://amzn.to/2WoabjB" visual="amzn.to/2WoabjB">Advanced
+      R</url></em>, a book in Chapman &amp; Hall's R Series. The book is
+      designed primarily for R users who want to improve their programming
+      skills and understanding of the language. It should also be useful for
+      programmers coming to R from other languages, to help you understand
+      why R works the way it does.
+    </p>
+
+    <p>
+      If you're looking for the 1st edition, you can find it at
+      <url href="http://adv-r.had.co.nz/" visual="adv-r.had.co.nz">adv-r.had.co.nz</url>.
+    </p>
+
+    <p>
+      This is a
+      <url href="https://pretextbook.org/" visual="pretextbook.org">PreTeXt</url>
+      edition of <em>Advanced R</em>. The original book is available at
+      <url href="https://adv-r.hadley.nz/" visual="adv-r.hadley.nz">adv-r.hadley.nz</url>.
+      Please send any issues with this PreTeXt edition to our
+      <url href="https://github.com/PreTeXtBooks/adv-r"
+        visual="github.com/PreTeXtBooks/adv-r">GitHub repository</url>.
+    </p>
+
+    <paragraphs xml:id="sec-welcome-license">
+      <title>License</title>
+
+      <p>
+        This work, as a whole, is licensed under a
+        <url href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+          visual="creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons
+          Attribution-NonCommercial-ShareAlike 4.0 International
+          License</url>.
+      </p>
+
+      <p>
+        The code contained in this book is simultaneously available under the
+        <url href="https://opensource.org/licenses/MIT"
+          visual="opensource.org/licenses/MIT">MIT license</url>; this means
+        that you are free to use it in your own packages, as long as you cite
+        the source.
+      </p>
+    </paragraphs>
+
+    <paragraphs xml:id="sec-welcome-other-books">
+      <title>Other Books</title>
+
+      <p>
+        You may also be interested in:
+      </p>
+
+      <p><ul>
+        <li><p>
+          <em><url href="https://advanced-r-solutions.rbind.io/"
+            visual="advanced-r-solutions.rbind.io">Advanced R
+            Solutions</url></em> by Malte Grosser and Henning Bumann,
+          provides worked solutions to the exercises in this book.
+        </p></li>
+        <li><p>
+          <em><url href="https://r4ds.had.co.nz/"
+            visual="r4ds.had.co.nz">R for Data Science</url></em> which
+          introduces you to R as a tool for doing data science, focussing on
+          a consistent set of packages known as the tidyverse.
+        </p></li>
+        <li><p>
+          <em><url href="https://r-pkgs.org/"
+            visual="r-pkgs.org">R Packages</url></em> which teaches you how
+          to make the most of R's fantastic package system.
+        </p></li>
+      </ul></p>
+    </paragraphs>
+
+  </preface>
