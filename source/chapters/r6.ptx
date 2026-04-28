@@ -537,7 +537,7 @@ hadley3$name
         Active fields allow you to define components that look like fields from
         the outside, but are defined with functions, like methods. Active fields
         are implemented using <alert>active bindings</alert>
-        (<xref ref="sec-advanced-bindings"/>). Each active binding is a function
+        (<xref ref="subsec-advanced-bindings"/>). Each active binding is a function
         that takes a single argument: <c>value</c>. If the argument is
         <c>missing()</c>, the value is being retrieved; otherwise it's being
         modified.
@@ -766,7 +766,7 @@ levels(x) &lt;- c("c", "b", "a")
         Since R6 objects are not copied-on-modify they are only deleted once, and
         it makes sense to think about <c>$finalize()</c> as a complement to
         <c>$initialize()</c>. Finalizers usually play a similar role to
-        <c>on.exit()</c> (as described in <xref ref="sec-on-exit"/>), cleaning up
+        <c>on.exit()</c> (as described in <xref ref="subsec-on-exit"/>), cleaning up
         any resources created by the initializer. For example, the following class
         wraps up a temporary file, automatically deleting it when the class is
         finalized.

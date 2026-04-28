@@ -75,7 +75,7 @@ attr(mtcars, "class")
       results when applied to base objects. It's safer to use
       <c>sloop::s3_class()</c>, which returns the implicit class that the S3 and
       S4 systems will use to pick methods. You'll learn more about
-      <c>s3_class()</c> in <xref ref="sec-implicit-class"/>.
+      <c>s3_class()</c> in <xref ref="subsec-implicit-class"/>.
     </p>
 
     <program language="r">
@@ -157,7 +157,7 @@ typeof(sum)
         </program>
         <p>
           Internal and primitive functions are described in
-          <xref ref="sec-primitive-functions"/>.
+          <xref ref="subsec-primitive-functions"/>.
         </p>
       </li>
 

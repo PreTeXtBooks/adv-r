@@ -303,7 +303,7 @@ validate_factor(new_factor(1:5, "a"))
 validate_factor(new_factor(0:1, "a"))
       </input></program>
       <p>
-        This validator function is called primarily for its side-effects (throwing an error if the object is invalid) so you'd expect it to invisibly return its primary input (as described in <xref ref="sec-invisible"/>). However, it's useful for validation methods to return visibly, as we'll see next.
+        This validator function is called primarily for its side-effects (throwing an error if the object is invalid) so you'd expect it to invisibly return its primary input (as described in <xref ref="subsec-invisible"/>). However, it's useful for validation methods to return visibly, as we'll see next.
       </p>
     </subsection>
 
@@ -411,7 +411,7 @@ my_new_generic &lt;- function(x) {
 }
     </input></program>
     <p>
-      (If you wonder why we have to repeat <c>my_new_generic</c> twice, think back to <xref ref="sec-first-class-functions"/>.)
+      (If you wonder why we have to repeat <c>my_new_generic</c> twice, think back to <xref ref="subsec-first-class-functions"/>.)
     </p>
     <p>
       You don't pass any of the arguments of the generic to <c>UseMethod()</c>; it uses deep magic to pass to the method automatically. The precise process is complicated and frequently surprising, so you should avoid doing any computation in a generic. To learn the full details, carefully read the Technical Details section in <c>?UseMethod</c>.

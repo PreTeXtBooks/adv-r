@@ -943,7 +943,7 @@ name(john) &lt;- letters
 
       <p>
         In <c>slots</c> and <c>contains</c> you can use S4 classes, S3 classes,
-        or the implicit class (<xref ref="sec-implicit-class"/>) of a base type.
+        or the implicit class (<xref ref="subsec-implicit-class"/>) of a base type.
         To use an S3 class, you must first register it with
         <c>setOldClass()</c>. You call this function once for each S3 class,
         giving it the class attribute. For example, the following definitions are
