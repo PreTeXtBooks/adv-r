@@ -788,7 +788,7 @@ e2$c
       </figure>
       <p>
         This basic idea can be used to create functions that <q>remember</q> their previous
-        state (discussed in a later chapter). This property is also
+        state (see <xref ref="sec-stateful-funs"/> for more details). This property is also
         used to implement the R6 object-oriented programming system, the topic of
         <xref ref="ch-r6"/>.
       </p>

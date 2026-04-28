@@ -198,7 +198,7 @@ args &lt;- list(1:10, na.rm = TRUE)
 do.call(mean, args)
       </input></program>
 
-      <p>We'll come back to this idea in a later chapter.</p>
+      <p>We'll come back to this idea in <xref ref="sec-tidy-dots"/>.</p>
     </subsection>
 
     <exercises>
@@ -424,7 +424,7 @@ g11()
 g11()
       </input></program>
 
-      <p>You might be surprised that <c>g11()</c> always returns the same value. This happens because every time a function is called a new environment is created to host its execution. This means that a function has no way to tell what happened the last time it was run; each invocation is completely independent. We'll see some ways to get around this in a later chapter.</p>
+      <p>You might be surprised that <c>g11()</c> always returns the same value. This happens because every time a function is called a new environment is created to host its execution. This means that a function has no way to tell what happened the last time it was run; each invocation is completely independent. We'll see some ways to get around this in <xref ref="sec-stateful-funs"/>.</p>
     </subsection>
 
     <subsection xml:id="subsec-dynamic-lookup">
@@ -505,7 +505,7 @@ h01(stop("This is an error!"))
     <subsection xml:id="subsec-promises">
       <title>Promises</title>
 
-      <p>Lazy evaluation is powered by a data structure called a <alert>promise</alert>, or (less commonly) a thunk. It's one of the features that makes R such an interesting programming language (we'll return to promises again in a later chapter).</p>
+      <p>Lazy evaluation is powered by a data structure called a <alert>promise</alert>, or (less commonly) a thunk. It's one of the features that makes R such an interesting programming language (we'll return to promises again in <xref ref="sec-quosures"/>).</p>
 
       <p>A promise has three components:</p>
 
@@ -750,7 +750,7 @@ str(i04(a = 1, b = 2))
 x &lt;- list(c(1, 3, NA), c(4, NA, 6))
 str(lapply(x, mean, na.rm = TRUE))
         </input></program>
-        <p>We'll come back to this technique in a later chapter.</p>
+        <p>We'll come back to this technique in <xref ref="sec-passing-arguments"/>.</p>
       </li>
       <li>
         <p>If your function is an S3 generic, you need some way to allow methods to take arbitrary extra arguments. For example, take the <c>print()</c> function. Because there are different options for printing depending on the type of object, there's no way to pre-specify every possible argument and <c>...</c> allows individual methods to have different arguments:</p>
@@ -759,7 +759,7 @@ print(factor(letters), max.levels = 4)
 
 print(y ~ x, showEnv = TRUE)
         </input></program>
-        <p>We'll come back to this use of <c>...</c> in a later chapter.</p>
+        <p>We'll come back to this use of <c>...</c> in <xref ref="subsec-s3-arguments"/>.</p>
       </li>
     </ul></p>
 
