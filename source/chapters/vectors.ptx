@@ -257,7 +257,7 @@ c(TRUE, 1L)
       <title>Getting and setting</title>
 
       <p>
-        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood (covered in a later chapter).</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
+        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood. You'll learn more about them in <xref ref="subsec-pairlists"/>.</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
       </p>
 
       <program language="r">
