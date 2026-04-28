@@ -24,17 +24,193 @@
 
     <p>
       If you're familiar with the first edition, this preface describes the
-      major changes so that you can focus your reading on the new areas.
+      major changes so that you can focus your reading on the new areas. If
+      you're reading a printed version of this book you'll notice one big
+      change very quickly: <em>Advanced R</em> is now in colour! This has
+      considerably improved the syntax highlighting of code chunks, and made
+      it much easier to create helpful diagrams. I have taken advantage of
+      this and included over 100 new diagrams throughout the book.
     </p>
+
+    <p>
+      Another big change in this version is the use of new packages,
+      particularly <url href="http://rlang.r-lib.org"
+      visual="rlang.r-lib.org">rlang</url>, which provides a clean interface
+      to low-level data structures and operations. The first edition used base
+      R functions almost exclusively, which created some pedagogical challenges
+      because many functions evolved independently over multiple years, making
+      it hard to see the big underlying ideas hidden amongst the incidental
+      variations in function names and arguments. I continue to show base
+      equivalents in sidebars, footnotes, and where needed, in individual
+      sections, but if you want to see the purest base R expression of the
+      ideas in this book, I recommend reading the first edition, which you can
+      find online at
+      <url href="http://adv-r.had.co.nz" visual="adv-r.had.co.nz">adv-r.had.co.nz</url>.
+    </p>
+
+    <p>
+      The foundations of R have not changed in the five years since the first
+      edition, but my understanding of them certainly has. Thus, the overall
+      structure of <q>Foundations</q> has remained roughly the same, but many
+      of the individual chapters have been considerably improved:
+    </p>
+
+    <p><ul>
+      <li><p>
+        <xref ref="ch-names-values"/>, <q>Names and values</q>, is a brand
+        new chapter that helps you understand the difference between objects
+        and names of objects. This helps you more accurately predict when R
+        will make a copy of a data structure, and lays important groundwork
+        to understand functional programming.
+      </p></li>
+      <li><p>
+        <xref ref="ch-vectors"/>, <q>Vectors</q> (previously called data
+        structures), has been rewritten to focus on vector types like
+        integers, factors, and data frames. It contains more details of
+        important S3 vectors (like dates and date-times), discusses the data
+        frame variation provided by the tibble package, and generally
+        reflects my improved understanding of vector data types.
+      </p></li>
+      <li><p>
+        <xref ref="ch-subsetting"/>, <q>Subsetting</q>, now distinguishes
+        between <c>[</c> and <c>[[</c> by their intention: <c>[</c> extracts
+        many values and <c>[[</c> extracts a single value (previously they
+        were characterised by whether they <q>simplified</q> or
+        <q>preserved</q>). The <q>train</q> illustration helps you understand
+        how <c>[[</c> works with lists, and introduces new functions that
+        provide more consistent behaviour for out-of-bounds indices.
+      </p></li>
+      <li><p>
+        <xref ref="ch-control-flow"/>, <q>Control flow</q>, is a new chapter:
+        somehow I previously forgot about important tools like
+        <c>if</c> statements and <c>for</c> loops!
+      </p></li>
+      <li><p>
+        <xref ref="ch-functions"/>, <q>Functions</q>, has an improved
+        ordering, introduces the pipe (<c>%&gt;%</c>) as a third way to
+        compose functions, and has considerably improved coverage of function
+        forms.
+      </p></li>
+      <li><p>
+        <xref ref="ch-environments"/>, <q>Environments</q>, has a reorganised
+        treatment of special environments, and a much improved discussion of
+        the call stack.
+      </p></li>
+      <li><p>
+        <xref ref="ch-conditions"/>, <q>Conditions</q>, contains material
+        previously in <q>Exceptions and debugging</q>, and much new content on
+        how R's condition system works. It also shows you how to create your
+        own custom condition classes.
+      </p></li>
+    </ul></p>
+
+    <p>
+      The chapters following Part I, Foundations, have been re-organised
+      around the three most important programming paradigms in R: functional
+      programming, object-oriented programming, and metaprogramming.
+    </p>
+
+    <p><ul>
+      <li><p>
+        Functional programming is now more cleanly divided into the three main
+        techniques: <q>Functionals</q> (<xref ref="ch-functionals"/>),
+        <q>Function factories</q> (<xref ref="ch-function-factories"/>), and
+        <q>Function operators</q> (<xref ref="ch-function-operators"/>). I've
+        focussed in on ideas that have practical applications in data science
+        and reduced the amount of pure theory.
+      </p>
+      <p>
+        These chapters now use functions provided by the purrr package, which
+        allow me to focus more on the underlying ideas and less on the
+        incidental details. This led to a considerable simplification of the
+        function operators chapter since a major use was to work around the
+        absence of ellipses (<c>...</c>) in base functionals.
+      </p></li>
+      <li><p>
+        Object-oriented programming (OOP) now forms a major section of the
+        book with completely new chapters on base types
+        (<xref ref="ch-base-types"/>), S3 (<xref ref="ch-s3"/>), S4
+        (<xref ref="ch-s4"/>), R6 (<xref ref="ch-r6"/>), and the tradeoffs
+        between the systems (<xref ref="ch-oo-tradeoffs"/>).
+      </p>
+      <p>
+        These chapters focus on how the different object systems work, not how
+        to use them effectively. This is unfortunate, but necessary, because
+        many of the technical details are not described elsewhere, and
+        effective use of OOP needs a whole book of its own.
+      </p></li>
+      <li><p>
+        Metaprogramming (previously called <q>computing on the language</q>)
+        describes the suite of tools that you can use to generate code with
+        code. Compared to the first edition this material has been
+        substantially expanded and now focusses on <q>tidy evaluation</q>, a
+        set of ideas and theory that make metaprogramming safe,
+        well-principled, and accessible to many more R programmers.
+        <xref ref="ch-meta-big-picture"/>, <q>Big picture</q>, coarsely lays
+        out how all the pieces fit together; <xref ref="ch-expressions"/>,
+        <q>Expressions</q>, describes the underlying data structures;
+        <xref ref="ch-quasiquotation"/>, <q>Quasiquotation</q>, covers
+        quoting and unquoting; <xref ref="ch-evaluation"/>,
+        <q>Evaluation</q>, explains evaluation of code in special
+        environments; and <xref ref="ch-translation"/>,
+        <q>Translations</q>, pulls all the themes together to show how you
+        might translate from one (programming) language to another.
+      </p></li>
+    </ul></p>
+
+    <p>
+      The final section of the book pulls together the chapters on programming
+      techniques: profiling, measuring and improving performance, and Rcpp.
+      The contents are very similar to the first edition, although the
+      organisation is a little different. I have made light updates throughout
+      these chapters particularly to use newer packages (microbenchmark
+      <m>\to</m> bench, lineprof <m>\to</m> profvis), but the majority of the
+      text is the same.
+    </p>
+
+    <p>
+      While the second edition has mostly expanded coverage of existing
+      material, five chapters have been removed:
+    </p>
+
+    <p><ul>
+      <li><p>
+        The vocabulary chapter has been removed because it was always a bit of
+        an odd duck, and there are more effective ways to present vocabulary
+        lists than in a book chapter.
+      </p></li>
+      <li><p>
+        The style chapter has been replaced with an online style guide,
+        <url href="http://style.tidyverse.org/" visual="style.tidyverse.org">style.tidyverse.org</url>.
+        The style guide is paired with the new styler package which can
+        automatically apply many of the rules.
+      </p></li>
+      <li><p>
+        The C chapter has been moved to
+        <url href="https://github.com/hadley/r-internals"
+        visual="github.com/hadley/r-internals">github.com/hadley/r-internals</url>,
+        which, over time, will provide a guide to writing C code that works
+        with R's data structures.
+      </p></li>
+      <li><p>
+        The memory chapter has been removed. Much of the material has been
+        integrated into <xref ref="ch-names-values"/> and the remainder felt
+        excessively technical and not that important to understand.
+      </p></li>
+      <li><p>
+        The chapter on R's performance as a language was removed. It delivered
+        few actionable insights, and became dated as R changed.
+      </p></li>
+    </ul></p>
 
     <p>
       This is a
       <url href="https://pretextbook.org/" visual="pretextbook.org">PreTeXt</url>
       edition of <em>Advanced R</em>. The original book is available at
-      <url href="https://adv-r.hadley.nz/" visual="adv-r.hadley.nz">adv-r.hadley.nz</url>
-      and the source for this edition is available on
+      <url href="https://adv-r.hadley.nz/" visual="adv-r.hadley.nz">adv-r.hadley.nz</url>.
+      Please send any issues with this PreTeXt edition to our
       <url href="https://github.com/PreTeXtBooks/adv-r"
-        visual="github.com/PreTeXtBooks/adv-r">GitHub</url>.
+        visual="github.com/PreTeXtBooks/adv-r">GitHub repository</url>.
     </p>
 
   </preface>

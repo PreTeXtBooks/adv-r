@@ -38,6 +38,7 @@
         </copyright>
       </colophon>
 
+      <xi:include href="chapters/welcome.ptx"/>
       <xi:include href="chapters/preface.ptx"/>
 
     </frontmatter>
