@@ -99,7 +99,7 @@ lobstr::ast(f(a, "b"))
 lobstr::ast(f1(f2(a, b), f3(1, f4(2))))
 </input></program>
 
-    <p>Because all function forms can be written in prefix form (<xref ref="sec-prefix-form"/>), every R expression can be displayed in this way:</p>
+    <p>Because all function forms can be written in prefix form (<xref ref="subsec-prefix-form"/>), every R expression can be displayed in this way:</p>
 
     <program language="r"><input>
 lobstr::ast(1 + 2 * 3)
@@ -154,7 +154,7 @@ cv(x + y)
 cv(`)`)
 </input></program>
 
-    <p>Dealing with weird names<fn>More technically, these are called non-syntactic names and are the topic of <xref ref="sec-non-syntactic"/>.</fn> is another good reason to avoid <c>paste()</c> when generating R code. You might think this is an esoteric concern, but not worrying about it when generating SQL code in web applications led to SQL injection attacks that have collectively cost billions of dollars.</p>
+    <p>Dealing with weird names<fn>More technically, these are called non-syntactic names and are the topic of <xref ref="subsec-non-syntactic"/>.</fn> is another good reason to avoid <c>paste()</c> when generating R code. You might think this is an esoteric concern, but not worrying about it when generating SQL code in web applications led to SQL injection attacks that have collectively cost billions of dollars.</p>
   </section>
 
   <section xml:id="sec-eval-intro">

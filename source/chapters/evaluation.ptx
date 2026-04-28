@@ -205,7 +205,7 @@ y
 
       <p>
         We can create a simple version of <c>source()</c> by combining <c>eval()</c> with
-        <c>parse_expr()</c> from Section <xref ref="sec-parsing"/>. We read in the file from disk,
+        <c>parse_expr()</c> from Section <xref ref="subsec-parsing"/>. We read in the file from disk,
         use <c>parse_expr()</c> to parse the string into a list of expressions, and then use
         <c>eval()</c> to evaluate each element in turn. This version evaluates the code in the
         caller environment, and invisibly returns the result of the last expression in the file
@@ -280,7 +280,7 @@ f()
 
       <p>
         This is because, if available, functions print their <c>srcref</c> attribute
-        (Section <xref ref="sec-fun-components"/>), and because <c>srcref</c> is a base R feature
+        (Section <xref ref="subsec-fun-components"/>), and because <c>srcref</c> is a base R feature
         it's unaware of quasiquotation.
       </p>
       <p>
@@ -360,7 +360,7 @@ local3 &lt;- function(expr, envir = new.env()) {
       gap with the <alert>quosure</alert>, an object that contains an expression and an environment.
       The name is a portmanteau of quoting and closure, because a quosure both quotes the expression
       and encloses the environment. Quosures reify the internal promise object
-      (Section <xref ref="sec-promises"/>) into something that you can program with.
+      (Section <xref ref="subsec-promises"/>) into something that you can program with.
     </p>
     <p>
       In this section, you'll learn how to create and manipulate quosures, and a little about how
@@ -792,7 +792,7 @@ transform2(df, x2 = x * 2, y = -y)
         variable called <c>data</c>. They will still have problems if they attempt to create a
         variable called <c>.data</c>, but this is much less likely. This is the same reasoning that
         leads to the <c>.x</c> and <c>.f</c> arguments to <c>map()</c>
-        (Section <xref ref="sec-argument-names"/>).
+        (Section <xref ref="subsec-argument-names"/>).
       </p>
     </subsection>
 

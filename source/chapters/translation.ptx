@@ -223,7 +223,7 @@ p("Some text", class = "important", `data-value` = 10)
     <subsection>
       <title>Tag functions</title>
       <p>
-        It's straightforward to adapt <c>p()</c> to other tags: we just need to replace <c>"p"</c> with the name of the tag. One elegant way to do that is to create a function with <c>rlang::new_function()</c> (<xref ref="subsec-new-function"/>), using unquoting and <c>paste0()</c> to generate the starting and ending tags.
+        It's straightforward to adapt <c>p()</c> to other tags: we just need to replace <c>"p"</c> with the name of the tag. One elegant way to do that is to create a function with <c>rlang::new_function()</c> (<xref ref="sec-new-function"/>), using unquoting and <c>paste0()</c> to generate the starting and ending tags.
       </p>
       <program language="r"><input>
 tag &lt;- function(tag) {
@@ -566,7 +566,7 @@ print.advr_latex &lt;- function(x) {
     <subsection>
       <title>Known symbols</title>
       <p>
-        Our first step is to create an environment that will convert the special LaTeX symbols used for Greek characters, e.g., <c>pi</c> to <c>\pi</c>. We'll use the trick from <xref ref="subsec-subset"/> to bind the symbol <c>pi</c> to the value <c>"\pi"</c>.
+        Our first step is to create an environment that will convert the special LaTeX symbols used for Greek characters, e.g., <c>pi</c> to <c>\pi</c>. We'll use the trick from <xref ref="sec-subset"/> to bind the symbol <c>pi</c> to the value <c>"\pi"</c>.
       </p>
       <program language="r"><input>
 greek &lt;- c(

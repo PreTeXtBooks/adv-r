@@ -179,7 +179,7 @@ paste("Good", time, name)
 cement(Good, !!time, !!name)
 </input></program>
 
-    <subsection>
+    <subsection xml:id="sec-vocabulary">
       <title>Vocabulary</title>
       <idx><h>arguments</h><h>evaluated versus quoted</h></idx>
       <idx><h>non-standard evaluation</h></idx>
@@ -301,7 +301,7 @@ f1(a + b + c)
       <p>
         We need another function to solve this problem: <c>enexpr()</c>. This captures what the
         caller supplied to the function by looking at the internal promise object that powers lazy
-        evaluation (<xref ref="sec-promises"/>).
+        evaluation (<xref ref="subsec-promises"/>).
       </p>
 
       <program language="r"><input>
@@ -724,7 +724,7 @@ call2(f, expr(x), expr(y))
 
       <p>
         Very occasionally it is useful to unquote a missing argument
-        (<xref ref="sec-empty-symbol"/>), but the naive approach doesn't work:
+        (<xref ref="subsec-empty-symbol"/>), but the naive approach doesn't work:
       </p>
 
       <program language="r"><input>
@@ -759,7 +759,7 @@ expr(df$!!x)
 
       <p>
         To make unquoting work, you'll need to use the prefix form
-        (<xref ref="sec-prefix-transform"/>):
+        (<xref ref="subsec-prefix-transform"/>):
       </p>
 
       <program language="r"><input>
@@ -1712,7 +1712,7 @@ slice(x, 3, 1)
       <p>
         Another powerful application of quotation is creating functions "by hand", using
         <c>rlang::new_function()</c>. It's a function that creates a function from its three
-        components (<xref ref="sec-fun-components"/>): arguments, body, and (optionally) an
+        components (<xref ref="subsec-fun-components"/>): arguments, body, and (optionally) an
         environment:
       </p>
 

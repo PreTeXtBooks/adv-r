@@ -124,14 +124,14 @@ lobstr::ast(y &lt; -x)
       <title>Infix calls</title>
       <idx><h>ASTs</h><h>infix calls</h></idx>
 
-      <p>Every call in R can be written in tree form because any call can be written in prefix form (<xref ref="sec-prefix-transform"/>). Take <c>y &lt;- x * 10</c> again: what are the functions that are being called? It is not as easy to spot as <c>f(x, 1)</c> because this expression contains two infix calls: <c>&lt;-</c> and <c>*</c>. That means that these two lines of code are equivalent:</p>
+      <p>Every call in R can be written in tree form because any call can be written in prefix form (<xref ref="subsec-prefix-transform"/>). Take <c>y &lt;- x * 10</c> again: what are the functions that are being called? It is not as easy to spot as <c>f(x, 1)</c> because this expression contains two infix calls: <c>&lt;-</c> and <c>*</c>. That means that these two lines of code are equivalent:</p>
 
       <program language="r"><input>
 y &lt;- x * 10
 `&lt;-`(y, `*`(x, 10))
 </input></program>
 
-      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in <xref ref="sec-non-syntactic"/>.</fn>:</p>
+      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in <xref ref="subsec-non-syntactic"/>.</fn>:</p>
 
       <figure xml:id="fig-expressions-prefix">
         <image source="../images/expressions/prefix.png"/>
@@ -181,7 +181,7 @@ lobstr::ast(1 -&gt; x)
       </exercise>
 
       <exercise>
-        <p>What is special about the AST below? (Hint: re-read <xref ref="sec-fun-components"/>.)</p>
+        <p>What is special about the AST below? (Hint: re-read <xref ref="subsec-fun-components"/>.)</p>
         <program language="r"><input>
 lobstr::ast(function(x = 1, y = 2) {})
 </input></program>
@@ -198,7 +198,7 @@ lobstr::ast(function(x = 1, y = 2) {})
     <idx><h>expressions</h></idx>
     <idx><h>expr()</h></idx>
 
-    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is <em>possible</em> to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in <xref ref="subsec-non-standard-ast"/>.</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
+    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is <em>possible</em> to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in <xref ref="sec-non-standard-ast"/>.</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
 
     <p>NB: In base R documentation "expression" is used to mean two things. As well as the definition above, expression is also used to refer to the type of object returned by <c>expression()</c> and <c>parse()</c>, which are basically lists of expressions as defined above. In this book I'll call these <alert>expression vectors</alert>, and I'll come back to them in <xref ref="subsec-expression-vectors"/>.</p>
 
@@ -207,7 +207,7 @@ lobstr::ast(function(x = 1, y = 2) {})
       <idx><h>constants</h></idx>
       <idx><h>scalars</h></idx>
 
-      <p>Scalar constants are the simplest component of the AST. More precisely, a <alert>constant</alert> is either <c>NULL</c> or a length-1 atomic vector (or scalar, <xref ref="sec-scalars"/>) like <c>TRUE</c>, <c>1L</c>, <c>2.5</c> or <c>"x"</c>. You can test for a constant with <c>rlang::is_syntactic_literal()</c>.</p>
+      <p>Scalar constants are the simplest component of the AST. More precisely, a <alert>constant</alert> is either <c>NULL</c> or a length-1 atomic vector (or scalar, <xref ref="subsec-scalars"/>) like <c>TRUE</c>, <c>1L</c>, <c>2.5</c> or <c>"x"</c>. You can test for a constant with <c>rlang::is_syntactic_literal()</c>.</p>
 
       <p>Constants are self-quoting in the sense that the expression used to represent a constant is the same constant:</p>
 
@@ -707,7 +707,7 @@ switch_expr &lt;- function(x, ...) {
 }
 </input></program>
 
-    <p>With these two functions in hand, we can write a basic template for any function that walks the AST using <c>switch()</c> (<xref ref="sec-switch"/>):</p>
+    <p>With these two functions in hand, we can write a basic template for any function that walks the AST using <c>switch()</c> (<xref ref="subsec-switch"/>):</p>
 
     <program language="r"><input>
 recurse_call &lt;- function(x) {
@@ -975,7 +975,7 @@ pl$x
       <idx><h>symbols</h><h>empty</h></idx>
       <idx><h>missing arguments</h></idx>
 
-      <p>The special symbol that needs a little extra discussion is the empty symbol, which is used to represent missing arguments (not missing values!). You only need to care about the missing symbol if you're programmatically creating functions with missing arguments; we'll come back to that in <xref ref="subsec-unquote-missing"/>.</p>
+      <p>The special symbol that needs a little extra discussion is the empty symbol, which is used to represent missing arguments (not missing values!). You only need to care about the missing symbol if you're programmatically creating functions with missing arguments; we'll come back to that in <xref ref="sec-unquote-missing"/>.</p>
 
       <p>You can make an empty symbol with <c>missing_arg()</c> (or <c>expr()</c>):</p>
 
