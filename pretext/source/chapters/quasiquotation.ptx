@@ -628,7 +628,7 @@ expr(f(!!x, y))
       </p>
 
       <figure xml:id="fig-bang-bang">
-        <image source="../images/quotation/bang-bang.png"/>
+        <image source="images/quotation/bang-bang.png"/>
       </figure>
 
       <p>As well as call objects, <c>!!</c> also works with symbols and constants:</p>
@@ -641,7 +641,7 @@ expr(f(!!a, !!b))
 </input></program>
 
       <figure xml:id="fig-quotation-simple">
-        <image source="../images/quotation/simple.png"/>
+        <image source="images/quotation/simple.png"/>
       </figure>
 
       <p>If the right-hand side of <c>!!</c> is a function call, <c>!!</c> will evaluate it and insert the results:</p>
@@ -666,13 +666,13 @@ expr(!!x1 / !!x2)
 </input></program>
 
       <figure xml:id="fig-quotation-infix">
-        <image source="../images/quotation/infix.png"/>
+        <image source="images/quotation/infix.png"/>
       </figure>
 
       <p>If we simply pasted the text of the expressions together, we'd end up with <c>x + 1 / x + 2</c>, which has a very different AST:</p>
 
       <figure xml:id="fig-quotation-infix-bad">
-        <image source="../images/quotation/infix-bad.png"/>
+        <image source="images/quotation/infix-bad.png"/>
       </figure>
     </subsection>
 
@@ -702,7 +702,7 @@ expr((!!f)(x, y))
 </input></program>
 
       <figure xml:id="fig-quotation-fun">
-        <image source="../images/quotation/fun.png"/>
+        <image source="images/quotation/fun.png"/>
       </figure>
 
       <p>Because of the large number of parentheses involved, it can be clearer to use <c>rlang::call2()</c>:</p>
@@ -790,7 +790,7 @@ expr(f(!!!ys, d = 4))
 </input></program>
 
       <figure xml:id="fig-bang-bang-bang">
-        <image source="../images/quotation/bang-bang-bang.png"/>
+        <image source="images/quotation/bang-bang-bang.png"/>
       </figure>
 
       <p>

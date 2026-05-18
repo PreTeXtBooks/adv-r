@@ -89,7 +89,7 @@
       one that describes how the data is stored (C = column oriented, R = row
       oriented, T = tagged) and one that describes any restriction on the matrix
       (s = symmetric, t = triangle, g = general).</caption>
-      <image source="../images/s4/Matrix.png"/>
+      <image source="images/s4/Matrix.png"/>
     </figure>
 
     <p>

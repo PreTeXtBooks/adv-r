@@ -108,7 +108,7 @@ environment(f02)
       <p>I'll draw functions as in the following diagram. The black dot on the left is the environment. The two blocks to the right are the function arguments. I won't draw the body, because it's usually large, and doesn't help you understand the shape of the function.</p>
 
       <figure>
-        <image source="../images/functions/components.png"/>
+        <image source="images/functions/components.png"/>
       </figure>
 
       <p>Like all objects in R, functions can also possess any number of additional <c>attributes()</c>. One attribute used by base R is <c>srcref</c>, short for source reference. It points to the source code used to create the function. The <c>srcref</c> is used for printing because, unlike <c>body()</c>, it contains code comments and other formatting.</p>
@@ -158,7 +158,7 @@ f01 &lt;- function(x) {
       </input></program>
 
       <figure>
-        <image source="../images/functions/first-class.png"/>
+        <image source="images/functions/first-class.png"/>
       </figure>
 
       <p>While you almost always create a function and then bind it to a name, the binding step is not compulsory. If you choose not to give a function a name, you get an <alert>anonymous function</alert>. This is useful when it's not worth the effort to figure out a name:</p>

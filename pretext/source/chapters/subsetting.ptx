@@ -331,19 +331,19 @@ x &lt;- list(1:3, "a", 4:6)
 </input></program>
 
       <figure>
-        <image source="../images/subsetting/train.png"/>
+        <image source="images/subsetting/train.png"/>
       </figure>
 
       <p>When extracting a single element, you have two options: you can create a smaller train, i.e., fewer carriages, or you can extract the contents of a particular carriage. This is the difference between <c>[</c> and <c>[[</c>:</p>
 
       <figure>
-        <image source="../images/subsetting/train-single.png"/>
+        <image source="images/subsetting/train-single.png"/>
       </figure>
 
       <p>When extracting multiple (or even zero!) elements, you have to make a smaller train:</p>
 
       <figure>
-        <image source="../images/subsetting/train-multiple.png"/>
+        <image source="images/subsetting/train-multiple.png"/>
       </figure>
 
       <p>Because <c>[[</c> can return only a single item, you must use it with either a single positive integer or a single string. If you use a vector with <c>[[</c>, it will subset recursively, i.e. <c>x[[c(1, 2)]]</c> is equivalent to <c>x[[1]][[2]]</c>. This is a quirky feature that few know about, so I recommend avoiding it in favour of <c>purrr::pluck()</c>, which you'll learn about in <xref ref="subsec-subsetting-oob"/>.</p>
