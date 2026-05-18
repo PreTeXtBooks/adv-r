@@ -68,7 +68,8 @@
         structures), has been rewritten to focus on vector types like
         integers, factors, and data frames. It contains more details of
         important S3 vectors (like dates and date-times), discusses the data
-        frame variation provided by the tibble package, and generally
+        frame variation provided by the
+        <url href="http://tibble.tidyverse.org/" visual="tibble.tidyverse.org">tibble package</url>, and generally
         reflects my improved understanding of vector data types.
       </p></li>
       <li><p>
@@ -120,7 +121,8 @@
         and reduced the amount of pure theory.
       </p>
       <p>
-        These chapters now use functions provided by the purrr package, which
+        These chapters now use functions provided by the
+        <url href="https://purrr.tidyverse.org" visual="purrr.tidyverse.org">purrr package</url>, which
         allow me to focus more on the underlying ideas and less on the
         incidental details. This led to a considerable simplification of the
         function operators chapter since a major use was to work around the
@@ -182,7 +184,8 @@
       <li><p>
         The style chapter has been replaced with an online style guide,
         <url href="http://style.tidyverse.org/" visual="style.tidyverse.org">style.tidyverse.org</url>.
-        The style guide is paired with the new styler package which can
+        The style guide is paired with the new
+        <url href="http://styler.r-lib.org" visual="styler.r-lib.org">styler package</url> which can
         automatically apply many of the rules.
       </p></li>
       <li><p>

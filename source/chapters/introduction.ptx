@@ -328,7 +328,9 @@
       <p>
         To understand the trade-offs that R has made compared to other
         programming languages, I found <em>Concepts, Techniques and Models of
-        Computer Programming</em> extremely helpful. It helped me understand that
+        Computer Programming</em><fn>Peter Van Roy and Seif Haridi,
+        <em>Concepts, Techniques, and Models of Computer Programming</em>
+        (MIT Press, 2004)</fn> extremely helpful. It helped me understand that
         R's copy-on-modify semantics make it substantially easier to reason about
         code, and that while its current implementation is not particularly
         efficient, it is a solvable problem.
