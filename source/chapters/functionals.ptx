@@ -24,7 +24,7 @@ randomise(sum)
 
       <p>The chances are that you've already used a functional. You might have used for-loop replacements like base R's <c>lapply()</c>, <c>apply()</c>, and <c>tapply()</c>; or purrr's <c>map()</c>; or maybe you've used a mathematical functional like <c>integrate()</c> or <c>optim()</c>.</p>
 
-      <p>A common use of functionals is as an alternative to for loops. For loops have a bad rap in R because many people believe they are slow<fn>Typically it's not the for loop itself that's slow, but what you're doing inside of it. A common culprit of slow loops is modifying a data structure, where each modification generates a copy. See <xref ref="sec-binding-basics"/> and <xref ref="ch-names-values"/> for more details.</fn>, but the real downside of for loops is that they're very flexible: a loop conveys that you're iterating, but not what should be done with the results. Just as it's better to use <c>while</c> than <c>repeat</c>, and it's better to use <c>for</c> than <c>while</c> (<xref ref="sec-loops"/>), it's better to use a functional than <c>for</c>. Each functional is tailored for a specific task, so when you recognise the functional you immediately know why it's being used.</p>
+      <p>A common use of functionals is as an alternative to for loops. For loops have a bad rap in R because many people believe they are slow<fn>Typically it's not the for loop itself that's slow, but what you're doing inside of it. A common culprit of slow loops is modifying a data structure, where each modification generates a copy. See Sections \@ref(single-binding) and \@ref(avoid-copies) for more details.</fn>, but the real downside of for loops is that they're very flexible: a loop conveys that you're iterating, but not what should be done with the results. Just as it's better to use <c>while</c> than <c>repeat</c>, and it's better to use <c>for</c> than <c>while</c> (<xref ref="sec-loops"/>), it's better to use a functional than <c>for</c>. Each functional is tailored for a specific task, so when you recognise the functional you immediately know why it's being used.</p>
 
       <p>If you're an experienced for loop user, switching to functionals is typically a pattern matching exercise. You look at the for loop and find a functional that matches the basic form. If one doesn't exist, don't try and torture an existing functional to fit the form you need. Instead, just leave it as a for loop! (Or once you've repeated the same loop two or more times, maybe think about writing your own functional).</p>
 
@@ -54,7 +54,7 @@ library(purrr)
     <section xml:id="sec-map">
       <title>My first functional: <c>map()</c></title>
 
-      <p>The most fundamental functional is <c>purrr::map()</c><fn>Not to be confused with <c>base::Map()</c>, which is considerably more complex. I'll discuss <c>Map()</c> in <xref ref="sec-pmap"/>.</fn>. It takes a vector and a function, calls the function once for each element of the vector, and returns the results in a list. In other words, <c>map(1:3, f)</c> is equivalent to <c>list(f(1), f(2), f(3))</c>.</p>
+      <p>The most fundamental functional is <c>purrr::map()</c><fn>Not to be confused with `base::Map()`, which is considerably more complex. I'll discuss `Map()` in Section \@ref(pmap).</fn>. It takes a vector and a function, calls the function once for each element of the vector, and returns the results in a list. In other words, <c>map(1:3, f)</c> is equivalent to <c>list(f(1), f(2), f(3))</c>.</p>
 
       <program language="r">
         <code>
@@ -683,7 +683,7 @@ map(names, welcome)
           </code>
         </program>
 
-        <p>You could avoid this problem by assigning the results of <c>map()</c> to a variable that you never use, but that would muddy the intent of the code. Instead, purrr provides the walk family of functions that ignore the return values of the <c>.f</c> and instead return <c>.x</c> invisibly<fn>In brief, invisible values are only printed if you explicitly request it. This makes them well suited for functions called primarily for their side-effects, as it allows their output to be ignored by default, while still giving an option to capture it. See <xref ref="ch-functions"/> for more details.</fn>.</p>
+        <p>You could avoid this problem by assigning the results of <c>map()</c> to a variable that you never use, but that would muddy the intent of the code. Instead, purrr provides the walk family of functions that ignore the return values of the <c>.f</c> and instead return <c>.x</c> invisibly<fn>In brief, invisible values are only printed if you explicitly request it. This makes them well suited for functions called primarily for their side-effects, as it allows their output to be ignored by default, while still giving an option to capture it. See Section \@ref(invisible) for more details.</fn>.</p>
 
         <program language="r">
           <code>

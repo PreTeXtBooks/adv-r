@@ -240,10 +240,7 @@ match.fun("mean")
 
     <p>
       Consider the following code. It binds <c>x</c> and <c>y</c> to the same underlying
-      value, then modifies <c>y</c>.<fn>You may be surprised to see <c>[[</c> used to
-      subset a numeric vector. We'll come back to this in <xref ref="sec-subset-single"/>,
-      but in brief, I think you should always use <c>[[</c> when you are getting or setting
-      a single element.</fn>
+      value, then modifies <c>y</c>.<fn>You may be surprised to see `[[` used to subset a numeric vector. We'll come back to this in Section \@ref(subset-single), but in brief, I think you should always use `[[` when you are getting or setting a single element.</fn>
     </p>
     <program language="r"><input>
 x &lt;- c(1, 2, 3)
@@ -449,8 +446,7 @@ d3[1, ] &lt;- d3[1, ] * 3
     <subsection xml:id="subsec-character-vectors">
       <title>Character vectors</title>
       <p>
-        The final place that R uses references is with character vectors.<fn>Confusingly, a
-        character vector is a vector of strings, not individual characters.</fn> I usually
+        The final place that R uses references is with character vectors.<fn>Confusingly, a character vector is a vector of strings, not individual characters.</fn> I usually
         draw character vectors like this:
       </p>
       <program language="r"><input>
@@ -525,9 +521,7 @@ x[[2]] &lt;- x
     <title>Object size</title>
 
     <p>
-      You can find out how much memory an object takes with <c>lobstr::obj_size()</c>:<fn>Beware
-      of the <c>utils::object.size()</c> function. It does not correctly account for shared
-      references and will return sizes that are too large.</fn>
+      You can find out how much memory an object takes with <c>lobstr::obj_size()</c>:<fn>Beware of the `utils::object.size()` function. It does not correctly account for shared references and will return sizes that are too large.</fn>
     </p>
     <program language="r"><input>
 obj_size(letters)
@@ -549,8 +543,7 @@ obj_size(y)
 #&gt; 8.00 MB
     </input></program>
     <p>
-      <c>y</c> is only 80 bytes bigger than <c>x</c>. That's the size of an empty list with
-      three elements:
+      <c>y</c> is only 80 bytes<fn>If you're running 32-bit R, you'll see slightly different sizes.</fn> bigger than <c>x</c>. That's the size of an empty list with three elements:
     </p>
     <program language="r"><input>
 obj_size(list(NULL, NULL, NULL))
@@ -675,10 +668,10 @@ v[[3]] &lt;- 4
       </p>
       <p><ul>
         <li><p>
-          When it comes to bindings, R can currently only count 0, 1, or many. That means that
-          if an object has two bindings, and one goes away, the reference count does not go back
-          to 1: one less than many is still many. In turn, this means that R will make copies
-          when it sometimes doesn't need to.
+          When it comes to bindings, R can currently<fn>By the time you read this, this may have changed, as plans are afoot to improve reference counting: https://developer.r-project.org/Refcnt.html</fn> only count 0, 1, or
+          many. That means that if an object has two bindings, and one goes away, the reference
+          count does not go back to 1: one less than many is still many. In turn, this means that
+          R will make copies when it sometimes doesn't need to.
         </p></li>
         <li><p>
           Whenever you call the vast majority of functions, it makes a reference to the object.
@@ -735,10 +728,7 @@ untracemem(x)
       </input></program>
       <p>
         In fact, each iteration copies the data frame not once, not twice, but three times!
-        Two copies are made by <c>[[.data.frame</c>, and a further copy<fn>These copies are
-        shallow: they only copy the reference to each individual column, not the contents of
-        the columns. This means the performance isn't terrible, but it's obviously not as
-        good as it could be.</fn> is made because <c>[[.data.frame</c> is a regular function
+        Two copies are made by <c>[[.data.frame</c>, and a further copy<fn>These copies are shallow: they only copy the reference to each individual column, not the contents of the columns. This means the performance isn't terrible, but it's obviously not as good as it could be.</fn> is made because <c>[[.data.frame</c> is a regular function
         that increments the reference count of <c>x</c>.
       </p>
       <p>

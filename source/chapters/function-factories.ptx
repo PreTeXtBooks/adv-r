@@ -216,7 +216,7 @@ env_print(cube)
 
         <p>
           <c>env_print()</c> shows us that both environments have a binding to
-          <c>exp</c>, but we want to see its value. We can do that by first
+          <c>exp</c>, but we want to see its value<fn>A future version of `env_print()` is likely to do better at summarising the contents so you don't need this step.</fn>. We can do that by first
           getting the environment of the function, and then extracting the
           values:
         </p>
@@ -599,7 +599,8 @@ new_counter3 &lt;- function() {
           <url href="http://scales.r-lib.org">scales</url> package is to make
           it easy to customise the labels on ggplot2. It provides many
           functions to control the fine details of axes and legends. The
-          formatter functions are a useful class of functions which make it
+          formatter functions<fn>It's an unfortunate accident of history that scales uses function suffixes instead of function prefixes. That's because it was written before I understood the autocomplete advantages to using common prefixes instead of common suffixes.</fn>
+          are a useful class of functions which make it
           easier to control the appearance of axis breaks. The design of these
           functions might initially seem a little odd: they all return a
           function, which you have to call in order to format a number.
@@ -704,7 +705,7 @@ ggplot(df, aes(x)) +
 
         <p>
           We could use this same pattern to wrap around the base R functions
-          that automatically find the so-called optimal binwidth,
+          that automatically find the so-called optimal<fn>ggplot2 doesn't expose these functions directly because I don't think the definition of optimality needed to make the problem mathematically tractable is a good match to the actual needs of data exploration.</fn> binwidth,
           <c>nclass.Sturges()</c>, <c>nclass.scott()</c>, and
           <c>nclass.FD()</c>:
         </p>

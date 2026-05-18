@@ -71,7 +71,7 @@ h &lt;- function() stop("This is an error!")
 
 f()
       </input></program>
-      <p>By default, the error message includes the call, but this is typically not useful (and recapitulates information that you can easily get from <c>traceback()</c>), so I think it's good practice to use <c>call. = FALSE</c><fn>The trailing <c>.</c> in <c>call.</c> is a peculiarity of <c>stop()</c>; don't read anything into it.</fn>:</p>
+      <p>By default, the error message includes the call, but this is typically not useful (and recapitulates information that you can easily get from <c>traceback()</c>), so I think it's good practice to use <c>call. = FALSE</c><fn>The trailing `.` in `call.` is a peculiarity of `stop()`; don't read anything into it.</fn>:</p>
       <program language="r"><input>
 h &lt;- function() stop("This is an error!", call. = FALSE)
 f()
@@ -156,7 +156,7 @@ fm()
         <li><p>When writing a package, you sometimes want to display a message when your package is loaded (i.e. in <c>.onAttach()</c>); here you must use <c>packageStartupMessage()</c>.</p></li>
       </ul></p>
       <p>Generally any function that produces a message should have some way to suppress it, like a <c>quiet = TRUE</c> argument. It is possible to suppress all messages with <c>suppressMessages()</c>, as you'll learn shortly, but it is nice to also give finer grained control.</p>
-      <p>It's important to compare <c>message()</c> to the closely related <c>cat()</c>. In terms of usage and result, they appear quite similar<fn>But note that <c>cat()</c> requires an explicit trailing <c>"\n"</c> to print a new line.</fn>:</p>
+      <p>It's important to compare <c>message()</c> to the closely related <c>cat()</c>. In terms of usage and result, they appear quite similar<fn>But note that `cat()` requires an explicit trailing `"\n"` to print a new line.</fn>:</p>
       <program language="r"><input>
 cat("Hi!\n")
 
@@ -187,7 +187,7 @@ f1 &lt;- function(x) {
 }
 f1("x")
     </input></program>
-    <p>However, if you wrap the statement that creates the error in <c>try()</c>, the error message will be displayed<fn>You can suppress the message with <c>try(..., silent = TRUE)</c>.</fn> but execution will continue:</p>
+    <p>However, if you wrap the statement that creates the error in <c>try()</c>, the error message will be displayed<fn>You can suppress the message with `try(..., silent = TRUE)`.</fn> but execution will continue:</p>
     <program language="r"><input>
 f2 &lt;- function(x) {
   try(log(x))
@@ -197,7 +197,7 @@ f2("a")
 #> Error in log(x) : non-numeric argument to mathematical function
 #> [1] 10
     </input></program>
-    <p>It is possible, but not recommended, to save the result of <c>try()</c> and perform different actions based on whether or not the code succeeded or failed<fn>You can tell if the expression failed because the result will have class <c>try-error</c>.</fn>. Instead, it is better to use <c>tryCatch()</c> or a higher-level helper; you'll learn about those shortly.</p>
+    <p>It is possible, but not recommended, to save the result of <c>try()</c> and perform different actions based on whether or not the code succeeded or failed<fn>You can tell if the expression failed because the result will have class `try-error`.</fn>. Instead, it is better to use <c>tryCatch()</c> or a higher-level helper; you'll learn about those shortly.</p>
     <p>A simple, but useful, pattern is to do assignment inside the call: this lets you define a default value to be used if the code does not succeed. This works because the argument is evaluated in the calling environment, not inside the function. (See <xref ref="subsec-promises"/> for more details.)</p>
     <program language="r"><input>
 default &lt;- NULL

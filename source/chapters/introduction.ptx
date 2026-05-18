@@ -312,10 +312,7 @@
       <p>
         To understand why R's object systems work the way they do, I found
         <em>The Structure and Interpretation of Computer Programs</em>
-        <fn>You can read it online for free at
-          <url href="https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html"
-            visual="mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html"/>.
-        </fn>
+        <fn>You can read it online for free at &lt;https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html&gt;</fn>
         (SICP) to be particularly helpful. It's a concise but deep book, and
         after reading it, I felt for the first time that I could actually design
         my own object-oriented system. The book was my first introduction to the

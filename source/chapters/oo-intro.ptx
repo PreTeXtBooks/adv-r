@@ -25,9 +25,7 @@
       </p></li>
       <li><p>
         S3 and S4 use generic function OOP which is rather different from the
-        encapsulated OOP used by most languages popular today.<fn>The exception
-        is Julia, which also uses generic function OOP. Compared to R, Julia's
-        implementation is fully developed and extremely performant.</fn> We'll
+        encapsulated OOP used by most languages popular today.<fn>The exception is Julia, which also uses generic function OOP. Compared to R, Julia's implementation is fully developed and extremely performant.</fn> We'll
         come back to precisely what those terms mean shortly, but basically,
         while the underlying ideas of OOP are the same across languages, their
         expressions are rather different. This means that you can't immediately

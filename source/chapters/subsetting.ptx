@@ -198,7 +198,7 @@ vals[select]
 
       <p><ul>
         <li><p>When subsetting with a single index, they behave like lists and index the columns, so <c>df[1:2]</c> selects the first two columns.</p></li>
-        <li><p>When subsetting with two indices, they behave like matrices, so <c>df[1:3, ]</c> selects the first three <em>rows</em> (and all the columns).<fn>If you're coming from Python this is likely to be confusing, as you'd probably expect <c>df[1:3, 1:2]</c> to select three columns and two rows. Generally, R "thinks" about dimensions in terms of rows and columns while Python does so in terms of columns and rows.</fn></p></li>
+        <li><p>When subsetting with two indices, they behave like matrices, so <c>df[1:3, ]</c> selects the first three <em>rows</em> (and all the columns).<fn>If you're coming from Python this is likely to be confusing, as you'd probably expect `df[1:3, 1:2]` to select three columns and two rows. Generally, R "thinks" about dimensions in terms of rows and columns while Python does so in terms of columns and rows.</fn></p></li>
       </ul></p>
 
       <program language="r"><input>
@@ -579,7 +579,7 @@ df[sample(nrow(df), 6, replace = TRUE), ]
     <subsection xml:id="subsec-ordering">
       <title>Ordering (integer subsetting)</title>
 
-      <p><c>order()</c> takes a vector as its input and returns an integer vector describing how to order the subsetted vector<fn>These are "pull" indices, i.e., <c>order(x)[i]</c> is an index of where each <c>x[i]</c> is located. It is not an index of where <c>x[i]</c> should be sent.</fn>:</p>
+      <p><c>order()</c> takes a vector as its input and returns an integer vector describing how to order the subsetted vector<fn>These are "pull" indices, i.e., `order(x)[i]` is an index of where each `x[i]` is located. It is not an index of where `x[i]` should be sent.</fn>:</p>
 
       <program language="r"><input>
 x &lt;- c("b", "c", "a")

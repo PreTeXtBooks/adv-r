@@ -4,11 +4,11 @@
 
   <introduction>
     <p>
-      This chapter discusses the most important family of data types in base R: vectors<fn>Collectively, all the other data types are known as &#x201c;node&#x201d; types, which include things like functions and environments. You&#x2019;re most likely to come across this highly technical term when using <c>gc()</c>: the &#x201c;N&#x201d; in <c>Ncells</c> stands for nodes and the &#x201c;V&#x201d; in <c>Vcells</c> stands for vectors.</fn>. While you&#x2019;ve probably already used many (if not all) of the different types of vectors, you may not have thought deeply about how they&#x2019;re interrelated. In this chapter, I won&#x2019;t cover individual vectors types in too much detail, but I will show you how all the types fit together as a whole. If you need more details, you can find them in R&#x2019;s documentation.
+      This chapter discusses the most important family of data types in base R: vectors<fn>Collectively, all the other data types are known as "node" types, which include things like functions and environments. You're most likely to come across this highly technical term when using `gc()`: the "N" in `Ncells` stands for nodes and the "V" in `Vcells` stands for vectors.</fn>. While you&#x2019;ve probably already used many (if not all) of the different types of vectors, you may not have thought deeply about how they&#x2019;re interrelated. In this chapter, I won&#x2019;t cover individual vectors types in too much detail, but I will show you how all the types fit together as a whole. If you need more details, you can find them in R&#x2019;s documentation.
     </p>
 
     <p>
-      Vectors come in two flavours: atomic vectors and lists<fn>A few places in R&#x2019;s documentation call lists generic vectors to emphasise their difference from atomic vectors.</fn>. They differ in terms of their elements&#x2019; types: for atomic vectors, all elements must have the same type; for lists, elements can have different types. While not a vector, <c>NULL</c> is closely related to vectors and often serves the role of a generic zero length vector. This diagram, which we&#x2019;ll be expanding on throughout this chapter, illustrates the basic relationships:
+      Vectors come in two flavours: atomic vectors and lists<fn>A few places in R's documentation call lists generic vectors to emphasise their difference from atomic vectors.</fn>. They differ in terms of their elements&#x2019; types: for atomic vectors, all elements must have the same type; for lists, elements can have different types. While not a vector, <c>NULL</c> is closely related to vectors and often serves the role of a generic zero length vector. This diagram, which we&#x2019;ll be expanding on throughout this chapter, illustrates the basic relationships:
     </p>
 
     <figure>
@@ -52,7 +52,7 @@
     <title>Atomic vectors</title>
 
     <p>
-      There are four primary types of atomic vectors: logical, integer, double, and character (which contains strings). Collectively integer and double vectors are known as numeric vectors<fn>This is a slight simplification as R does not use &#x201c;numeric&#x201d; consistently, which we&#x2019;ll come back to in Section <xref ref="subsec-scalars"/>.</fn>. There are two rare types: complex and raw. I won&#x2019;t discuss them further because complex numbers are rarely needed in statistics, and raw vectors are a special type that&#x2019;s only needed when handling binary data.
+      There are four primary types of atomic vectors: logical, integer, double, and character (which contains strings). Collectively integer and double vectors are known as numeric vectors<fn>This is a slight simplification as R does not use "numeric" consistently, which we'll come back to in Section \@ref(numeric-type).</fn>. There are two rare types: complex and raw. I won&#x2019;t discuss them further because complex numbers are rarely needed in statistics, and raw vectors are a special type that&#x2019;s only needed when handling binary data.
     </p>
 
     <figure>
@@ -63,13 +63,13 @@
       <title>Scalars</title>
 
       <p>
-        Each of the four primary types has a special syntax to create an individual value, AKA a <alert>scalar</alert><fn>Technically, the R language does not possess scalars. Everything that looks like a scalar is actually a vector of length one. This is mostly a theoretical distinction, but it does mean that expressions like <c>1[1]</c> work.</fn>:
+        Each of the four primary types has a special syntax to create an individual value, AKA a <alert>scalar</alert><fn>Technically, the R language does not possess scalars. Everything that looks like a scalar is actually a vector of length one. This is mostly a theoretical distinction, but it does mean that expressions like `1[1]` work.</fn>:
       </p>
 
       <p><ul>
         <li><p>Logicals can be written in full (<c>TRUE</c> or <c>FALSE</c>), or abbreviated (<c>T</c> or <c>F</c>).</p></li>
         <li><p>Doubles can be specified in decimal (<c>0.1234</c>), scientific (<c>1.23e4</c>), or hexadecimal (<c>0xcafe</c>) form. There are three special values unique to doubles: <c>Inf</c>, <c>-Inf</c>, and <c>NaN</c> (not a number). These are special values defined by the floating point standard.</p></li>
-        <li><p>Integers are written similarly to doubles but must be followed by <c>L</c><fn><c>L</c> is not intuitive, and you might wonder where it comes from. At the time <c>L</c> was added to R, R&#x2019;s integer type was equivalent to a long integer in C, and C code could use a suffix of <c>l</c> or <c>L</c> to force a number to be a long integer. It was decided that <c>l</c> was too visually similar to <c>i</c> (used for complex numbers in R), leaving <c>L</c>.</fn> (<c>1234L</c>, <c>1e4L</c>, or <c>0xcafeL</c>), and can not contain fractional values.</p></li>
+        <li><p>Integers are written similarly to doubles but must be followed by <c>L</c><fn>`L` is not intuitive, and you might wonder where it comes from. At the time `L` was added to R, R's integer type was equivalent to a long integer in C, and C code could use a suffix of `l` or `L` to force a number to be a long integer. It was decided that `l` was too visually similar to `i` (used for complex numbers in R), leaving `L`.</fn> (<c>1234L</c>, <c>1e4L</c>, or <c>0xcafeL</c>), and can not contain fractional values.</p></li>
         <li><p>Strings are surrounded by <c>"</c> (<c>"hi"</c>) or <c>'</c> (<c>'bye'</c>). Special characters are escaped with <c>\</c>; see <c>?Quotes</c> for full details.</p></li>
       </ul></p>
     </subsection>
@@ -109,7 +109,7 @@ c(c(1, 2), c(3, 4))
       </figure>
 
       <p>
-        You can determine the type of a vector with <c>typeof()</c><fn>You may have heard of the related <c>mode()</c> and <c>storage.mode()</c> functions. Do not use them: they exist only for compatibility with S.</fn> and its length with <c>length()</c>.
+        You can determine the type of a vector with <c>typeof()</c><fn>You may have heard of the related `mode()` and `storage.mode()` functions. Do not use them: they exist only for compatibility with S.</fn> and its length with <c>length()</c>.
       </p>
 
       <program language="r">
@@ -171,7 +171,7 @@ is.na(x)
       </program>
 
       <p>
-        NB: Technically there are four missing values<fn>Well, technically, five if we include <c>NA_complex_</c>, but we ignore this &#x201c;rare&#x201d; type, as mentioned above.</fn>, one for each of the atomic types: <c>NA</c> (logical), <c>NA_integer_</c> (integer), <c>NA_real_</c> (double), and <c>NA_character_</c> (character). This distinction is usually unimportant because <c>NA</c> will be automatically coerced to the correct type when needed.
+        NB: Technically there are four missing values<fn>Well, technically, five if we include `NA_complex_`, but we ignore this "rare" type, as mentioned above.</fn>, one for each of the atomic types: <c>NA</c> (logical), <c>NA_integer_</c> (integer), <c>NA_real_</c> (double), and <c>NA_character_</c> (character). This distinction is usually unimportant because <c>NA</c> will be automatically coerced to the correct type when needed.
       </p>
     </subsection>
 
@@ -257,7 +257,7 @@ c(TRUE, 1L)
       <title>Getting and setting</title>
 
       <p>
-        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists. Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood. You'll learn more about them in <xref ref="subsec-pairlists"/>.</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
+        You can think of attributes as name-value pairs<fn>Attributes behave like named lists, but are actually pairlists.  Pairlists are functionally indistinguishable from lists, but are profoundly different under the hood. You'll learn more about them in Section \@ref(pairlists).</fn> that attach metadata to an object. Individual attributes can be retrieved and modified with <c>attr()</c>, or retrieved en masse with <c>attributes()</c>, and set en masse with <c>structure()</c>.
       </p>
 
       <program language="r">
@@ -531,7 +531,7 @@ grade
       </program>
 
       <p>
-        In base R<fn>The tidyverse never automatically coerces characters to factors, and provides the forcats package specifically for working with factors.</fn> you tend to encounter factors very frequently because many base R functions (like <c>read.csv()</c> and <c>data.frame()</c>) automatically convert character vectors to factors. This is suboptimal because there&#x2019;s no way for those functions to know the set of all possible levels or their correct order: the levels are a property of theory or experimental design, not of the data. Instead, use the argument <c>stringsAsFactors = FALSE</c> to suppress this behaviour, and then manually convert character vectors to factors using your knowledge of the &#x201c;theoretical&#x201d; data. To learn about the historical context of this behaviour, I recommend <url href="https://simplystatistics.org/posts/2015-07-24-stringsasfactors-an-unauthorized-biography"><em>stringsAsFactors: An unauthorized biography</em></url> by Roger Peng, and <url href="http://notstatschat.tumblr.com/post/124987394001/stringsasfactors-sigh"><em>stringsAsFactors = &lt;sigh&gt;</em></url> by Thomas Lumley.
+        In base R<fn>The tidyverse never automatically coerces characters to factors, and provides the forcats [@forcats] package specifically for working with factors.</fn> you tend to encounter factors very frequently because many base R functions (like <c>read.csv()</c> and <c>data.frame()</c>) automatically convert character vectors to factors. This is suboptimal because there&#x2019;s no way for those functions to know the set of all possible levels or their correct order: the levels are a property of theory or experimental design, not of the data. Instead, use the argument <c>stringsAsFactors = FALSE</c> to suppress this behaviour, and then manually convert character vectors to factors using your knowledge of the &#x201c;theoretical&#x201d; data. To learn about the historical context of this behaviour, I recommend <url href="https://simplystatistics.org/posts/2015-07-24-stringsasfactors-an-unauthorized-biography"><em>stringsAsFactors: An unauthorized biography</em></url> by Roger Peng, and <url href="http://notstatschat.tumblr.com/post/124987394001/stringsasfactors-sigh"><em>stringsAsFactors = &lt;sigh&gt;</em></url> by Thomas Lumley.
       </p>
 
       <p>
@@ -571,7 +571,7 @@ unclass(date)
       <title>Date-times</title>
 
       <p>
-        Base R<fn>The tidyverse provides the lubridate package for working with date-times. It provides a number of convenient helpers that work with the base POSIXct type.</fn> provides two ways of storing date-time information, POSIXct, and POSIXlt. These are admittedly odd names: &#x201c;POSIX&#x201d; is short for Portable Operating System Interface, which is a family of cross-platform standards. &#x201c;ct&#x201d; stands for calendar time (the <c>time_t</c> type in C), and &#x201c;lt&#x201d; for local time (the <c>struct tm</c> type in C). Here we&#x2019;ll focus on <c>POSIXct</c>, because it&#x2019;s the simplest, is built on top of an atomic vector, and is most appropriate for use in data frames. POSIXct vectors are built on top of double vectors, where the value represents the number of seconds since 1970-01-01.
+        Base R<fn>The tidyverse provides the lubridate [@lubridate] package for working with date-times. It provides a number of convenient helpers that work with the base POSIXct type.</fn> provides two ways of storing date-time information, POSIXct, and POSIXlt. These are admittedly odd names: &#x201c;POSIX&#x201d; is short for Portable Operating System Interface, which is a family of cross-platform standards. &#x201c;ct&#x201d; stands for calendar time (the <c>time_t</c> type in C), and &#x201c;lt&#x201d; for local time (the <c>struct tm</c> type in C). Here we&#x2019;ll focus on <c>POSIXct</c>, because it&#x2019;s the simplest, is built on top of an atomic vector, and is most appropriate for use in data frames. POSIXct vectors are built on top of double vectors, where the value represents the number of seconds since 1970-01-01.
       </p>
 
       <program language="r">
@@ -797,7 +797,7 @@ l[[1, 1]]
     </figure>
 
     <p>
-      If you do data analysis in R, you&#x2019;re going to be using data frames. A data frame is a named list of vectors with attributes for (column) <c>names</c>, <c>row.names</c><fn>Row names are one of the most surprisingly complex data structures in R. They&#x2019;ve also been a persistent source of performance issues over the years. The most straightforward implementation is a character or integer vector, with one element for each row. But there&#x2019;s also a compact representation for &#x201c;automatic&#x201d; row names (consecutive integers), created by <c>.set_row_names()</c>. R 3.5 has a special way of deferring integer to character conversion that is specifically designed to speed up <c>lm()</c>; see <url href="https://svn.r-project.org/R/branches/ALTREP/ALTREP.html#deferred_string_conversions">ALTREP deferred string conversions</url> for details.</fn>, and its class, &#x201c;data.frame&#x201d;:
+      If you do data analysis in R, you&#x2019;re going to be using data frames. A data frame is a named list of vectors with attributes for (column) <c>names</c>, <c>row.names</c><fn>Row names are one of the most surprisingly complex data structures in R. They've also been a persistent source of performance issues over the years. The most straightforward implementation is a character or integer vector, with one element for each row. But there's also a compact representation for "automatic" row names (consecutive integers), created by `.set_row_names()`. R 3.5 has a special way of deferring integer to character conversion that is specifically designed to speed up `lm()`; see &lt;https://svn.r-project.org/R/branches/ALTREP/ALTREP.html#deferred_string_conversions&gt; for details.</fn>, and its class, &#x201c;data.frame&#x201d;:
     </p>
 
     <program language="r">
@@ -814,7 +814,7 @@ attributes(df1)
     </p>
 
     <p><ul>
-      <li><p>A data frame has <c>rownames()</c><fn>Technically, you are encouraged to use <c>row.names()</c>, not <c>rownames()</c> with data frames, but this distinction is rarely important.</fn> and <c>colnames()</c>. The <c>names()</c> of a data frame are the column names.</p></li>
+      <li><p>A data frame has <c>rownames()</c><fn>Technically, you are encouraged to use `row.names()`, not `rownames()` with data frames, but this distinction is rarely important.</fn> and <c>colnames()</c>. The <c>names()</c> of a data frame are the column names.</p></li>
       <li><p>A data frame has <c>nrow()</c> rows and <c>ncol()</c> columns. The <c>length()</c> of a data frame gives the number of columns.</p></li>
     </ul></p>
 
@@ -1043,7 +1043,7 @@ dplyr::starwars
 
       <p><ul>
         <li><p>When you subset columns with <c>df[, vars]</c>, you will get a vector if <c>vars</c> selects one variable, otherwise you&#x2019;ll get a data frame. This is a frequent source of bugs when using <c>[</c> in a function, unless you always remember to use <c>df[, vars, drop = FALSE]</c>.</p></li>
-        <li><p>When you attempt to extract a single column with <c>df$x</c> and there is no column <c>x</c>, a data frame will instead select any variable that starts with <c>x</c>. If no variable starts with <c>x</c>, <c>df$x</c> will return <c>NULL</c>. This makes it easy to select the wrong variable or to select a variable that doesn&#x2019;t exist<fn>We can make R warn about this behavior (called partial matching) by setting <c>options(warnPartialMatchDollar = TRUE)</c>.</fn>.</p></li>
+        <li><p>When you attempt to extract a single column with <c>df$x</c> and there is no column <c>x</c>, a data frame will instead select any variable that starts with <c>x</c>. If no variable starts with <c>x</c>, <c>df$x</c> will return <c>NULL</c>. This makes it easy to select the wrong variable or to select a variable that doesn&#x2019;t exist<fn>We can make R warn about this behavior (called partial matching) by setting `options(warnPartialMatchDollar = TRUE)`.</fn>.</p></li>
       </ul></p>
 
       <p>
@@ -1103,7 +1103,7 @@ is_tibble(df2)
       </p>
 
       <p>
-        List-columns are allowed in data frames but you have to do a little extra work by either adding the list-column after creation or wrapping the list in <c>I()</c><fn><c>I()</c> is short for identity and is often used to indicate that an input should be left as is, and not automatically transformed.</fn>.
+        List-columns are allowed in data frames but you have to do a little extra work by either adding the list-column after creation or wrapping the list in <c>I()</c><fn>`I()` is short for identity and is often used to indicate that an input should be left as is, and not automatically transformed.</fn>.
       </p>
 
       <program language="r">
