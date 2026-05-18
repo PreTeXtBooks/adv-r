@@ -131,7 +131,7 @@ y &lt;- x * 10
 `&lt;-`(y, `*`(x, 10))
 </input></program>
 
-      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with ``` `` ```, as in Section \@ref(non-syntactic).</fn>:</p>
+      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in Section \@ref(non-syntactic).</fn>:</p>
 
       <figure xml:id="fig-expressions-prefix">
         <image source="../images/expressions/prefix.png"/>
@@ -198,7 +198,7 @@ lobstr::ast(function(x = 1, y = 2) {})
     <idx><h>expressions</h></idx>
     <idx><h>expr()</h></idx>
 
-    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is _possible_ to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in Section \@ref(non-standard-ast).</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
+    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is <em>possible</em> to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in Section \@ref(non-standard-ast).</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
 
     <p>NB: In base R documentation "expression" is used to mean two things. As well as the definition above, expression is also used to refer to the type of object returned by <c>expression()</c> and <c>parse()</c>, which are basically lists of expressions as defined above. In this book I'll call these <alert>expression vectors</alert>, and I'll come back to them in <xref ref="subsec-expression-vectors"/>.</p>
 
