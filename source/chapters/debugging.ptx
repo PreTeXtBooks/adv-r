@@ -705,9 +705,13 @@ options(error = function() {
 f &lt;- function() g()
 g &lt;- function() message("Hi!")
 f()
+#&lt; Hi!
 
 rlang::with_abort(f(), "message")
+#&lt; Error: 'with_abort' is not an exported object from 'namespace:rlang'
+
 rlang::last_trace()
+#&lt; Error: Can't show last error because no error was recorded yet
           </input></program>
         </li>
         <li><p>
