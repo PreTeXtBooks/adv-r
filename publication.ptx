@@ -11,7 +11,7 @@
   <!-- stored or created.  Directories are relative to the main -->
   <!-- source PreTeXt file                                      -->
   <source>
-    <directories external="../assets" generated="../generated-assets"/>
+    <directories external="chapters" generated="../generated-assets"/>
   </source>
 
   <numbering>

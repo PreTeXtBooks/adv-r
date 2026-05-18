@@ -2,7 +2,7 @@
 <pretext xml:lang="en-US" xmlns:xi="http://www.w3.org/2001/XInclude">
 
   <docinfo>
-    <brandlogo url="https://adv-r.hadley.nz/" source="images/cover.png"/>
+    <brandlogo url="https://adv-r.hadley.nz/" source="../images/cover.png"/>
     <document-id>advanced-r</document-id>
   </docinfo>
 
