@@ -549,8 +549,8 @@ obj_size(y)
 #&gt; 8.00 MB
     </input></program>
     <p>
-      <c>y</c> is only 80 bytes bigger than <c>x</c>. That's the size of an empty list with
-      three elements:
+      <c>y</c> is only 80 bytes<fn>If you're running 32-bit R, you'll see slightly different
+      sizes.</fn> bigger than <c>x</c>. That's the size of an empty list with three elements:
     </p>
     <program language="r"><input>
 obj_size(list(NULL, NULL, NULL))
@@ -675,10 +675,13 @@ v[[3]] &lt;- 4
       </p>
       <p><ul>
         <li><p>
-          When it comes to bindings, R can currently only count 0, 1, or many. That means that
-          if an object has two bindings, and one goes away, the reference count does not go back
-          to 1: one less than many is still many. In turn, this means that R will make copies
-          when it sometimes doesn't need to.
+          When it comes to bindings, R can currently<fn>By the time you read this, this may
+          have changed, as plans are afoot to improve reference counting:
+          <url href="https://developer.r-project.org/Refcnt.html"
+            visual="https://developer.r-project.org/Refcnt.html"/>.</fn> only count 0, 1, or
+          many. That means that if an object has two bindings, and one goes away, the reference
+          count does not go back to 1: one less than many is still many. In turn, this means that
+          R will make copies when it sometimes doesn't need to.
         </p></li>
         <li><p>
           Whenever you call the vast majority of functions, it makes a reference to the object.
