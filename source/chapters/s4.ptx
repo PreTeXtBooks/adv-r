@@ -102,9 +102,7 @@
         All functions related to S4 live in the methods package. This package is
         always available when you're running R interactively, but may not be
         available when running R in batch mode, i.e. from
-        <c>Rscript</c>.<fn>This is a historical quirk introduced because the
-        methods package used to take a long time to load and <c>Rscript</c> is
-        optimised for fast command line invocation.</fn> For this reason, it's a
+        <c>Rscript</c>.<fn>This is a historical quirk introduced because the methods package used to take a long time to load and `Rscript` is optimised for fast command line invocation.</fn> For this reason, it's a
         good idea to call <c>library(methods)</c> whenever you use S4. This also
         signals to the reader that you'll be using the S4 object system.
       </p>
@@ -236,9 +234,7 @@ sloop::ftype(age)
       </p></li>
       <li><p>
         A <alert>prototype</alert>, a list of default values for each slot.
-        Technically, the prototype is optional,<fn><c>?setClass</c> recommends
-        that you avoid the <c>prototype</c> argument, but this is generally
-        considered to be bad advice.</fn> but you should always provide it.
+        Technically, the prototype is optional,<fn>`?setClass` recommends that you avoid the `prototype` argument, but this is generally considered to be bad advice.</fn> but you should always provide it.
       </p></li>
     </ul></p>
 
@@ -758,8 +754,7 @@ name(john) &lt;- letters
         There are two <alert>pseudo-classes</alert> that you can define methods
         for. These are called pseudo-classes because they don't actually exist,
         but allow you to define useful behaviours. The first pseudo-class is
-        <c>ANY</c> which matches any class.<fn>The S4 <c>ANY</c> pseudo-class
-        plays the same role as the S3 <c>default</c> pseudo-class.</fn> For
+        <c>ANY</c> which matches any class.<fn>The S4 `ANY` pseudo-class plays the same role as the S3 `default` pseudo-class.</fn> For
         technical reasons that we'll get to later, the link to the <c>ANY</c>
         method is longer than the links between the other classes:
       </p>

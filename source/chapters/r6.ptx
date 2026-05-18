@@ -85,10 +85,7 @@ library(R6)
     <p>
       R6 only needs a single function call to create both the class and its
       methods: <c>R6::R6Class()</c>. This is the only function from the package
-      that you'll ever use!<fn>That means if you're creating R6 in a package, you
-      only need to make sure it's listed in the <c>Imports</c> field of the
-      <c>DESCRIPTION</c>. There's no need to import the package into the
-      <c>NAMESPACE</c>.</fn>
+      that you'll ever use!<fn>That means if you're creating R6 in a package, you only need to make sure it's listed in the `Imports` field of the `DESCRIPTION`. There's no need to import the package into the `NAMESPACE`.</fn>
     </p>
 
     <p>
@@ -107,8 +104,7 @@ library(R6)
         and fields (anything else) that make up the public interface of the object.
         By convention, methods and fields use <c>snake_case</c>. Methods can access
         the methods and fields of the current object via
-        <c>self$</c>.<fn>Unlike in Python, the <c>self</c> variable is automatically
-        provided by R6, and does not form part of the method signature.</fn>
+        <c>self$</c>.<fn>Unlike in Python, the `self` variable is automatically provided by R6, and does not form part of the method signature.</fn>
       </p></li>
     </ul></p>
 
@@ -468,9 +464,7 @@ cards &lt;- paste0(rep(value, 4), suit)
       <p>
         With R6 you can define <alert>private</alert> fields and methods, elements
         that can only be accessed from within the class, not from the
-        outside.<fn>Because R is such a flexible language, it's technically still
-        possible to access private values, but you'll have to try much harder,
-        spelunking in to the details of R6's implementation.</fn> There are two
+        outside.<fn>Because R is such a flexible language, it's technically still possible to access private values, but you'll have to try much harder, spelunking in to the details of R6's implementation.</fn> There are two
         things that you need to know to take advantage of private elements:
       </p>
 

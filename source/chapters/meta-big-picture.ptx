@@ -154,7 +154,7 @@ cv(x + y)
 cv(`)`)
 </input></program>
 
-    <p>Dealing with weird names<fn>More technically, these are called non-syntactic names and are the topic of <xref ref="subsec-non-syntactic"/>.</fn> is another good reason to avoid <c>paste()</c> when generating R code. You might think this is an esoteric concern, but not worrying about it when generating SQL code in web applications led to SQL injection attacks that have collectively cost billions of dollars.</p>
+    <p>Dealing with weird names<fn>More technically, these are called non-syntactic names and are the topic of Section \@ref(non-syntactic).</fn> is another good reason to avoid <c>paste()</c> when generating R code. You might think this is an esoteric concern, but not worrying about it when generating SQL code in web applications led to SQL injection attacks that have collectively cost billions of dollars.</p>
   </section>
 
   <section xml:id="sec-eval-intro">

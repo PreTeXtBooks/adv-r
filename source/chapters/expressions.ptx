@@ -61,7 +61,7 @@ library(lobstr)
       <title>Drawing</title>
       <idx><h>ASTs</h><h>ast()</h></idx>
 
-      <p>We'll start by introducing some conventions for drawing ASTs, beginning with a simple call that shows their main components: <c>f(x, "y", 1)</c>. I'll draw trees in two ways<fn>For more complex code, you can also use RStudio's tree viewer which doesn't obey quite the same graphical conventions, but allows you to interactively explore large ASTs. Try it out with <c>View(expr(f(x, "y", 1)))</c>.</fn>:</p>
+      <p>We'll start by introducing some conventions for drawing ASTs, beginning with a simple call that shows their main components: <c>f(x, "y", 1)</c>. I'll draw trees in two ways<fn>For more complex code, you can also use RStudio's tree viewer which doesn't obey quite the same graphical conventions, but allows you to interactively explore large ASTs. Try it out with `View(expr(f(x, "y", 1)))`.</fn>:</p>
 
       <ul>
         <li>
@@ -131,7 +131,7 @@ y &lt;- x * 10
 `&lt;-`(y, `*`(x, 10))
 </input></program>
 
-      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in <xref ref="subsec-non-syntactic"/>.</fn>:</p>
+      <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with ``` `` ```, as in Section \@ref(non-syntactic).</fn>:</p>
 
       <figure xml:id="fig-expressions-prefix">
         <image source="../images/expressions/prefix.png"/>
@@ -198,7 +198,7 @@ lobstr::ast(function(x = 1, y = 2) {})
     <idx><h>expressions</h></idx>
     <idx><h>expr()</h></idx>
 
-    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is <em>possible</em> to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in <xref ref="sec-non-standard-ast"/>.</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
+    <p>Collectively, the data structures present in the AST are called expressions. An <alert>expression</alert> is any member of the set of base types created by parsing code: constant scalars, symbols, call objects, and pairlists. These are the data structures used to represent captured code from <c>expr()</c>, and <c>is_expression(expr(...))</c> is always true<fn>It is _possible_ to insert any other base object into an expression, but this is unusual and only needed in rare circumstances. We'll come back to that idea in Section \@ref(non-standard-ast).</fn>. Constants, symbols and call objects are the most important, and are discussed below. Pairlists and empty symbols are more specialised and we'll come back to them in <xref ref="subsec-pairlists"/> and <xref ref="subsec-empty-symbol"/>.</p>
 
     <p>NB: In base R documentation "expression" is used to mean two things. As well as the definition above, expression is also used to refer to the type of object returned by <c>expression()</c> and <c>parse()</c>, which are basically lists of expressions as defined above. In this book I'll call these <alert>expression vectors</alert>, and I'll come back to them in <xref ref="subsec-expression-vectors"/>.</p>
 
@@ -256,9 +256,9 @@ is.symbol(expr(x))
       <idx><h>call objects</h></idx>
       <idx><h>language objects</h><h>see call objects</h></idx>
 
-      <p>A <alert>call object</alert> represents a captured function call. Call objects are a special type of list<fn>More precisely, they're pairlists, <xref ref="subsec-pairlists"/>, but this distinction rarely matters.</fn> where the first component specifies the function to call (usually a symbol), and the remaining elements are the arguments for that call. Call objects create branches in the AST, because calls can be nested inside other calls.</p>
+      <p>A <alert>call object</alert> represents a captured function call. Call objects are a special type of list<fn>More precisely, they're pairlists, Section \@ref(pairlists), but this distinction rarely matters.</fn> where the first component specifies the function to call (usually a symbol), and the remaining elements are the arguments for that call. Call objects create branches in the AST, because calls can be nested inside other calls.</p>
 
-      <p>You can identify a call object when printed because it looks just like a function call. Confusingly <c>typeof()</c> and <c>str()</c> print "language"<fn>Avoid <c>is.language()</c> which returns <c>TRUE</c> for symbols, calls, and expression vectors.</fn> for call objects, but <c>is.call()</c> returns <c>TRUE</c>:</p>
+      <p>You can identify a call object when printed because it looks just like a function call. Confusingly <c>typeof()</c> and <c>str()</c> print "language"<fn>Avoid `is.language()` which returns `TRUE` for symbols, calls, and expression vectors.</fn> for call objects, but <c>is.call()</c> returns <c>TRUE</c>:</p>
 
       <program language="r"><input>
 lobstr::ast(read.table("important.csv", row.names = FALSE))
@@ -318,7 +318,7 @@ x
         <title>Function position</title>
         <idx><h>call objects</h><h>function component</h></idx>
 
-        <p>The first element of the call object is the <alert>function position</alert>. This contains the function that will be called when the object is evaluated, and is usually a symbol<fn>Peculiarly, it can also be a number, as in the expression <c>3()</c>. But this call will always fail to evaluate because a number is not a function.</fn>:</p>
+        <p>The first element of the call object is the <alert>function position</alert>. This contains the function that will be called when the object is evaluated, and is usually a symbol<fn>Peculiarly, it can also be a number, as in the expression `3()`. But this call will always fail to evaluate because a number is not a function.</fn>:</p>
 
         <program language="r"><input>
 lobstr::ast(foo())
@@ -493,7 +493,7 @@ names(x) &lt;- c("x", "y")
       <title>Operator precedence</title>
       <idx><h>operator precedence</h></idx>
 
-      <p>Infix functions introduce two sources of ambiguity<fn>This ambiguity does not exist in languages with only prefix or postfix calls. It's interesting to compare a simple arithmetic operation in Lisp (prefix) and Forth (postfix). In Lisp you'd write <c>(* (+ 1 2) 3))</c>; this avoids ambiguity by requiring parentheses everywhere. In Forth, you'd write <c>1 2 + 3 *</c>; this doesn't require any parentheses, but does require more thought when reading.</fn>. The first source of ambiguity arises from infix functions: what does <c>1 + 2 * 3</c> yield? Do you get 9 (i.e. <c>(1 + 2) * 3</c>), or 7 (i.e. <c>1 + (2 * 3)</c>)? In other words, which of the two possible parse trees below does R use?</p>
+      <p>Infix functions introduce two sources of ambiguity<fn>This ambiguity does not exist in languages with only prefix or postfix calls. It's interesting to compare a simple arithmetic operation in Lisp (prefix) and Forth (postfix). In Lisp you'd write `(* (+ 1 2) 3))`; this avoids ambiguity by requiring parentheses everywhere. In Forth, you'd write `1 2 + 3 *`; this doesn't require any parentheses, but does require more thought when reading.</fn>. The first source of ambiguity arises from infix functions: what does <c>1 + 2 * 3</c> yield? Do you get 9 (i.e. <c>(1 + 2) * 3</c>), or 7 (i.e. <c>1 + (2 * 3)</c>)? In other words, which of the two possible parse trees below does R use?</p>
 
       <figure xml:id="fig-expressions-ambig-order">
         <image source="../images/expressions/ambig-order.png"/>

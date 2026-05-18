@@ -158,7 +158,7 @@ env_get(e3, "xyz", default = NA)
       <p>There are two other ways to add bindings to an environment:</p>
       <p><ul>
         <li>
-          <p><c>env_poke()</c><fn>You might wonder why rlang has <c>env_poke()</c> instead of <c>env_set()</c>. This is for consistency: <c>_set()</c> functions return a modified copy; <c>_poke()</c> functions modify in place.</fn> takes a name (as string) and a value:</p>
+          <p><c>env_poke()</c><fn>You might wonder why rlang has `env_poke()` instead of `env_set()`. This is for consistency: `_set()` functions return a modified copy; `_poke()` functions modify in place.</fn> takes a name (as string) and a value:</p>
           <program language="r"><input>
 env_poke(e3, "a", 100)
 e3$a
@@ -333,7 +333,7 @@ f2 &lt;- function(..., env = caller_env()) {
     <p>Most environments are not created by you (e.g. with <c>env()</c>) but are instead created by R. In this section, you'll learn about the most important environments, starting with the package environments. You'll then learn about the function environment bound to the function when it is created, and the (usually) ephemeral execution environment created every time the function is called. Finally, you'll see how the package and function environments interact to support namespaces, which ensure that a package always behaves the same way, regardless of what other packages the user has loaded.</p>
     <subsection xml:id="subsec-search-path">
       <title>Package environments and the search path</title>
-      <p>Each package attached by <c>library()</c> or <c>require()</c> becomes one of the parents of the global environment. The immediate parent of the global environment is the last package you attached<fn>Note the difference between attached and loaded. A package is loaded automatically if you access one of its functions using <c>::</c>; it is only <alert>attached</alert> to the search path by <c>library()</c> or <c>require()</c>.</fn>, the parent of that package is the second to last package you attached, ...</p>
+      <p>Each package attached by <c>library()</c> or <c>require()</c> becomes one of the parents of the global environment. The immediate parent of the global environment is the last package you attached<fn>Note the difference between attached and loaded. A package is loaded automatically if you access one of its functions using `::`; it is only __attached__ to the search path by `library()` or `require()`.</fn>, the parent of that package is the second to last package you attached, ...</p>
       <figure><image source="../images/environments/search-path.png"/></figure>
       <p>If you follow all the parents back, you see the order in which every package has been attached. This is known as the <alert>search path</alert> because all objects in these environments can be found from the top-level interactive workspace. You can see the names of these environments with <c>base::search()</c>, or the environments themselves with <c>rlang::search_envs()</c>:</p>
       <program language="r"><input>
@@ -538,7 +538,7 @@ a(f())
     </subsection>
     <subsection xml:id="subsec-frames">
       <title>Frames</title>
-      <p>Each element of the call stack is a <alert>frame</alert><fn>NB: <c>?environment</c> uses frame in a different sense: "Environments consist of a <em>frame</em>, or collection of named objects, and a pointer to an enclosing environment." We avoid this sense of frame, which comes from S, because it's very specific and not widely used in base R. For example, the frame in <c>parent.frame()</c> is an execution context, not a collection of named objects.</fn>, also known as an evaluation context. The frame is an extremely important internal data structure, and R code can only access a small part of the data structure because tampering with it will break R. A frame has three key components:</p>
+      <p>Each element of the call stack is a <alert>frame</alert><fn>NB: `?environment` uses frame in a different sense: "Environments consist of a _frame_, or collection of named objects, and a pointer to an enclosing environment." We avoid this sense of frame, which comes from S, because it's very specific and not widely used in base R. For example, the frame in `parent.frame()` is an execution context, not a collection of named objects.</fn>, also known as an evaluation context. The frame is an extremely important internal data structure, and R code can only access a small part of the data structure because tampering with it will break R. A frame has three key components:</p>
       <p><ul>
         <li><p>An expression (labelled with <c>expr</c>) giving the function call. This is what <c>traceback()</c> prints out.</p></li>
         <li><p>An environment (labelled with <c>env</c>), which is typically the execution environment of a function. There are two main exceptions: the environment of the global frame is the global environment, and calling <c>eval()</c> also generates frames, where the environment can be anything.</p></li>

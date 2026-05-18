@@ -103,7 +103,7 @@ ftype(t.test)
 ftype(t.data.frame)
     </input></program>
     <p>
-      Unlike most functions, you can't see the source code for most S3 methods<fn>The exceptions are methods found in the base package, like <c>t.data.frame</c>, and methods that you've created.</fn> just by typing their names. That's because S3 methods are not usually exported: they live only inside the package, and are not available from the global environment. Instead, you can use <c>sloop::s3_get_method()</c>, which will work regardless of where the method lives:
+      Unlike most functions, you can't see the source code for most S3 methods<fn>The exceptions are methods found in the base package, like `t.data.frame`, and methods that you've created.</fn> just by typing their names. That's because S3 methods are not usually exported: they live only inside the package, and are not available from the global environment. Instead, you can use <c>sloop::s3_get_method()</c>, which will work regardless of where the method lives:
     </p>
     <program language="r"><input>
 weighted.mean.Date
@@ -218,7 +218,7 @@ print(mod)
         <li><p>Check the type of the base object and the types of each attribute.</p></li>
       </ul></p>
       <p>
-        I'll illustrate these ideas by creating constructors for base classes<fn>Recent versions of R have <c>.Date()</c>, <c>.difftime()</c>, <c>.POSIXct()</c>, and <c>.POSIXlt()</c> constructors but they are internal, not well documented, and do not follow the principles that I recommend.</fn> that you're already familiar with. To start, lets make a constructor for the simplest S3 class: <c>Date</c>. A <c>Date</c> is just a double with a single attribute: its <c>class</c> is "Date". This makes for a very simple constructor:
+        I'll illustrate these ideas by creating constructors for base classes<fn>Recent versions of R have `.Date()`, `.difftime()`, `.POSIXct()`, and `.POSIXlt()` constructors but they are internal, not well documented, and do not follow the principles that I recommend.</fn> that you're already familiar with. To start, lets make a constructor for the simplest S3 class: <c>Date</c>. A <c>Date</c> is just a double with a single attribute: its <c>class</c> is "Date". This makes for a very simple constructor:
       </p>
       <program language="r"><input>
 new_Date &lt;- function(x = double()) {
@@ -350,7 +350,7 @@ factor(c("a", "a", "b"))
           </input></program>
         </li>
         <li>
-          <p>Some complex objects are most naturally specified by multiple simple components. For example, I think it's natural to construct a date-time by supplying the individual components (year, month, day etc). That leads me to this <c>POSIXct()</c> helper that resembles the existing <c>ISODatetime()</c> function<fn>This helper is not efficient: behind the scenes <c>ISODatetime()</c> works by pasting the components into a string and then using <c>strptime()</c>. A more efficient equivalent is available in <c>lubridate::make_datetime()</c>.</fn>:</p>
+          <p>Some complex objects are most naturally specified by multiple simple components. For example, I think it's natural to construct a date-time by supplying the individual components (year, month, day etc). That leads me to this <c>POSIXct()</c> helper that resembles the existing <c>ISODatetime()</c> function<fn>This helper is not efficient: behind the scenes `ISODatetime()` works by pasting the components into a string and then using `strptime()`. A more efficient equivalent is available in `lubridate::make_datetime()`.</fn>:</p>
           <program language="r"><input>
 POSIXct &lt;- function(year = integer(),
                     month = integer(),
@@ -394,7 +394,7 @@ POSIXct(2020, 1, 1, tzone = "America/New_York")
     <title>Generics and methods</title>
 
     <p>
-      The job of an S3 generic is to perform method dispatch, i.e. find the specific implementation for a class. Method dispatch is performed by <c>UseMethod()</c>, which every generic calls<fn>The exception is internal generics, which are implemented in C, and are the topic of <xref ref="subsec-internal-generics"/>.</fn>. <c>UseMethod()</c> takes two arguments: the name of the generic function (required), and the argument to use for method dispatch (optional). If you omit the second argument, it will dispatch based on the first argument, which is almost always what is desired.
+      The job of an S3 generic is to perform method dispatch, i.e. find the specific implementation for a class. Method dispatch is performed by <c>UseMethod()</c>, which every generic calls<fn>The exception is internal generics, which are implemented in C, and are the topic of Section \@ref(internal-generics).</fn>. <c>UseMethod()</c> takes two arguments: the name of the generic function (required), and the argument to use for method dispatch (optional). If you omit the second argument, it will dispatch based on the first argument, which is almost always what is desired.
     </p>
     <p>
       Most generics are very simple, and consist of only a call to <c>UseMethod()</c>. Take <c>mean()</c> for example:
@@ -471,7 +471,7 @@ s3_methods_class("ordered")
         <li><p>First, you should only ever write a method if you own the generic or the class. R will allow you to define a method even if you don't, but it is exceedingly bad manners. Instead, work with the author of either the generic or the class to add the method in their code.</p></li>
         <li>
           <p>A method must have the same arguments as its generic. This is enforced in packages by <c>R CMD check</c>, but it's good practice even if you're not creating a package.</p>
-          <p>There is one exception to this rule: if the generic has <c>...</c>, the method can contain a superset of the arguments. This allows methods to take arbitrary additional arguments. The downside of using <c>...</c>, however, is that any misspelled arguments will be silently swallowed<fn>See <url href="https://github.com/hadley/ellipsis" visual="https://github.com/hadley/ellipsis">https://github.com/hadley/ellipsis</url> for an experimental way of warning when methods fail to use all the arguments in <c>...</c>, providing a potential resolution of this issue.</fn>, as mentioned in <xref ref="sec-fun-dot-dot-dot"/>.</p>
+          <p>There is one exception to this rule: if the generic has <c>...</c>, the method can contain a superset of the arguments. This allows methods to take arbitrary additional arguments. The downside of using <c>...</c>, however, is that any misspelled arguments will be silently swallowed<fn>See &lt;https://github.com/hadley/ellipsis&gt; for an experimental way of warning when methods fail to use all the arguments in `...`, providing a potential resolution of this issue.</fn>, as mentioned in <xref ref="sec-fun-dot-dot-dot"/>.</p>
         </li>
       </ul></p>
     </subsection>

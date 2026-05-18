@@ -96,9 +96,7 @@ library(purrr)
     <p>
       Here we'll explore the details of <c>eval()</c> which we briefly mentioned in the last
       chapter. It has two key arguments: <c>expr</c> and <c>env</c>. The first argument,
-      <c>expr</c>, is the object to evaluate, typically a symbol or expression.<fn>All other
-      objects yield themselves when evaluated; i.e. <c>eval(x)</c> yields <c>x</c>, except when
-      <c>x</c> is a symbol or expression.</fn> None of the evaluation functions quote their inputs,
+      <c>expr</c>, is the object to evaluate, typically a symbol or expression.<fn>All other objects yield themselves when evaluated; i.e. `eval(x)` yields `x`, except when `x` is a symbol or expression.</fn> None of the evaluation functions quote their inputs,
       so you'll usually use them with <c>expr()</c> or similar:
     </p>
 
@@ -355,8 +353,7 @@ local3 &lt;- function(expr, envir = new.env()) {
     <p>
       Almost every use of <c>eval()</c> involves both an expression and environment. This coupling
       is so important that we need a data structure that can hold both pieces. Base R does not have
-      such a structure<fn>Technically a formula combines an expression and environment, but formulas
-      are tightly coupled to modelling so a new data structure makes sense.</fn> so rlang fills the
+      such a structure<fn>Technically a formula combines an expression and environment, but formulas are tightly coupled to modelling so a new data structure makes sense.</fn> so rlang fills the
       gap with the <alert>quosure</alert>, an object that contains an expression and an environment.
       The name is a portmanteau of quoting and closure, because a quosure both quotes the expression
       and encloses the environment. Quosures reify the internal promise object

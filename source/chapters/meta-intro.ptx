@@ -38,9 +38,7 @@
     before having to learn the details. This book focusses on the theoretical side of tidy
     evaluation, so you can fully understand how it works from the ground up. If you are looking
     for a more practical introduction, I recommend the tidy evaluation book at
-    <url href="https://tidyeval.tidyverse.org"/><fn>As I write this chapter, the tidy evaluation
-    book is still a work-in-progress, but by the time you read this it will hopefully be
-    finished.</fn>.
+    <url href="https://tidyeval.tidyverse.org"/><fn>As I write this chapter, the tidy evaluation book is still a work-in-progress, but by the time you read this it will hopefully be finished.</fn>.
   </p>
 
   <p>

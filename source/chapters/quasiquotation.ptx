@@ -350,9 +350,7 @@ exprs(x = x ^ 2, y = y ^ 3, z = z ^ 4)
         Sometimes you only want to allow the user to specify a variable name, not an arbitrary
         expression. In this case, you can use <c>ensym()</c> or <c>ensyms()</c>. These are
         variants of <c>enexpr()</c> and <c>enexprs()</c> that check the captured expression is
-        either a symbol or a string (which is converted to a symbol<fn>This is for compatibility
-        with base R, which allows you to provide a string instead of a symbol in many places:
-        <c>"x" &lt;- 1</c>, <c>"foo"(x, y)</c>, <c>c("x" = 1)</c>.</fn>).
+        either a symbol or a string (which is converted to a symbol<fn>This is for compatibility with base R, which allows you to provide a string instead of a symbol in many places: `"x" &lt;- 1`, `"foo"(x, y)`, `c("x" = 1)`.</fn>).
         <c>ensym()</c> and <c>ensyms()</c> throw an error if given anything else.
       </p>
 
@@ -406,8 +404,7 @@ alist(x = 1, y = x + 2)
 
       <p>
         The equivalent to <c>enexprs()</c> is an undocumented feature of
-        <c>substitute()</c><fn>Discovered by Peter Meilstrup and described in
-        <url href="http://r.789695.n4.nabble.com/substitute-on-arguments-in-ellipsis-quot-dot-dot-dot-quot-td4751658.html">R-devel on 2018-08-13</url>.</fn>:
+        <c>substitute()</c><fn>Discovered by Peter Meilstrup and described in [R-devel on 2018-08-13](http://r.789695.n4.nabble.com/substitute-on-arguments-in-ellipsis-quot-dot-dot-dot-quot-td4751658.html).</fn>:
       </p>
 
       <program language="r"><input>
@@ -831,12 +828,7 @@ call2("f", !!!xs, expr(y))
         <c>!!x + !!y</c> instead of <c>(!!x) + (!!y)</c>.
       </p>
       <p>
-        The biggest downside<fn>Prior to R 3.5.1, there was another major downside: the R
-        deparser treated <c>!!x</c> as <c>!(!x)</c>. This is why in old versions of R you might
-        see extra parentheses when printing expressions. The good news is that these parentheses
-        are not real and can be safely ignored most of the time. The bad news is that they will
-        become real if you reparse that printed output to R code. These roundtripped functions
-        will not work as expected since <c>!(!x)</c> does not unquote.</fn> to using a fake
+        The biggest downside<fn>Prior to R 3.5.1, there was another major downside: the R deparser treated `!!x` as `!(!x)`. This is why in old versions of R you might see extra parentheses when printing expressions. The good news is that these parentheses are not real and can be safely ignored most of the time. The bad news is that they will become real if you reparse that printed output to R code. These roundtripped functions will not work as expected since `!(!x)` does not unquote.</fn> to using a fake
         operator is that you might get silent errors when misusing <c>!!</c> outside of
         quasiquoting functions. Most of the time this is not an issue because <c>!!</c> is
         typically used to unquote expressions or quosures. Since expressions are not supported
@@ -872,8 +864,7 @@ with(df, x + !!y)
         </p></li>
         <li><p>
           They override a rarely used piece of syntax, as double negation is not a common
-          pattern in R<fn>Unlike, say, Javascript, where <c>!!x</c> is a commonly used shortcut
-          to convert an integer into a logical.</fn>. If you do need it, you can just add
+          pattern in R<fn>Unlike, say, Javascript, where `!!x` is a commonly used shortcut to convert an integer into a logical.</fn>. If you do need it, you can just add
           parentheses <c>!(!x)</c>.
         </p></li>
       </ul>
@@ -1228,8 +1219,7 @@ tibble::tibble(!!var = value)
     </p>
     <p>
       We say functions that support these tools, without quoting arguments, have
-      <alert>tidy dots</alert><fn>This is admittedly not the most creative of names, but it
-      clearly suggests it's something that has been added to R after the fact.</fn>. To gain tidy
+      <alert>tidy dots</alert><fn>This is admittedly not the most creative of names, but it clearly suggests it's something that has been added to R after the fact.</fn>. To gain tidy
       dots behaviour in your own function, all you need to do is use <c>list2()</c>.
     </p>
 
@@ -1781,11 +1771,7 @@ curve2(sin(exp(4 * x)), n = 1000)
 
       <p>
         Functions like <c>curve()</c> that use an expression containing a pronoun are known as
-        <alert>anaphoric</alert> functions<fn>Anaphoric comes from the linguistics term
-        "anaphora", an expression that is context dependent. Anaphoric functions are found in
-        <url href="http://www.arcfn.com/doc/anaphoric.html">Arc</url> (a Lisp like language),
-        <url href="http://www.perlmonks.org/index.pl?node_id=666047">Perl</url>, and
-        <url href="http://amalloy.hubpages.com/hub/Unhygenic-anaphoric-Clojure-macros-for-fun-and-profit">Clojure</url>.</fn>.
+        <alert>anaphoric</alert> functions<fn>Anaphoric comes from the linguistics term "anaphora", an expression that is context dependent. Anaphoric functions are found in [Arc](http://www.arcfn.com/doc/anaphoric.html) (a Lisp like language), [Perl](http://www.perlmonks.org/index.pl?node_id=666047), and [Clojure](http://amalloy.hubpages.com/hub/Unhygenic-anaphoric-Clojure-macros-for-fun-and-profit).</fn>.
       </p>
     </subsection>
 
@@ -1829,8 +1815,7 @@ compose &lt;- function(f, g) {
 
     <p>
       The idea of quasiquotation is an old one. It was first developed by the philosopher Willard
-      van Orman Quine<fn>You might be familiar with the name Quine from "quines", computer
-      programs that return a copy of their own source when run.</fn> in the early 1940s. It's
+      van Orman Quine<fn>You might be familiar with the name Quine from "quines", computer programs that return a copy of their own source when run.</fn> in the early 1940s. It's
       needed in philosophy because it helps when precisely delineating the use and mention of
       words, i.e. distinguishing between the object and the words we use to refer to that object.
     </p>
