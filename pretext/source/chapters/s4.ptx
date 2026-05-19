@@ -703,7 +703,7 @@ name(john) &lt;- letters
     </p>
 
     <figure>
-      <image source="../images/s4/emoji.png"/>
+      <image source="images/s4/emoji.png"/>
     </figure>
 
     <p>
@@ -722,7 +722,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/single.png"/>
+        <image source="images/s4/single.png"/>
       </figure>
 
       <p>
@@ -760,7 +760,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/single-any.png"/>
+        <image source="images/s4/single-any.png"/>
       </figure>
 
       <p>
@@ -780,7 +780,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/multiple.png"/>
+        <image source="images/s4/multiple.png"/>
       </figure>
 
       <p>
@@ -809,11 +809,11 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/multiple-ambig.png"/>
+        <image source="images/s4/multiple-ambig.png"/>
       </figure>
 
       <figure>
-        <image source="../images/s4/multiple-ambig-2.png"/>
+        <image source="images/s4/multiple-ambig-2.png"/>
       </figure>
 
       <p>
@@ -824,7 +824,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/multiple-any.png"/>
+        <image source="images/s4/multiple-any.png"/>
       </figure>
 
       <p>
@@ -838,7 +838,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/multiple-all.png"/>
+        <image source="images/s4/multiple-all.png"/>
       </figure>
     </subsection>
 
@@ -853,7 +853,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/single-single.png"/>
+        <image source="images/s4/single-single.png"/>
       </figure>
 
       <p>
@@ -868,7 +868,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/single-single-ambig.png"/>
+        <image source="images/s4/single-single-ambig.png"/>
       </figure>
 
       <p>
@@ -887,7 +887,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/single-multiple.png"/>
+        <image source="images/s4/single-multiple.png"/>
       </figure>
 
       <p>
@@ -896,7 +896,7 @@ name(john) &lt;- letters
       </p>
 
       <figure>
-        <image source="../images/s4/multiple-multiple.png"/>
+        <image source="images/s4/multiple-multiple.png"/>
       </figure>
 
       <p>

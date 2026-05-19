@@ -67,7 +67,7 @@ library(lobstr)
         <li>
           <p>By "hand" (i.e. with OmniGraffle):</p>
           <figure xml:id="fig-expressions-simple">
-            <image source="../images/expressions/simple.png"/>
+            <image source="images/expressions/simple.png"/>
           </figure>
         </li>
         <li>
@@ -90,7 +90,7 @@ lobstr::ast(f(x, "y", 1))
       <p>The above example only contained one function call, making for a very shallow tree. Most expressions will contain considerably more calls, creating trees with multiple levels. For example, consider the AST for <c>f(g(1, 2), h(3, 4, i()))</c>:</p>
 
       <figure xml:id="fig-expressions-complicated">
-        <image source="../images/expressions/complicated.png"/>
+        <image source="images/expressions/complicated.png"/>
       </figure>
 
       <program language="r"><input>
@@ -134,7 +134,7 @@ y &lt;- x * 10
       <p>And they both have this AST<fn>The names of non-prefix functions are non-syntactic so I surround them with <c>``</c>, as in Section \@ref(non-syntactic).</fn>:</p>
 
       <figure xml:id="fig-expressions-prefix">
-        <image source="../images/expressions/prefix.png"/>
+        <image source="images/expressions/prefix.png"/>
       </figure>
 
       <program language="r"><input>
@@ -339,7 +339,7 @@ lobstr::ast(foo(1)(2))
 </input></program>
 
         <figure xml:id="fig-expressions-call-call">
-          <image source="../images/expressions/call-call.png"/>
+          <image source="images/expressions/call-call.png"/>
         </figure>
       </paragraphs>
 
@@ -496,7 +496,7 @@ names(x) &lt;- c("x", "y")
       <p>Infix functions introduce two sources of ambiguity<fn>This ambiguity does not exist in languages with only prefix or postfix calls. It's interesting to compare a simple arithmetic operation in Lisp (prefix) and Forth (postfix). In Lisp you'd write `(* (+ 1 2) 3))`; this avoids ambiguity by requiring parentheses everywhere. In Forth, you'd write `1 2 + 3 *`; this doesn't require any parentheses, but does require more thought when reading.</fn>. The first source of ambiguity arises from infix functions: what does <c>1 + 2 * 3</c> yield? Do you get 9 (i.e. <c>(1 + 2) * 3</c>), or 7 (i.e. <c>1 + (2 * 3)</c>)? In other words, which of the two possible parse trees below does R use?</p>
 
       <figure xml:id="fig-expressions-ambig-order">
-        <image source="../images/expressions/ambig-order.png"/>
+        <image source="images/expressions/ambig-order.png"/>
       </figure>
 
       <p>Programming languages use conventions called <alert>operator precedence</alert> to resolve this ambiguity. We can use <c>ast()</c> to see what R does:</p>
