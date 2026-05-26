@@ -14,6 +14,7 @@
       <li><p><url href="http://homepage.stat.uiowa.edu/~luke/R/exceptions/simpcond.html">A prototype of a condition system for R</url> by Robert Gentleman and Luke Tierney. This describes an early version of R's condition system. While the implementation has changed somewhat since this document was written, it provides a good overview of how the pieces fit together, and some motivation for its design.</p></li>
       <li><p><url href="http://www.gigamonkeys.com/book/beyond-exception-handling-conditions-and-restarts.html">Beyond exception handling: conditions and restarts</url> by Peter Seibel. This describes exception handling in Lisp, which happens to be very similar to R's approach. It provides useful motivation and more sophisticated examples. I have provided an R translation of the chapter at <url href="http://adv-r.had.co.nz/beyond-exception-handling.html">http://adv-r.had.co.nz/beyond-exception-handling.html</url>.</p></li>
     </ul></p>
+    <p>I also found it helpful to work through the underlying C code that implements these ideas. If you're interested in understanding how it all works, you might find <url href="https://gist.github.com/hadley/4278d0a6d3a10e42533d59905fbed0ac">my notes</url> to be useful.</p>
     <paragraphs xml:id="para-conditions-quiz">
       <title>Quiz</title>
       <p>Want to skip this chapter? Go for it, if you can answer the questions below. Find the answers at the end of the chapter in <xref ref="sec-conditions-answers"/>.</p>
