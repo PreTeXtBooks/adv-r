@@ -81,7 +81,9 @@
             problem.
           </p>
           <p>
-            You can automate this process with the errorist and searcher
+            You can automate this process with the
+            <url href="https://github.com/coatless/errorist">errorist</url> and
+            <url href="https://github.com/coatless/searcher">searcher</url>
             packages. See their websites for more details.
           </p>
         </li>

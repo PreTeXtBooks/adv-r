@@ -134,7 +134,8 @@ writeLines(readLines(tmp))
       aggregates. profvis also connects profiling data back to the underlying
       source code, making it easier to build up a mental model of what you need
       to change. If you find profvis doesn't help for your code, you might try
-      one of the other options like <c>utils::summaryRprof()</c> or the proftools
+      one of the other options like <c>utils::summaryRprof()</c> or the
+      <url href="https://CRAN.R-project.org/package=proftools">proftools</url>
       package.</p>
 
       <p>There are two ways to use profvis:</p>
@@ -309,7 +310,8 @@ f &lt;- function(n = 1e5) {
     effects in real code; a deep understanding of subatomic physics is not very
     helpful when baking.</p>
 
-    <p>A great tool for microbenchmarking in R is the bench package. The bench
+    <p>A great tool for microbenchmarking in R is the
+    <url href="https://bench.r-lib.org/">bench</url> package. The bench
     package uses a high precision timer, making it possible to compare operations
     that only take a tiny amount of time. For example, the following code compares
     the speed of two approaches to computing a square root.</p>
@@ -385,7 +387,7 @@ lb[c("expression", "min", "median", "itr/sec", "n_gc")]
       <title>Interpreting results</title>
 
       <p>As with all microbenchmarks, pay careful attention to the units: here,
-      each computation takes about [computed value] ns. To help calibrate the
+      each computation takes about a few hundred nanoseconds. To help calibrate the
       impact of a microbenchmark on run time, it's useful to think about how many
       times a function needs to run before it takes a second. If a microbenchmark
       takes:</p>

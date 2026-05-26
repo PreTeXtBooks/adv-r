@@ -33,6 +33,7 @@
       <program language="r"><input>
 library(rlang)
       </input></program>
+      <p>The <c>env_</c> functions in rlang are designed to work with the pipe: all take an environment as the first argument, and many also return an environment. I won't use the pipe in this chapter in the interest of keeping the code as simple as possible, but you should consider it for your own code.</p>
     </paragraphs>
   </introduction>
 
@@ -45,6 +46,7 @@ library(rlang)
       <li><p>An environment has a parent.</p></li>
       <li><p>Environments are not copied when modified.</p></li>
     </ul></p>
+    <p>Let's explore these ideas with code and pictures.</p>
     <subsection xml:id="subsec-env-basics-create">
       <title>Basics</title>
       <p>To create an environment, use <c>rlang::env()</c>. It works like <c>list()</c>, taking a set of name-value pairs:</p>
@@ -412,6 +414,7 @@ g &lt;- function(x) {
 g(10)
 g(10)
       </input></program>
+      <p>Think about it for a moment before you read on.</p>
       <p>This function returns the same value every time because of the fresh start principle, described in <xref ref="subsec-fresh-start"/>. Each time a function is called, a new environment is created to host execution. This is called the execution environment, and its parent is the function environment. Let's illustrate that process with a simpler function. I draw execution environments with an indirect parent; the parent environment is found via the function environment.</p>
       <program language="r"><input>
 h &lt;- function(x) {
